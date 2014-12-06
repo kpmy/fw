@@ -1,11 +1,25 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"rt"
 	"xev"
 )
 
 func main() {
 	path, _ := os.Getwd()
-	xev.Load(path, "PrivDemo1.oxf")
+	ret := xev.Load(path, "PrivDemo1.oxf")
+	if ret != nil {
+		p := rt.NewProcessor()
+		p.ConnectTo(ret)
+		for {
+			fmt.Print(".")
+			res, _ := p.Do()
+			if res != rt.OK {
+				break
+			}
+		}
+		fmt.Println("")
+	}
 }

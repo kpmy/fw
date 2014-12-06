@@ -1,8 +1,6 @@
 package node
 
-import (
-	"cp/object"
-)
+import "cp/object"
 
 type Class int
 
@@ -19,6 +17,11 @@ type Node interface {
 	SetRight(n Node)
 	SetLink(n Node)
 	SetObject(o object.Object)
+
+	Left() Node
+	Right() Node
+	Link() Node
+	Object() object.Object
 }
 
 func New(class Class) Node {
@@ -43,20 +46,36 @@ type nodeFields struct {
 	obj               object.Object
 }
 
-func (nf nodeFields) SetLeft(n Node) {
+func (nf *nodeFields) SetLeft(n Node) {
 	nf.left = n
 }
 
-func (nf nodeFields) SetRight(n Node) {
+func (nf *nodeFields) SetRight(n Node) {
 	nf.right = n
 }
 
-func (nf nodeFields) SetLink(n Node) {
+func (nf *nodeFields) SetLink(n Node) {
 	nf.link = n
 }
 
-func (nf nodeFields) SetObject(o object.Object) {
+func (nf *nodeFields) SetObject(o object.Object) {
 	nf.obj = o
+}
+
+func (nf *nodeFields) Left() Node {
+	return nf.left
+}
+
+func (nf *nodeFields) Right() Node {
+	return nf.right
+}
+
+func (nf *nodeFields) Link() Node {
+	return nf.link
+}
+
+func (nf *nodeFields) Object() object.Object {
+	return nf.obj
 }
 
 type enterNode struct {
@@ -64,7 +83,7 @@ type enterNode struct {
 	enter Enter
 }
 
-func (e enterNode) SetEnter(enter Enter) {
+func (e *enterNode) SetEnter(enter Enter) {
 	e.enter = enter
 }
 
@@ -74,16 +93,20 @@ type constantNode struct {
 	data interface{}
 }
 
-func (c constantNode) SetType(t object.Type) {
+func (c *constantNode) SetType(t object.Type) {
 	c.typ = t
 }
 
-func (c constantNode) SetData(data interface{}) {
+func (c *constantNode) SetData(data interface{}) {
 	c.data = data
 }
 
-type variableNode struct {
-	nodeFields
+func (c *constantNode) Data() interface{} {
+	return c.data
+}
+
+func (c *constantNode) Type() object.Type {
+	return c.typ
 }
 
 type dyadicNode struct {
@@ -91,10 +114,24 @@ type dyadicNode struct {
 	operation Operation
 }
 
-func (d dyadicNode) SetOperation(op Operation) {
+func (d *dyadicNode) SetOperation(op Operation) {
 	d.operation = op
+}
+
+func (d *dyadicNode) Operation() Operation {
+	return d.operation
 }
 
 type assignNode struct {
 	nodeFields
 }
+
+func (a *assignNode) Self() AssignNode {
+	return a
+}
+
+type variableNode struct {
+	nodeFields
+}
+
+func (v *variableNode) Self() VariableNode { return v }

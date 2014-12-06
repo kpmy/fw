@@ -84,11 +84,10 @@ func (r *Result) buildObjectList(list []Node) []object.Object {
 	return ret
 }
 
-func (r *Result) buildNode(n *Node) node.Node {
+func (r *Result) buildNode(n *Node) (ret node.Node) {
 	if n == nil {
 		panic("n is nil")
 	}
-	var ret node.Node
 	ret = nodeMap[n.Id]
 	if ret == nil {
 		switch n.Data.Nod.Class {
@@ -131,44 +130,61 @@ func (r *Result) buildNode(n *Node) node.Node {
 		left := r.findLink(n, "left")
 		if left != nil {
 			ret.SetLeft(r.buildNode(left))
+			if ret.Left() == nil {
+				panic("error in node")
+			}
 		}
 		right := r.findLink(n, "right")
 		if right != nil {
 			ret.SetRight(r.buildNode(right))
+			if ret.Right() == nil {
+				panic("error in node")
+			}
 		}
 		link := r.findLink(n, "link")
 		if link != nil {
 			ret.SetLink(r.buildNode(link))
+			if ret.Link() == nil {
+				panic("error in node")
+			}
 		}
 		object := r.findLink(n, "object")
 		if object != nil {
 			ret.SetObject(r.buildObject(object))
+			if ret.Object() == nil {
+				panic("error in node")
+			}
 		}
 	}
 	return ret
 }
 
-func buildMod(r *Result) (node.Node, []object.Object) {
-	var root node.Node
-	var list []object.Object
+func buildMod(r *Result) (nodeList []node.Node, objList []object.Object, root node.Node) {
 	for i := range r.GraphList {
 		if r.GraphList[i].CptScope != "" {
-			list = r.buildObjectList(r.GraphList[i].NodeList)
+			objList = r.buildObjectList(r.GraphList[i].NodeList)
 		}
 		if r.GraphList[i].CptProc != "" {
+			nodeList = make([]node.Node, 0)
 			for j := range r.GraphList[i].NodeList {
-				root = r.buildNode(&r.GraphList[i].NodeList[j])
+				node := &r.GraphList[i].NodeList[j]
+				ret := r.buildNode(&r.GraphList[i].NodeList[j])
+				nodeList = append(nodeList, ret)
+				if node.Data.Nod.Class == "enter" {
+					root = ret
+				}
 			}
 		}
 	}
-	return root, list
+	return nodeList, objList, root
 }
 
-func DoAST(r *Result) {
+func DoAST(r *Result) (ret node.Node) {
 	nodeMap = make(map[string]node.Node)
 	objectMap = make(map[string]object.Object)
-	_, _ = buildMod(r)
+	_, _, ret = buildMod(r)
 	fmt.Println(len(nodeMap), len(objectMap))
 	nodeMap = nil
 	objectMap = nil
+	return ret
 }

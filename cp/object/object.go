@@ -16,6 +16,7 @@ const (
 type Object interface {
 	SetName(name string)
 	SetType(typ Type)
+	Type() Type
 }
 
 func New(mode Mode) Object {
@@ -34,12 +35,16 @@ type objectFields struct {
 	typ  Type
 }
 
-func (of objectFields) SetType(typ Type) {
+func (of *objectFields) SetType(typ Type) {
 	of.typ = typ
 }
 
-func (of objectFields) SetName(name string) {
+func (of *objectFields) SetName(name string) {
 	of.name = name
+}
+
+func (of *objectFields) Type() Type {
+	return of.typ
 }
 
 type variableObject struct {
