@@ -46,37 +46,21 @@ type nodeFields struct {
 	obj               object.Object
 }
 
-func (nf *nodeFields) SetLeft(n Node) {
-	nf.left = n
-}
+func (nf *nodeFields) SetLeft(n Node) { nf.left = n }
 
-func (nf *nodeFields) SetRight(n Node) {
-	nf.right = n
-}
+func (nf *nodeFields) SetRight(n Node) { nf.right = n }
 
-func (nf *nodeFields) SetLink(n Node) {
-	nf.link = n
-}
+func (nf *nodeFields) SetLink(n Node) { nf.link = n }
 
-func (nf *nodeFields) SetObject(o object.Object) {
-	nf.obj = o
-}
+func (nf *nodeFields) SetObject(o object.Object) { nf.obj = o }
 
-func (nf *nodeFields) Left() Node {
-	return nf.left
-}
+func (nf *nodeFields) Left() Node { return nf.left }
 
-func (nf *nodeFields) Right() Node {
-	return nf.right
-}
+func (nf *nodeFields) Right() Node { return nf.right }
 
-func (nf *nodeFields) Link() Node {
-	return nf.link
-}
+func (nf *nodeFields) Link() Node { return nf.link }
 
-func (nf *nodeFields) Object() object.Object {
-	return nf.obj
-}
+func (nf *nodeFields) Object() object.Object { return nf.obj }
 
 type enterNode struct {
 	nodeFields
@@ -134,4 +118,6 @@ type variableNode struct {
 	nodeFields
 }
 
-func (v *variableNode) Self() VariableNode { return v }
+func (v *variableNode) Self() VariableNode {
+	return v
+}

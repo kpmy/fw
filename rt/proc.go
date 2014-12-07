@@ -107,7 +107,6 @@ func (p *procImpl) ConnectTo(head node.Node) (err error) {
 
 func (p *procImpl) Do() (res Result, err error) {
 	if p.stack.Top() != nil {
-		fmt.Println(p.cycle)
 		p.cycle++
 		f := p.stack.Top()
 		//цикл дейкстры

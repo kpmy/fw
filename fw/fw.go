@@ -14,7 +14,6 @@ func main() {
 		p := rt.NewProcessor()
 		p.ConnectTo(ret)
 		for {
-			fmt.Print(".")
 			res, _ := p.Do()
 			if res != rt.OK {
 				break
