@@ -4,7 +4,6 @@ import (
 	"cp/node"
 	"errors"
 	"fmt"
-	"reflect"
 )
 
 type Result int
@@ -20,19 +19,69 @@ type Processor interface {
 	Do() (Result, error)
 }
 
+type Sequence interface {
+	Do(f *frame) Wait
+}
+
 func NewProcessor() Processor {
 	return new(procImpl).Init()
 }
 
 type frame struct {
-	Frame
-	prologue, epilogue interface{}
-	ir, ret            node.Node
+	p      *procImpl
+	parent *frame
+	ir     node.Node
+	seq    Sequence
+	ret    map[node.Node]interface{}
+}
+
+func (f *frame) Do() (wait Wait) {
+	if f.seq == nil {
+		panic("no sequence")
+	}
+	return f.seq.Do(f)
+}
+
+func (f *frame) OnPush() {
+	switch f.ir.(type) {
+	case node.AssignNode:
+		f.ret = make(map[node.Node]interface{}, 2)
+		f.seq = new(assignSeq)
+	case node.OperationNode:
+		f.ret = make(map[node.Node]interface{}, 3)
+		f.seq = new(opSeq)
+	default:
+		panic("unknown ir")
+	}
+}
+
+func (f *frame) OnPop() {
+	switch f.ir.(type) {
+	case node.AssignNode:
+		if f.ir.Link() != nil {
+			f.p.stack.Push(NewFrame(f.p, f.ir.Link()))
+		}
+	case node.OperationNode:
+		f.parent.ret[f.ir] = f.ret[f.ir]
+	}
+}
+
+func (f *frame) push(t *frame) {
+	t.parent = f
+	f.p.stack.Push(t)
+}
+
+func NewFrame(p *procImpl, ir node.Node) Frame {
+	f := new(frame)
+	f.ir = ir
+	f.p = p
+	return f
 }
 
 type procImpl struct {
 	stack Stack
 	heap  Heap
+	cycle int64
 }
 
 func (p *procImpl) Init() *procImpl {
@@ -44,12 +93,9 @@ func (p *procImpl) Init() *procImpl {
 func (p *procImpl) ConnectTo(head node.Node) (err error) {
 	if head != nil {
 		switch head.(type) {
+		// особый случай, после enter вправо, а не вниз
 		case node.EnterNode:
-			f := new(frame)
-			f.ir = head.Right()
-			f.prologue = prologue
-			f.epilogue = prologue
-			p.stack.Push(f)
+			p.stack.Push(NewFrame(p, head.Right()))
 		default:
 			panic("oops")
 		}
@@ -59,104 +105,29 @@ func (p *procImpl) ConnectTo(head node.Node) (err error) {
 	return err
 }
 
-func prologue() {
-
-}
-
-func (p *procImpl) doExpression() {
-	f := p.stack.Top().(*frame)
-	fmt.Println(reflect.TypeOf(f.ir))
-	switch f.ir.(type) {
-	//assign works like .left := .right
-	case node.AssignNode:
-		if f.prologue != nil {
-			f.ret = f.ir.Link()
-			switch f.ir.Left().(type) {
-			case node.VariableNode: //nothing to do
-			default:
-				panic("left is not variable")
-			}
-			switch f.ir.Right().(type) {
-			case node.ConstantNode:
-				x := p.heap.ThisVariable(f.ir.Left().Object())
-				_ = x
-				*x.(*int) = f.ir.Right().(node.ConstantNode).Data().(int)
-				fmt.Println(x)
-				x = p.heap.ThisVariable(f.ir.Left().Object())
-				fmt.Println(*x.(*int))
-			case node.OperationNode:
-				nf := new(frame)
-				nf.ir = f.ir.Right()
-				nf.ret = f.ir
-				nf.prologue = prologue
-				nf.epilogue = node.New(node.CONSTANT)
-				f.epilogue = nf.epilogue
-				p.stack.Push(nf)
-			default:
-				panic("unknown right assign")
-			}
-			f.prologue = nil
-		} else if f.epilogue != nil {
-			switch f.epilogue.(type) {
-			case node.ConstantNode:
-				x := p.heap.ThisVariable(f.ir.Left().Object())
-				_ = x
-				*x.(*int) = f.epilogue.(node.ConstantNode).Data().(int)
-				fmt.Println(*x.(*int))
-			default:
-				fmt.Println("no custom epilogue")
-			}
-			p.stack.Pop()
-			if f.ret != nil {
-				nf := new(frame)
-				nf.ir = f.ret
-				nf.prologue = prologue
-				nf.epilogue = prologue
-				p.stack.Push(nf)
-			}
-
-		}
-	case node.OperationNode:
-		switch f.ir.(node.OperationNode).Operation() {
-		case node.PLUS:
-			var a, b int
-			switch f.ir.Left().(type) {
-			case node.ConstantNode:
-				a = f.ir.Left().(node.ConstantNode).Data().(int)
-			case node.VariableNode:
-				x := p.heap.ThisVariable(f.ir.Left().Object())
-				a = *x.(*int)
-			default:
-				panic("unknown left operand")
-			}
-			switch f.ir.Right().(type) {
-			case node.ConstantNode:
-				b = f.ir.Right().(node.ConstantNode).Data().(int)
-			case node.VariableNode:
-				x := p.heap.ThisVariable(f.ir.Right().Object())
-				b = *x.(*int)
-			default:
-				panic("unknown right operand")
-			}
-			switch f.epilogue.(type) {
-			case node.ConstantNode:
-				fmt.Println(a, b)
-				f.epilogue.(node.ConstantNode).SetData(a + b)
-				p.stack.Pop()
-			default:
-				panic("unknown epilogue")
-			}
-		default:
-			panic("unknown operation")
-		}
-	default:
-		panic("ooops")
-	}
-}
-
 func (p *procImpl) Do() (res Result, err error) {
 	if p.stack.Top() != nil {
-		p.doExpression()
+		fmt.Println(p.cycle)
+		p.cycle++
+		f := p.stack.Top()
+		//цикл дейкстры
+		for {
+			wait := f.Do()
+			fmt.Println(wait)
+			if wait == SKIP {
+				break
+			} else if wait == DO {
+			} else if wait == WRONG {
+				panic("something wrong")
+			} else {
+				if f == p.stack.Top() {
+					p.stack.Pop()
+				} else {
+					panic("do not stop if not top on stack")
+				}
+				break
+			}
+		}
 	} else {
 		err = errors.New("no program")
 	}

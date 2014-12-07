@@ -2,6 +2,15 @@ package rt
 
 import "container/list"
 
+type Wait int
+
+const (
+	WRONG Wait = iota
+	SKIP
+	STOP
+	DO
+)
+
 type Stack interface {
 	Push(frame Frame)
 	Pop() Frame
@@ -9,6 +18,9 @@ type Stack interface {
 }
 
 type Frame interface {
+	Do() (wait Wait)
+	OnPush()
+	OnPop()
 }
 
 func NewStack() Stack {
@@ -26,6 +38,7 @@ func (s *stdStack) Init() *stdStack {
 
 func (s *stdStack) Push(frame Frame) {
 	s.inner.PushFront(frame)
+	frame.OnPush()
 }
 
 func (s *stdStack) Pop() (frame Frame) {
@@ -33,6 +46,7 @@ func (s *stdStack) Pop() (frame Frame) {
 		elem := s.inner.Front()
 		frame = elem.Value.(Frame)
 		s.inner.Remove(elem)
+		frame.OnPop()
 	} else {
 		panic("it's empty stack")
 	}
@@ -45,4 +59,19 @@ func (s *stdStack) Top() (frame Frame) {
 		frame = elem.Value.(Frame)
 	}
 	return frame
+}
+
+func (w Wait) String() string {
+	switch w {
+	case DO:
+		return "DO"
+	case SKIP:
+		return "SKIP"
+	case STOP:
+		return "STOP"
+	case WRONG:
+		return "WRONG"
+	default:
+		panic("wrong wait value")
+	}
 }
