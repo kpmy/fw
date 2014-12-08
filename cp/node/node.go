@@ -1,6 +1,9 @@
 package node
 
-import "cp/object"
+import (
+	"cp/object"
+	"cp/statement"
+)
 
 type Class int
 
@@ -108,10 +111,19 @@ func (d *dyadicNode) Operation() Operation {
 
 type assignNode struct {
 	nodeFields
+	stat statement.Statement
 }
 
 func (a *assignNode) Self() AssignNode {
 	return a
+}
+
+func (a *assignNode) SetStatement(s statement.Statement) {
+	a.stat = s
+}
+
+func (a *assignNode) Statement() statement.Statement {
+	return a.stat
 }
 
 type variableNode struct {

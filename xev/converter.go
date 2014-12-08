@@ -3,6 +3,7 @@ package xev
 import (
 	"cp/node"
 	"cp/object"
+	"cp/statement"
 	"fmt"
 	"strconv"
 )
@@ -121,6 +122,13 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			}
 		case "assign":
 			ret = node.New(node.ASSIGN)
+			switch n.Data.Nod.Statement {
+			case "assign":
+				ret.(node.AssignNode).SetStatement(statement.ASSIGN)
+			default:
+				panic("unknown assign statement")
+			}
+
 		default:
 			panic("no such node type")
 		}

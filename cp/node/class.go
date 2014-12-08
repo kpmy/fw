@@ -1,6 +1,9 @@
 package node
 
-import "cp/object"
+import (
+	"cp/object"
+	"cp/statement"
+)
 
 type Enter int
 
@@ -33,6 +36,8 @@ type ConstantNode interface {
 // Self-designator for empty interfaces
 type AssignNode interface {
 	Self() AssignNode
+	SetStatement(statement.Statement)
+	Statement() statement.Statement
 }
 
 type VariableNode interface {

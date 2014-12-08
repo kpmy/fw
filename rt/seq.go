@@ -3,6 +3,7 @@ package rt
 import (
 	"cp/node"
 	"cp/object"
+	"cp/statement"
 )
 
 type assignSeq struct {
@@ -10,40 +11,46 @@ type assignSeq struct {
 }
 
 func (s *assignSeq) Do(f *frame) (ret Wait) {
-	_ = f.ir.(node.AssignNode)
+	a := f.ir.(node.AssignNode)
+	assign := func() Wait {
+		switch f.ir.Left().(type) {
+		case node.VariableNode:
+			f.ret[f.ir.Left()] = f.ir.Left().Object()
+			s.step = func() Wait {
+				switch f.ir.Right().(type) {
+				case node.ConstantNode:
+					f.ret[f.ir.Right()] = f.ir.Right().(node.ConstantNode).Data()
+					s.step = func() Wait {
+						a := f.p.heap.This(f.ret[f.ir.Left()].(object.Object))
+						a.Set(f.ret[f.ir.Right()])
+						return STOP
+					}
+					return DO
+				case node.OperationNode:
+					nf := NewFrame(f.p, f.ir.Right()).(*frame)
+					f.push(nf)
+					s.step = func() Wait {
+						a := f.p.heap.This(f.ret[f.ir.Left()].(object.Object))
+						a.Set(f.ret[f.ir.Right()])
+						return STOP
+					}
+					return SKIP
+				default:
+					panic("wrong right")
+				}
+			}
+			return DO
+		default:
+			panic("wrong left")
+		}
+	}
 	if s.step == nil {
 		ret = DO
-		s.step = func() Wait {
-			switch f.ir.Left().(type) {
-			case node.VariableNode:
-				f.ret[f.ir.Left()] = f.ir.Left().Object()
-				s.step = func() Wait {
-					switch f.ir.Right().(type) {
-					case node.ConstantNode:
-						f.ret[f.ir.Right()] = f.ir.Right().(node.ConstantNode).Data()
-						s.step = func() Wait {
-							a := f.p.heap.This(f.ret[f.ir.Left()].(object.Object))
-							a.Set(f.ret[f.ir.Right()])
-							return STOP
-						}
-						return DO
-					case node.OperationNode:
-						nf := NewFrame(f.p, f.ir.Right()).(*frame)
-						f.push(nf)
-						s.step = func() Wait {
-							a := f.p.heap.This(f.ret[f.ir.Left()].(object.Object))
-							a.Set(f.ret[f.ir.Right()])
-							return STOP
-						}
-						return SKIP
-					default:
-						panic("wrong right")
-					}
-				}
-				return DO
-			default:
-				panic("wrong left")
-			}
+		switch a.Statement() {
+		case statement.ASSIGN:
+			s.step = assign
+		default:
+			panic("unknown assign subclass")
 		}
 	} else {
 		ret = s.step()

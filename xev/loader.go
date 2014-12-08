@@ -15,6 +15,7 @@ type CptNode struct {
 	Enter     string `xml:"urn:bbcb:component:dev:cpt enter,attr"`
 	Operation string `xml:"urn:bbcb:component:dev:cpt operation,attr"`
 	Value     string `xml:",chardata"`
+	Statement string `xml:"urn:bbcb:component:dev:cpt statement,attr"`
 }
 
 type NodeData struct {
