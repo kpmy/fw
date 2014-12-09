@@ -6,6 +6,7 @@ type CptObject struct {
 	Name string `xml:"urn:bbcb:component:dev:cpt name,attr"`
 	Mode string `xml:"urn:bbcb:component:dev:cpt mode,attr"`
 	Typ  string `xml:"urn:bbcb:component:dev:cpt type,attr"`
+	Leaf bool   `xml:"urn:bbcb:component:dev:cpt leaf,attr"`
 }
 
 type CptNode struct {
@@ -16,6 +17,7 @@ type CptNode struct {
 	Operation string `xml:"urn:bbcb:component:dev:cpt operation,attr"`
 	Value     string `xml:",chardata"`
 	Statement string `xml:"urn:bbcb:component:dev:cpt statement,attr"`
+	Proto     string `xml:"urn:bbcb:component:dev:cpt proto,attr"`
 }
 
 type NodeData struct {

@@ -1,6 +1,7 @@
 package rt
 
 import (
+	"cp/constant/operation"
 	"cp/node"
 	"cp/object"
 	"cp/statement"
@@ -66,7 +67,7 @@ func (s *opSeq) Do(f *frame) (ret Wait) {
 	_ = f.ir.(node.OperationNode)
 	op := func() Wait {
 		switch f.ir.(node.OperationNode).Operation() {
-		case node.PLUS:
+		case operation.PLUS:
 			a := f.ret[f.ir.Left()]
 			b := f.ret[f.ir.Right()]
 			f.ret[f.ir] = Sum(a, b)
@@ -116,4 +117,24 @@ func (s *opSeq) Do(f *frame) (ret Wait) {
 		ret = s.step()
 	}
 	return ret
+}
+
+type callSeq struct {
+	step func() Wait
+}
+
+func (s *callSeq) Do(f *frame) Wait {
+	if s.step == nil {
+		switch f.ir.Left().(type) {
+		case node.ProcedureNode:
+			s.step = func() Wait {
+				return STOP
+			}
+			return DO
+		default:
+			panic("unknown call left")
+		}
+	} else {
+		return s.step()
+	}
 }

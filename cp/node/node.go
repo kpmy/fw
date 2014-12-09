@@ -1,18 +1,8 @@
 package node
 
 import (
+	"cp/constant"
 	"cp/object"
-	"cp/statement"
-)
-
-type Class int
-
-const (
-	ENTER Class = iota
-	ASSIGN
-	VARIABLE
-	DYADIC
-	CONSTANT
 )
 
 type Node interface {
@@ -27,18 +17,22 @@ type Node interface {
 	Object() object.Object
 }
 
-func New(class Class) Node {
+func New(class constant.Class) Node {
 	switch class {
-	case ENTER:
+	case constant.ENTER:
 		return new(enterNode)
-	case ASSIGN:
+	case constant.ASSIGN:
 		return new(assignNode)
-	case VARIABLE:
+	case constant.VARIABLE:
 		return new(variableNode)
-	case DYADIC:
+	case constant.DYADIC:
 		return new(dyadicNode)
-	case CONSTANT:
+	case constant.CONSTANT:
 		return new(constantNode)
+	case constant.CALL:
+		return new(callNode)
+	case constant.PROCEDURE:
+		return new(procedureNode)
 	default:
 		panic("no such class")
 	}
@@ -64,72 +58,3 @@ func (nf *nodeFields) Right() Node { return nf.right }
 func (nf *nodeFields) Link() Node { return nf.link }
 
 func (nf *nodeFields) Object() object.Object { return nf.obj }
-
-type enterNode struct {
-	nodeFields
-	enter Enter
-}
-
-func (e *enterNode) SetEnter(enter Enter) {
-	e.enter = enter
-}
-
-type constantNode struct {
-	nodeFields
-	typ  object.Type
-	data interface{}
-}
-
-func (c *constantNode) SetType(t object.Type) {
-	c.typ = t
-}
-
-func (c *constantNode) SetData(data interface{}) {
-	c.data = data
-}
-
-func (c *constantNode) Data() interface{} {
-	return c.data
-}
-
-func (c *constantNode) Type() object.Type {
-	return c.typ
-}
-
-type dyadicNode struct {
-	nodeFields
-	operation Operation
-}
-
-func (d *dyadicNode) SetOperation(op Operation) {
-	d.operation = op
-}
-
-func (d *dyadicNode) Operation() Operation {
-	return d.operation
-}
-
-type assignNode struct {
-	nodeFields
-	stat statement.Statement
-}
-
-func (a *assignNode) Self() AssignNode {
-	return a
-}
-
-func (a *assignNode) SetStatement(s statement.Statement) {
-	a.stat = s
-}
-
-func (a *assignNode) Statement() statement.Statement {
-	return a.stat
-}
-
-type variableNode struct {
-	nodeFields
-}
-
-func (v *variableNode) Self() VariableNode {
-	return v
-}

@@ -50,6 +50,8 @@ func (f *frame) OnPush() {
 	case node.OperationNode:
 		f.ret = make(map[node.Node]interface{}, 3)
 		f.seq = new(opSeq)
+	case node.CallNode:
+		f.seq = new(callSeq)
 	default:
 		panic("unknown ir")
 	}
@@ -63,6 +65,10 @@ func (f *frame) OnPop() {
 		}
 	case node.OperationNode:
 		f.parent.ret[f.ir] = f.ret[f.ir]
+	case node.CallNode:
+		if f.ir.Link() != nil {
+			f.p.stack.Push(NewFrame(f.p, f.ir.Link()))
+		}
 	}
 }
 

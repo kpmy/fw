@@ -6,6 +6,7 @@ type Type int
 const (
 	HEAD Mode = iota
 	VARIABLE
+	LOCAL_PROCEDURE
 )
 
 const (
@@ -25,6 +26,8 @@ func New(mode Mode) Object {
 		return new(headObject)
 	case VARIABLE:
 		return new(variableObject)
+	case LOCAL_PROCEDURE:
+		return new(localProcedureObject)
 	default:
 		panic("no such object mode")
 	}
@@ -52,5 +55,9 @@ type variableObject struct {
 }
 
 type headObject struct {
+	objectFields
+}
+
+type localProcedureObject struct {
 	objectFields
 }

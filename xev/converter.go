@@ -1,6 +1,9 @@
 package xev
 
 import (
+	"cp/constant"
+	"cp/constant/enter"
+	"cp/constant/operation"
 	"cp/node"
 	"cp/object"
 	"cp/statement"
@@ -51,6 +54,8 @@ func (r *Result) buildObject(n *Node) object.Object {
 			ret = object.New(object.HEAD)
 		case "variable":
 			ret = object.New(object.VARIABLE)
+		case "local procedure":
+			ret = object.New(object.LOCAL_PROCEDURE)
 		default:
 			panic("no such object mode")
 		}
@@ -93,25 +98,27 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 	if ret == nil {
 		switch n.Data.Nod.Class {
 		case "enter":
-			ret = node.New(node.ENTER)
+			ret = node.New(constant.ENTER)
 			switch n.Data.Nod.Enter {
 			case "module":
-				ret.(node.EnterNode).SetEnter(node.MODULE)
+				ret.(node.EnterNode).SetEnter(enter.MODULE)
+			case "procedure":
+				ret.(node.EnterNode).SetEnter(enter.PROCEDURE)
 			default:
 				panic("no such enter type")
 			}
 		case "variable":
-			ret = node.New(node.VARIABLE)
+			ret = node.New(constant.VARIABLE)
 		case "dyadic":
-			ret = node.New(node.DYADIC)
+			ret = node.New(constant.DYADIC)
 			switch n.Data.Nod.Operation {
 			case "plus":
-				ret.(node.OperationNode).SetOperation(node.PLUS)
+				ret.(node.OperationNode).SetOperation(operation.PLUS)
 			default:
 				panic("no such operation")
 			}
 		case "constant":
-			ret = node.New(node.CONSTANT)
+			ret = node.New(constant.CONSTANT)
 			switch n.Data.Nod.Typ {
 			case "INTEGER":
 				ret.(node.ConstantNode).SetType(object.INTEGER)
@@ -121,14 +128,17 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 				panic("no such constant type")
 			}
 		case "assign":
-			ret = node.New(node.ASSIGN)
+			ret = node.New(constant.ASSIGN)
 			switch n.Data.Nod.Statement {
 			case "assign":
 				ret.(node.AssignNode).SetStatement(statement.ASSIGN)
 			default:
 				panic("unknown assign statement")
 			}
-
+		case "call":
+			ret = node.New(constant.CALL)
+		case "procedure":
+			ret = node.New(constant.PROCEDURE)
 		default:
 			panic("no such node type")
 		}
@@ -178,7 +188,7 @@ func buildMod(r *Result) (nodeList []node.Node, objList []object.Object, root no
 				node := &r.GraphList[i].NodeList[j]
 				ret := r.buildNode(&r.GraphList[i].NodeList[j])
 				nodeList = append(nodeList, ret)
-				if node.Data.Nod.Class == "enter" {
+				if (node.Data.Nod.Class == "enter") && (node.Data.Nod.Enter == "module") {
 					root = ret
 				}
 			}
