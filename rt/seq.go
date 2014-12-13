@@ -36,6 +36,11 @@ func (s *assignSeq) Do(f *frame) (ret Wait) {
 						return STOP
 					}
 					return SKIP
+				case node.VariableNode:
+					a := f.p.heap.This(f.ir.Right().Object())
+					b := f.p.heap.This(f.ret[f.ir.Left()].(object.Object))
+					b.Set(a)
+					return STOP
 				default:
 					panic("wrong right")
 				}
@@ -127,14 +132,33 @@ func (s *callSeq) Do(f *frame) Wait {
 	if s.step == nil {
 		switch f.ir.Left().(type) {
 		case node.ProcedureNode:
+			proc := f.p.thisMod.NodeByObject(f.ir.Left().Object())
+			f.push(NewFrame(f.p, proc).(*frame))
 			s.step = func() Wait {
 				return STOP
 			}
-			return DO
+			return SKIP
 		default:
 			panic("unknown call left")
 		}
 	} else {
 		return s.step()
+	}
+}
+
+type enterSeq struct {
+	step func() Wait
+}
+
+func (e *enterSeq) Do(f *frame) Wait {
+	if e.step == nil {
+		//for f.ir == EnterNode entering to .Right()
+		f.push(NewFrame(f.p, f.ir.Right()).(*frame))
+		e.step = func() Wait {
+			return STOP
+		}
+		return SKIP
+	} else {
+		return e.step()
 	}
 }

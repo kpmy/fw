@@ -14,8 +14,7 @@ func Load(path, name string) (ret *module.Module) {
 	fmt.Println(len(data))
 	if data != nil {
 		result := LoadOXF(data)
-		ret = new(module.Module)
-		ret.Enter, ret.Objects = DoAST(result)
+		ret = DoAST(result)
 	}
 	return ret
 }

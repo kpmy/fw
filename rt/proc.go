@@ -1,10 +1,12 @@
 package rt
 
 import (
+	"cp/constant/enter"
 	"cp/module"
 	"cp/node"
 	"errors"
 	"fmt"
+	"reflect"
 )
 
 type Result int
@@ -53,7 +55,15 @@ func (f *frame) OnPush() {
 		f.seq = new(opSeq)
 	case node.CallNode:
 		f.seq = new(callSeq)
+	case node.EnterNode:
+		if f.ir.(node.EnterNode).Enter() == enter.PROCEDURE {
+			fmt.Println("proc")
+		} else {
+			panic("cannot enter to module")
+		}
+		f.seq = new(enterSeq)
 	default:
+		fmt.Println(reflect.TypeOf(f.ir))
 		panic("unknown ir")
 	}
 }

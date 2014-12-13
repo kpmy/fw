@@ -8,6 +8,7 @@ import (
 )
 
 type EnterNode interface {
+	Enter() enter.Enter
 	SetEnter(enter enter.Enter)
 }
 
@@ -49,6 +50,10 @@ type enterNode struct {
 
 func (e *enterNode) SetEnter(enter enter.Enter) {
 	e.enter = enter
+}
+
+func (e *enterNode) Enter() enter.Enter {
+	return e.enter
 }
 
 type constantNode struct {

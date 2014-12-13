@@ -3,6 +3,7 @@ package rt
 import (
 	"cp/object"
 	"fmt"
+	"reflect"
 )
 
 type INTEGER int
@@ -18,7 +19,12 @@ func (i *INTEGER) Set(val interface{}) {
 	switch val.(type) {
 	case int:
 		*i = INTEGER(val.(int))
+	case INTEGER:
+		*i = val.(INTEGER)
+	case *INTEGER:
+		*i = *val.(*INTEGER)
 	default:
+		fmt.Print(reflect.TypeOf(val), " ")
 		panic("wrong type for INTEGER")
 	}
 	fmt.Println("set", int(*i))

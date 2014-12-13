@@ -4,6 +4,7 @@ import (
 	"cp/constant"
 	"cp/constant/enter"
 	"cp/constant/operation"
+	"cp/module"
 	"cp/node"
 	"cp/object"
 	"cp/statement"
@@ -197,12 +198,13 @@ func buildMod(r *Result) (nodeList []node.Node, objList []object.Object, root no
 	return nodeList, objList, root
 }
 
-func DoAST(r *Result) (ent node.Node, obj []object.Object) {
+func DoAST(r *Result) (mod *module.Module) {
 	nodeMap = make(map[string]node.Node)
 	objectMap = make(map[string]object.Object)
-	_, obj, ent = buildMod(r)
+	mod = new(module.Module)
+	mod.Nodes, mod.Objects, mod.Enter = buildMod(r)
 	fmt.Println(len(nodeMap), len(objectMap))
 	nodeMap = nil
 	objectMap = nil
-	return ent, obj
+	return mod
 }
