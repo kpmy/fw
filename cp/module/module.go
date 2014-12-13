@@ -7,7 +7,7 @@ import (
 
 type Module struct {
 	Enter   node.Node
-	Objects []object.Object
+	Objects map[node.Node][]object.Object
 	Nodes   []node.Node
 }
 

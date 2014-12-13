@@ -178,24 +178,31 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 	return ret
 }
 
-func buildMod(r *Result) (nodeList []node.Node, objList []object.Object, root node.Node) {
+func buildMod(r *Result) (nodeList []node.Node, scopeList map[node.Node][]object.Object, root node.Node) {
+	scopes := make(map[string][]object.Object, 0)
 	for i := range r.GraphList {
 		if r.GraphList[i].CptScope != "" {
-			objList = r.buildObjectList(r.GraphList[i].NodeList)
+			scopes[r.GraphList[i].CptScope] = r.buildObjectList(r.GraphList[i].NodeList)
 		}
+	}
+	scopeList = make(map[node.Node][]object.Object, 0)
+	for i := range r.GraphList {
 		if r.GraphList[i].CptProc != "" {
 			nodeList = make([]node.Node, 0)
 			for j := range r.GraphList[i].NodeList {
 				node := &r.GraphList[i].NodeList[j]
-				ret := r.buildNode(&r.GraphList[i].NodeList[j])
+				ret := r.buildNode(node)
 				nodeList = append(nodeList, ret)
+				if scopes[node.Id] != nil {
+					scopeList[ret] = scopes[node.Id]
+				}
 				if (node.Data.Nod.Class == "enter") && (node.Data.Nod.Enter == "module") {
 					root = ret
 				}
 			}
 		}
 	}
-	return nodeList, objList, root
+	return nodeList, scopeList, root
 }
 
 func DoAST(r *Result) (mod *module.Module) {
@@ -203,7 +210,7 @@ func DoAST(r *Result) (mod *module.Module) {
 	objectMap = make(map[string]object.Object)
 	mod = new(module.Module)
 	mod.Nodes, mod.Objects, mod.Enter = buildMod(r)
-	fmt.Println(len(nodeMap), len(objectMap))
+	fmt.Println(len(mod.Nodes), len(mod.Objects))
 	nodeMap = nil
 	objectMap = nil
 	return mod
