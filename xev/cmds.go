@@ -1,20 +1,21 @@
 package xev
 
 import (
-	"cp/node"
+	"cp/module"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
 )
 
-func Load(path, name string) (ret node.Node) {
+func Load(path, name string) (ret *module.Module) {
 	fmt.Println(path + ` ` + name)
 	var data []byte
 	data, _ = ioutil.ReadFile(filepath.Join(path, name))
 	fmt.Println(len(data))
 	if data != nil {
 		result := LoadOXF(data)
-		ret = DoAST(result)
+		ret = new(module.Module)
+		ret.Enter, ret.Objects = DoAST(result)
 	}
 	return ret
 }

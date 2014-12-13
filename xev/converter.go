@@ -197,12 +197,12 @@ func buildMod(r *Result) (nodeList []node.Node, objList []object.Object, root no
 	return nodeList, objList, root
 }
 
-func DoAST(r *Result) (ret node.Node) {
+func DoAST(r *Result) (ent node.Node, obj []object.Object) {
 	nodeMap = make(map[string]node.Node)
 	objectMap = make(map[string]object.Object)
-	_, _, ret = buildMod(r)
+	_, obj, ent = buildMod(r)
 	fmt.Println(len(nodeMap), len(objectMap))
 	nodeMap = nil
 	objectMap = nil
-	return ret
+	return ent, obj
 }

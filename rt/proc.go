@@ -1,6 +1,7 @@
 package rt
 
 import (
+	"cp/module"
 	"cp/node"
 	"errors"
 	"fmt"
@@ -15,7 +16,7 @@ const (
 )
 
 type Processor interface {
-	ConnectTo(head node.Node) error
+	ConnectTo(mod *module.Module) error
 	Do() (Result, error)
 }
 
@@ -85,9 +86,10 @@ func NewFrame(p *procImpl, ir node.Node) Frame {
 }
 
 type procImpl struct {
-	stack Stack
-	heap  Heap
-	cycle int64
+	stack   Stack
+	heap    Heap
+	cycle   int64
+	thisMod *module.Module
 }
 
 func (p *procImpl) Init() *procImpl {
@@ -96,7 +98,9 @@ func (p *procImpl) Init() *procImpl {
 	return p
 }
 
-func (p *procImpl) ConnectTo(head node.Node) (err error) {
+func (p *procImpl) ConnectTo(mod *module.Module) (err error) {
+	p.thisMod = mod
+	head := p.thisMod.Enter
 	if head != nil {
 		switch head.(type) {
 		// особый случай, после enter вправо, а не вниз

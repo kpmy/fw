@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"rt"
 	"xev"
@@ -12,13 +11,17 @@ func main() {
 	ret := xev.Load(path, "PrivDemo1.oxf")
 	if ret != nil {
 		p := rt.NewProcessor()
-		p.ConnectTo(ret)
+		err := p.ConnectTo(ret)
+		if err != nil {
+			panic("not connected")
+		}
 		for {
 			res, _ := p.Do()
 			if res != rt.OK {
 				break
 			}
 		}
-		fmt.Println("")
+	} else {
+		panic("no module")
 	}
 }
