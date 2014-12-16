@@ -1,5 +1,9 @@
 package frame
 
+import (
+	"rt2/context"
+)
+
 type WAIT int
 
 const (
@@ -24,6 +28,7 @@ type Frame interface {
 	OnPop()
 	Parent() Frame
 	Root() Stack
+	context.ContextAware
 }
 
 //пользовательская функция, которую выполнит фрейм, может поставить на очередь выполнения себя или другую функцию

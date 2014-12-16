@@ -2,6 +2,7 @@ package nodeframe
 
 import (
 	"cp/node"
+	"rt2/context"
 	"rt2/decision"
 	"rt2/frame"
 	"ypk/assert"
@@ -34,6 +35,7 @@ type nodeFrame struct {
 	parent frame.Frame
 	ir     node.Node
 	seq    frame.Sequence
+	domain context.Domain
 }
 
 func (f *nodeFrame) Do() frame.WAIT {
@@ -69,5 +71,11 @@ func (f *nodeFrame) OnPush(root frame.Stack, parent frame.Frame) {
 	f.onPush()
 }
 
-func (f *nodeFrame) Parent() frame.Frame { return f.parent }
-func (f *nodeFrame) Root() frame.Stack   { return f.root }
+func (f *nodeFrame) Parent() frame.Frame    { return f.parent }
+func (f *nodeFrame) Root() frame.Stack      { return f.root }
+func (f *nodeFrame) Domain() context.Domain { return f.domain }
+func (f *nodeFrame) Init(d context.Domain) {
+	assert.For(f.domain == nil, 20)
+	assert.For(d != nil, 21)
+	f.domain = d
+}

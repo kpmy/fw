@@ -3,15 +3,22 @@ package frame
 import (
 	"container/list"
 	"fmt"
+	"rt2/context"
+	"ypk/assert"
 )
 
 type RootFrame struct {
-	inner list.List
+	inner  list.List
+	domain context.Domain
 }
 
-func (f *RootFrame) Init() *RootFrame {
+func (f *RootFrame) init() *RootFrame {
 	f.inner = *list.New()
 	return f
+}
+
+func NewRoot() *RootFrame {
+	return new(RootFrame).init()
 }
 
 func (f *RootFrame) Push(frame Frame) {
@@ -24,6 +31,7 @@ func (f *RootFrame) PushFor(frame, parent Frame) {
 		panic("impossibru")
 	}
 	f.inner.PushFront(frame)
+	frame.Init(f.Domain())
 	frame.OnPush(f, parent)
 }
 
@@ -80,7 +88,12 @@ func (f *RootFrame) OnPush(a Stack, b Frame) {}
 func (f *RootFrame) OnPop()                  {}
 func (f *RootFrame) Parent() Frame           { return nil }
 func (f *RootFrame) Root() Stack             { return nil }
-
+func (f *RootFrame) Domain() context.Domain  { return f.domain }
+func (f *RootFrame) Init(d context.Domain) {
+	assert.For(f.domain == nil, 20)
+	assert.For(d != nil, 21)
+	f.domain = d
+}
 func (w WAIT) String() string {
 	switch w {
 	case DO:
