@@ -2,36 +2,34 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"rt2/context"
 	"rt2/frame"
+	"rt2/module"
 	"rt2/nodeframe"
 	_ "rt2/rules"
-	"xev"
+	"rt2/scope"
 	"ypk/assert"
 )
 
-type stdDomain struct {
-}
-
-func (d *stdDomain) ConnectTo(x context.ContextAware) {
-	assert.For(x != nil, 20)
-	x.Init(d)
-}
-
 func main() {
-	path, _ := os.Getwd()
-	ret := xev.Load(path, "PrivDemo1.oxf")
-	assert.For(ret != nil, 20)
-	domain := new(stdDomain)
-	root := frame.NewRoot()
-	domain.ConnectTo(root)
-	var fu nodeframe.FrameUtils
-	root.Push(fu.New(ret.Enter))
-	i := 0
-	for x := frame.DO; x == frame.DO; x = root.Do() {
-		fmt.Println(x)
-		i++
+	global := new(stdDomain)
+	modList := module.New()
+	global.ConnectTo(context.MOD, modList)
+	ret, err := modList.Load("PrivDemo1")
+	assert.For(err == nil, 20)
+	{
+		domain := new(stdDomain)
+		global.ConnectTo("PrivDemo1", domain)
+		root := frame.NewRoot()
+		domain.ConnectTo(context.STACK, root)
+		domain.ConnectTo(context.SCOPE, scope.New())
+		var fu nodeframe.FrameUtils
+		root.Push(fu.New(ret.Enter))
+		i := 0
+		for x := frame.DO; x == frame.DO; x = root.Do() {
+			fmt.Println(x)
+			i++
+		}
+		fmt.Println("total steps", i)
 	}
-	fmt.Println("total steps", i)
 }

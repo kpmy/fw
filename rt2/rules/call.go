@@ -3,6 +3,7 @@ package rules
 import (
 	"cp/node"
 	"rt2/frame"
+	mod "rt2/module"
 	"rt2/nodeframe"
 )
 
@@ -11,13 +12,13 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	n := fu.NodeOf(f)
 	switch n.Left().(type) {
 	case node.ProcedureNode:
-		//proc := f.p.thisMod.NodeByObject(f.ir.Left().Object())
-		//f.Root().Push(fu.New(?))
+		m := mod.DomainModule(f.Domain())
+		proc := m.NodeByObject(n.Left().Object())
+		f.Root().Push(fu.New(proc))
 		seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			return frame.End()
 		}
-		ret = frame.STOP
-		seq = nil //frame.SKIP //uncomment when truly work
+		ret = frame.SKIP
 	default:
 		panic("unknown call left")
 	}

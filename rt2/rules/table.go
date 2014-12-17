@@ -5,9 +5,11 @@ import (
 	"cp/node"
 	"fmt"
 	"reflect"
+	"rt2/context"
 	"rt2/decision"
 	"rt2/frame"
 	"rt2/nodeframe"
+	"rt2/scope"
 	"ypk/assert"
 )
 
@@ -19,6 +21,8 @@ func prologue(n node.Node) frame.Sequence {
 		return func(f frame.Frame) (frame.Sequence, frame.WAIT) {
 			node := fu.NodeOf(f).Right()
 			assert.For(node != nil, 40)
+			sm := scope.This(f.Domain().Discover(context.SCOPE))
+			sm.Allocate(n)
 			f.Root().Push(fu.New(node))
 			return frame.Tail(frame.STOP), frame.SKIP
 		}
@@ -44,7 +48,13 @@ func epilogue(n node.Node) frame.Sequence {
 			}
 			return frame.End()
 		}
-	case node.OperationNode, node.EnterNode:
+	case node.EnterNode:
+		return func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+			sm := scope.This(f.Domain().Discover(context.SCOPE))
+			sm.Dispose(n)
+			return frame.End()
+		}
+	case node.OperationNode:
 		return nil //do nothing
 	default:
 		fmt.Println(reflect.TypeOf(n))
