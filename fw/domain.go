@@ -37,6 +37,8 @@ func (d *stdDomain) Domain() context.Domain {
 	return d.parent
 }
 
+func (d *stdDomain) Handle(msg interface{}) {}
+
 func (d *stdDomain) Init(dd context.Domain) {
 	glob := dd.(*stdDomain).global
 	assert.For(glob == nil, 20) //допустим только один уровень вложенности доменов пока

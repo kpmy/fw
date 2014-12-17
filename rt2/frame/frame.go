@@ -39,3 +39,11 @@ func Tail(x WAIT) (seq Sequence) {
 }
 
 func End() (Sequence, WAIT) { return nil, STOP }
+
+type SetDataMsg struct {
+	Data []interface{}
+}
+
+type GetDataMsg struct {
+	Data []interface{}
+}

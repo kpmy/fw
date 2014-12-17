@@ -17,4 +17,5 @@ type Domain interface {
 type ContextAware interface {
 	Init(d Domain)
 	Domain() Domain
+	Handle(msg interface{})
 }

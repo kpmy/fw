@@ -47,6 +47,7 @@ func (l *list) Init(d context.Domain) {
 	l.d = d
 }
 
+func (l *list) Handle(msg interface{}) {}
 func (l *list) Load(name string) (*mod.Module, error) {
 	assert.For(name != "", 20)
 	ret := l.Loaded(name)

@@ -94,6 +94,8 @@ func (f *RootFrame) Init(d context.Domain) {
 	assert.For(d != nil, 21)
 	f.domain = d
 }
+func (f *RootFrame) Handle(msg interface{}) {}
+
 func (w WAIT) String() string {
 	switch w {
 	case DO:

@@ -10,7 +10,7 @@ func For(cond bool, code int) {
 		switch {
 		case (code >= 20) && (code < 40):
 			e = fmt.Sprintln(code, "precondition violated")
-		case (code >= 40) && (code < 59):
+		case (code >= 40) && (code < 60):
 			e = fmt.Sprintln(code, "subcondition violated")
 		case (code >= 60) && (code < 80):
 			e = fmt.Sprintln(code, "postcondition violated")

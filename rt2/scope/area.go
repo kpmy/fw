@@ -6,19 +6,14 @@ import (
 	"rt2/context"
 )
 
-//менеджер зон видимости
+//менеджер зон видимости, зоны видимости динамические, создаются в момент входа в EnterNode
 type Manager interface {
 	context.ContextAware
-	Calculate(n node.Node) Area
+	Update(o object.Object, val Value)
+	Select(o object.Object) interface{}
 	Allocate(n node.Node)
 	Dispose(n node.Node)
 }
 
-//зона видимости
-type Area interface {
-	Get(o object.Object) Object
-	Set(o Object)
-}
-
-//объект зоны видимости
-type Object interface{}
+//средство обновления значения
+type Value func(in interface{}) (out interface{})

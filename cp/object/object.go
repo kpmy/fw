@@ -20,6 +20,10 @@ type Object interface {
 	Type() Type
 }
 
+type VariableObject interface {
+	This() VariableObject
+}
+
 func New(mode Mode) Object {
 	switch mode {
 	case HEAD:
@@ -61,3 +65,5 @@ type headObject struct {
 type localProcedureObject struct {
 	objectFields
 }
+
+func (v *variableObject) This() VariableObject { return v }
