@@ -2,7 +2,6 @@ package frame
 
 import (
 	"container/list"
-	"fmt"
 	"rt2/context"
 	"ypk/assert"
 )
@@ -60,7 +59,7 @@ func (f *RootFrame) Do() (res WAIT) {
 		//цикл дейкстры
 		for {
 			wait := x.Do()
-			fmt.Println(wait)
+			//fmt.Println(wait)
 			if wait == SKIP {
 				break
 			} else if wait == DO {

@@ -27,7 +27,7 @@ func main() {
 		root.Push(fu.New(ret.Enter))
 		i := 0
 		for x := frame.DO; x == frame.DO; x = root.Do() {
-			fmt.Println(x)
+			//fmt.Println(x)
 			i++
 		}
 		fmt.Println("total steps", i)
