@@ -15,7 +15,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	switch a.(node.AssignNode).Statement() {
 	case statement.ASSIGN:
 		m := new(frame.SetDataMsg)
-		m.Data = make([]interface{}, 1)
+		m.Data = make(map[interface{}]interface{})
 		f.(context.ContextAware).Handle(m)
 		switch a.Left().(type) {
 		case node.VariableNode:
@@ -43,7 +43,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 					sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 					sc.Update(a.Left().Object(), func(interface{}) interface{} {
-						return fu.DataOf(f)[0]
+						return fu.DataOf(f)[a.Right()]
 					})
 					return frame.End()
 				}

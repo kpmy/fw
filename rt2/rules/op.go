@@ -35,14 +35,14 @@ func opSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	var fu nodeframe.FrameUtils
 
 	m := new(frame.SetDataMsg)
-	m.Data = make([]interface{}, 2)
+	m.Data = make(map[interface{}]interface{}, 2)
 	f.(context.ContextAware).Handle(m)
 
 	op := func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		n := fu.NodeOf(f)
 		switch n.(node.OperationNode).Operation() {
 		case operation.PLUS:
-			fu.DataOf(f.Parent())[0] = sum(fu.DataOf(f)[0], fu.DataOf(f)[1])
+			fu.DataOf(f.Parent())[n] = sum(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
 			return frame.End()
 		default:
 			panic("unknown operation")
@@ -53,12 +53,12 @@ func opSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		n := fu.NodeOf(f)
 		switch n.Right().(type) {
 		case node.ConstantNode:
-			fu.DataOf(f)[1] = n.Right().(node.ConstantNode).Data()
+			fu.DataOf(f)[n.Right()] = n.Right().(node.ConstantNode).Data()
 			return op, frame.DO
 		case node.VariableNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				fu.DataOf(f)[1] = sc.Select(n.Right().Object())
+				fu.DataOf(f)[n.Right()] = sc.Select(n.Right().Object())
 				return op, frame.DO
 			}
 			ret = frame.DO
@@ -72,12 +72,12 @@ func opSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		n := fu.NodeOf(f)
 		switch n.Left().(type) {
 		case node.ConstantNode:
-			fu.DataOf(f)[0] = n.Left().(node.ConstantNode).Data()
+			fu.DataOf(f)[n.Left()] = n.Left().(node.ConstantNode).Data()
 			return right, frame.DO
 		case node.VariableNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				fu.DataOf(f)[0] = sc.Select(n.Left().Object())
+				fu.DataOf(f)[n.Left()] = sc.Select(n.Left().Object())
 				return right, frame.DO
 			}
 			ret = frame.DO

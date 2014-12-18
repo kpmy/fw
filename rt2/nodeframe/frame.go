@@ -30,10 +30,10 @@ func (fu FrameUtils) NodeOf(f frame.Frame) node.Node {
 	return ff.ir
 }
 
-func (fu FrameUtils) DataOf(f frame.Frame) []interface{} {
+func (fu FrameUtils) DataOf(f frame.Frame) map[interface{}]interface{} {
 	m := new(frame.GetDataMsg)
 	f.(context.ContextAware).Handle(m)
-	return m.Data
+	return m.Data.(map[interface{}]interface{})
 }
 
 type nodeFrame struct {
@@ -42,7 +42,7 @@ type nodeFrame struct {
 	ir     node.Node
 	seq    frame.Sequence
 	domain context.Domain
-	data   []interface{}
+	data   map[interface{}]interface{}
 }
 
 func (f *nodeFrame) Do() frame.WAIT {
@@ -90,7 +90,7 @@ func (f *nodeFrame) Handle(msg interface{}) {
 	assert.For(msg != nil, 20)
 	switch msg.(type) {
 	case *frame.SetDataMsg:
-		f.data = msg.(*frame.SetDataMsg).Data
+		f.data = msg.(*frame.SetDataMsg).Data.(map[interface{}]interface{})
 	case *frame.GetDataMsg:
 		msg.(*frame.GetDataMsg).Data = f.data
 	}
