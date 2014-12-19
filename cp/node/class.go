@@ -10,11 +10,13 @@ import (
 type EnterNode interface {
 	Enter() enter.Enter
 	SetEnter(enter enter.Enter)
+	Node
 }
 
 type OperationNode interface {
 	SetOperation(op operation.Operation)
 	Operation() operation.Operation
+	Node
 }
 
 type ConstantNode interface {
@@ -22,6 +24,7 @@ type ConstantNode interface {
 	SetData(data interface{})
 	Data() interface{}
 	Type() object.Type
+	Node
 }
 
 // Self-designator for empty interfaces
@@ -29,18 +32,22 @@ type AssignNode interface {
 	Self() AssignNode
 	SetStatement(statement.Statement)
 	Statement() statement.Statement
+	Node
 }
 
 type VariableNode interface {
 	Self() VariableNode
+	Node
 }
 
 type CallNode interface {
 	Self() CallNode
+	Node
 }
 
 type ProcedureNode interface {
 	Self() ProcedureNode
+	Node
 }
 
 type enterNode struct {

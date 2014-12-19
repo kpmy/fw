@@ -9,7 +9,11 @@ import (
 	"cp/object"
 	"cp/statement"
 	"fmt"
+	"math/big"
 	"strconv"
+	"unicode/utf16"
+	"unicode/utf8"
+	"ypk/assert"
 )
 
 func (r *Result) findNode(id string) *Node {
@@ -40,13 +44,77 @@ func (r *Result) findLink(n *Node, link string) *Node {
 	return ret
 }
 
+type convertable interface {
+	SetData(x interface{})
+	SetType(t object.Type)
+}
+
+func convertData(typ string, val string, conv convertable) {
+	assert.For(conv != nil, 20)
+	switch typ {
+	case "INTEGER":
+		conv.SetType(object.INTEGER)
+		x, _ := strconv.ParseInt(val, 16, 32)
+		conv.SetData(int32(x))
+	case "SHORTINT":
+		conv.SetType(object.SHORTINT)
+		x, _ := strconv.ParseInt(val, 16, 16)
+		conv.SetData(int16(x))
+	case "LONGINT":
+		conv.SetType(object.LONGINT)
+		x, _ := strconv.ParseInt(val, 16, 64)
+		conv.SetData(x)
+	case "BYTE":
+		conv.SetType(object.BYTE)
+		x, _ := strconv.ParseInt(val, 16, 8)
+		conv.SetData(int8(x))
+	case "CHAR":
+		conv.SetType(object.CHAR)
+		x, _ := strconv.ParseUint(val, 16, 16)
+		s := make([]uint16, 1)
+		s[0] = uint16(x)
+		r := utf16.Decode(s)
+		conv.SetData(r[0])
+	case "SHORTCHAR":
+		conv.SetType(object.SHORTCHAR)
+		x, _ := strconv.ParseUint(val, 16, 8)
+		s := make([]uint8, 1)
+		s[0] = uint8(x)
+		r, _ := utf8.DecodeRune(s)
+		conv.SetData(r)
+	case "REAL":
+		conv.SetType(object.REAL)
+		x, _ := strconv.ParseFloat(val, 64)
+		conv.SetData(float64(x))
+	case "SHORTREAL":
+		conv.SetType(object.SHORTREAL)
+		x, _ := strconv.ParseFloat(val, 32)
+		conv.SetData(float32(x))
+	case "SET":
+		conv.SetType(object.SET)
+		x, _ := strconv.ParseInt(val, 16, 32)
+		conv.SetData(big.NewInt(x))
+	case "BOOLEAN":
+		conv.SetType(object.BOOLEAN)
+		if val == "TRUE" {
+			conv.SetData(true)
+		} else if val == "FALSE" {
+			conv.SetData(false)
+		} else {
+			panic("wrong bool")
+		}
+	case "":
+		conv.SetType(object.NOTYPE)
+	default:
+		panic("no such constant type")
+	}
+}
+
 var nodeMap map[string]node.Node
 var objectMap map[string]object.Object
 
 func (r *Result) buildObject(n *Node) object.Object {
-	if n == nil {
-		panic("n is nil")
-	}
+	assert.For(n != nil, 20)
 	var ret object.Object
 	ret = objectMap[n.Id]
 	if ret == nil {
@@ -57,6 +125,10 @@ func (r *Result) buildObject(n *Node) object.Object {
 			ret = object.New(object.VARIABLE)
 		case "local procedure":
 			ret = object.New(object.LOCAL_PROCEDURE)
+		case "constant":
+			ret = object.New(object.CONSTANT)
+			convertData(n.Data.Obj.Typ, n.Data.Obj.Value, ret.(object.ConstantObject))
+			fmt.Println(n.Data.Obj.Name, " ", ret.(object.ConstantObject).Data())
 		default:
 			panic("no such object mode")
 		}
@@ -64,22 +136,12 @@ func (r *Result) buildObject(n *Node) object.Object {
 	if ret != nil {
 		objectMap[n.Id] = ret
 		ret.SetName(n.Data.Obj.Name)
-		switch n.Data.Obj.Typ {
-		case "":
-			ret.SetType(object.NOTYPE)
-		case "INTEGER":
-			ret.SetType(object.INTEGER)
-		default:
-			panic("no such object type")
-		}
 	}
 	return ret
 }
 
 func (r *Result) buildObjectList(list []Node) []object.Object {
-	if list == nil {
-		panic("list is nil")
-	}
+	assert.For(list != nil, 20)
 	ret := make([]object.Object, 0)
 	for i := range list {
 		obj := r.buildObject(&list[i])
@@ -92,9 +154,7 @@ func (r *Result) buildObjectList(list []Node) []object.Object {
 }
 
 func (r *Result) buildNode(n *Node) (ret node.Node) {
-	if n == nil {
-		panic("n is nil")
-	}
+	assert.For(n != nil, 20)
 	ret = nodeMap[n.Id]
 	if ret == nil {
 		switch n.Data.Nod.Class {
@@ -120,14 +180,8 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			}
 		case "constant":
 			ret = node.New(constant.CONSTANT)
-			switch n.Data.Nod.Typ {
-			case "INTEGER":
-				ret.(node.ConstantNode).SetType(object.INTEGER)
-				x, _ := strconv.Atoi(n.Data.Nod.Value)
-				ret.(node.ConstantNode).SetData(x)
-			default:
-				panic("no such constant type")
-			}
+			convertData(n.Data.Nod.Typ, n.Data.Nod.Value, ret.(node.ConstantNode))
+			fmt.Println(ret.(node.ConstantNode).Data())
 		case "assign":
 			ret = node.New(constant.ASSIGN)
 			switch n.Data.Nod.Statement {

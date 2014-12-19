@@ -11,14 +11,14 @@ import (
 	"rt2/scope"
 )
 
-func intOf(x interface{}) (a int) {
+func int32Of(x interface{}) (a int32) {
 	fmt.Println(reflect.TypeOf(x))
 	switch x.(type) {
-	case *int:
-		z := *x.(*int)
+	case *int32:
+		z := *x.(*int32)
 		a = z
-	case int:
-		a = x.(int)
+	case int32:
+		a = x.(int32)
 	default:
 		panic("unsupported type")
 	}
@@ -26,8 +26,8 @@ func intOf(x interface{}) (a int) {
 }
 
 func sum(_a interface{}, _b interface{}) interface{} {
-	var a int = intOf(_a)
-	var b int = intOf(_b)
+	var a int32 = int32Of(_a)
+	var b int32 = int32Of(_b)
 	return a + b
 }
 
