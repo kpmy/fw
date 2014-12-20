@@ -49,6 +49,40 @@ type convertable interface {
 	SetType(t object.Type)
 }
 
+type typed interface {
+	SetType(t object.Type)
+}
+
+func initType(typ string, conv typed) {
+	assert.For(conv != nil, 20)
+	switch typ {
+	case "INTEGER":
+		conv.SetType(object.INTEGER)
+	case "SHORTINT":
+		conv.SetType(object.SHORTINT)
+	case "LONGINT":
+		conv.SetType(object.LONGINT)
+	case "BYTE":
+		conv.SetType(object.BYTE)
+	case "CHAR":
+		conv.SetType(object.CHAR)
+	case "SHORTCHAR":
+		conv.SetType(object.SHORTCHAR)
+	case "REAL":
+		conv.SetType(object.REAL)
+	case "SHORTREAL":
+		conv.SetType(object.SHORTREAL)
+	case "SET":
+		conv.SetType(object.SET)
+	case "BOOLEAN":
+		conv.SetType(object.BOOLEAN)
+	case "":
+		conv.SetType(object.NOTYPE)
+	default:
+		panic("no such constant type")
+	}
+}
+
 func convertData(typ string, val string, conv convertable) {
 	assert.For(conv != nil, 20)
 	switch typ {
@@ -92,7 +126,7 @@ func convertData(typ string, val string, conv convertable) {
 		conv.SetData(float32(x))
 	case "SET":
 		conv.SetType(object.SET)
-		x, _ := strconv.ParseInt(val, 16, 32)
+		x, _ := strconv.ParseInt(val, 2, 32)
 		conv.SetData(big.NewInt(x))
 	case "BOOLEAN":
 		conv.SetType(object.BOOLEAN)
@@ -123,19 +157,33 @@ func (r *Result) buildObject(n *Node) object.Object {
 			ret = object.New(object.HEAD)
 		case "variable":
 			ret = object.New(object.VARIABLE)
+			initType(n.Data.Obj.Typ, ret.(object.VariableObject))
 		case "local procedure":
 			ret = object.New(object.LOCAL_PROCEDURE)
 		case "constant":
 			ret = object.New(object.CONSTANT)
 			convertData(n.Data.Obj.Typ, n.Data.Obj.Value, ret.(object.ConstantObject))
-			fmt.Println(n.Data.Obj.Name, " ", ret.(object.ConstantObject).Data())
+			//fmt.Println(n.Data.Obj.Name, " ", ret.(object.ConstantObject).Data())
+		case "parameter":
+			ret = object.New(object.PARAMETER)
+			initType(n.Data.Obj.Typ, ret.(object.ParameterObject))
 		default:
+			fmt.Println(n.Data.Obj.Mode)
 			panic("no such object mode")
 		}
 	}
 	if ret != nil {
 		objectMap[n.Id] = ret
 		ret.SetName(n.Data.Obj.Name)
+
+		link := r.findLink(n, "link")
+		if link != nil {
+			ret.SetLink(r.buildObject(link))
+			if ret.Link() == nil {
+				panic("error in object")
+			}
+		}
+
 	}
 	return ret
 }
@@ -181,7 +229,7 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 		case "constant":
 			ret = node.New(constant.CONSTANT)
 			convertData(n.Data.Nod.Typ, n.Data.Nod.Value, ret.(node.ConstantNode))
-			fmt.Println(ret.(node.ConstantNode).Data())
+			//fmt.Println(ret.(node.ConstantNode).Data())
 		case "assign":
 			ret = node.New(constant.ASSIGN)
 			switch n.Data.Nod.Statement {
@@ -194,7 +242,21 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			ret = node.New(constant.CALL)
 		case "procedure":
 			ret = node.New(constant.PROCEDURE)
+		case "parameter":
+			ret = node.New(constant.PARAMETER)
+		case "return":
+			ret = node.New(constant.RETURN)
+		case "monadic":
+			ret = node.New(constant.MONADIC)
+			switch n.Data.Nod.Operation {
+			case "convert":
+				ret.(node.OperationNode).SetOperation(operation.CONVERT)
+				initType(n.Data.Nod.Typ, ret.(node.MonadicNode))
+			default:
+				panic("no such operation")
+			}
 		default:
+			fmt.Println(n.Data.Nod.Class)
 			panic("no such node type")
 		}
 	}

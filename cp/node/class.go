@@ -29,25 +29,47 @@ type ConstantNode interface {
 
 // Self-designator for empty interfaces
 type AssignNode interface {
-	Self() AssignNode
+	self() AssignNode
 	SetStatement(statement.Statement)
 	Statement() statement.Statement
 	Node
 }
 
 type VariableNode interface {
-	Self() VariableNode
+	self() VariableNode
 	Node
 }
 
 type CallNode interface {
-	Self() CallNode
+	self() CallNode
 	Node
 }
 
 type ProcedureNode interface {
-	Self() ProcedureNode
+	self() ProcedureNode
 	Node
+}
+
+type ParameterNode interface {
+	Node
+	self() ParameterNode
+}
+
+type ReturnNode interface {
+	Node
+	self() ReturnNode
+}
+
+type DyadicNode interface {
+	OperationNode
+	self() DyadicNode
+}
+
+type MonadicNode interface {
+	OperationNode
+	SetType(typ object.Type)
+	Type() object.Type
+	self() MonadicNode
 }
 
 type enterNode struct {
@@ -55,13 +77,8 @@ type enterNode struct {
 	enter enter.Enter
 }
 
-func (e *enterNode) SetEnter(enter enter.Enter) {
-	e.enter = enter
-}
-
-func (e *enterNode) Enter() enter.Enter {
-	return e.enter
-}
+func (e *enterNode) SetEnter(enter enter.Enter) { e.enter = enter }
+func (e *enterNode) Enter() enter.Enter         { return e.enter }
 
 type constantNode struct {
 	nodeFields
@@ -69,72 +86,77 @@ type constantNode struct {
 	data interface{}
 }
 
-func (c *constantNode) SetType(t object.Type) {
-	c.typ = t
-}
+func (c *constantNode) SetType(t object.Type) { c.typ = t }
 
-func (c *constantNode) SetData(data interface{}) {
-	c.data = data
-}
+func (c *constantNode) SetData(data interface{}) { c.data = data }
 
-func (c *constantNode) Data() interface{} {
-	return c.data
-}
+func (c *constantNode) Data() interface{} { return c.data }
 
-func (c *constantNode) Type() object.Type {
-	return c.typ
-}
+func (c *constantNode) Type() object.Type { return c.typ }
 
 type dyadicNode struct {
 	nodeFields
 	operation operation.Operation
 }
 
-func (d *dyadicNode) SetOperation(op operation.Operation) {
-	d.operation = op
-}
+func (d *dyadicNode) SetOperation(op operation.Operation) { d.operation = op }
 
-func (d *dyadicNode) Operation() operation.Operation {
-	return d.operation
-}
+func (d *dyadicNode) Operation() operation.Operation { return d.operation }
+
+func (d *dyadicNode) self() DyadicNode { return d }
 
 type assignNode struct {
 	nodeFields
 	stat statement.Statement
 }
 
-func (a *assignNode) Self() AssignNode {
-	return a
-}
+func (a *assignNode) self() AssignNode { return a }
 
-func (a *assignNode) SetStatement(s statement.Statement) {
-	a.stat = s
-}
+func (a *assignNode) SetStatement(s statement.Statement) { a.stat = s }
 
-func (a *assignNode) Statement() statement.Statement {
-	return a.stat
-}
+func (a *assignNode) Statement() statement.Statement { return a.stat }
 
 type variableNode struct {
 	nodeFields
 }
 
-func (v *variableNode) Self() VariableNode {
-	return v
-}
+func (v *variableNode) self() VariableNode { return v }
 
 type callNode struct {
 	nodeFields
 }
 
-func (v *callNode) Self() CallNode {
-	return v
-}
+func (v *callNode) self() CallNode { return v }
 
 type procedureNode struct {
 	nodeFields
 }
 
-func (v *procedureNode) Self() ProcedureNode {
-	return v
+func (v *procedureNode) self() ProcedureNode { return v }
+
+type parameterNode struct {
+	nodeFields
 }
+
+func (v *parameterNode) self() ParameterNode { return v }
+
+type returnNode struct {
+	nodeFields
+}
+
+func (v *returnNode) self() ReturnNode { return v }
+
+type monadicNode struct {
+	nodeFields
+	operation operation.Operation
+	typ       object.Type
+}
+
+func (v *monadicNode) self() MonadicNode { return v }
+
+func (v *monadicNode) SetOperation(op operation.Operation) { v.operation = op }
+
+func (v *monadicNode) Operation() operation.Operation { return v.operation }
+
+func (v *monadicNode) SetType(t object.Type) { v.typ = t }
+func (v *monadicNode) Type() object.Type     { return v.typ }

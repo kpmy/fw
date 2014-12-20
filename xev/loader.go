@@ -3,10 +3,10 @@ package xev
 import "encoding/xml"
 
 type CptObject struct {
-	Name  string `xml:"urn:bbcb:component:dev:cpt name,attr"`
-	Mode  string `xml:"urn:bbcb:component:dev:cpt mode,attr"`
-	Typ   string `xml:"urn:bbcb:component:dev:cpt type,attr"`
-	Leaf  bool   `xml:"urn:bbcb:component:dev:cpt leaf,attr"`
+	Name string `xml:"urn:bbcb:component:dev:cpt name,attr"`
+	Mode string `xml:"urn:bbcb:component:dev:cpt mode,attr"`
+	Typ  string `xml:"urn:bbcb:component:dev:cpt type,attr"`
+	//	Leaf  bool   `xml:"urn:bbcb:component:dev:cpt leaf,attr"`
 	Value string `xml:",chardata"`
 }
 

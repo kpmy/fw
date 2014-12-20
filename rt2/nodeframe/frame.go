@@ -2,11 +2,15 @@ package nodeframe
 
 import (
 	"cp/node"
+	"fmt"
+	"reflect"
 	"rt2/context"
 	"rt2/decision"
 	"rt2/frame"
 	"ypk/assert"
 )
+
+var count int64
 
 type FrameUtils struct{}
 
@@ -14,6 +18,8 @@ func (fu FrameUtils) New(n node.Node) (f frame.Frame) {
 	assert.For(n != nil, 20)
 	f = new(nodeFrame)
 	f.(*nodeFrame).ir = n
+	f.(*nodeFrame).num = count
+	count++
 	return f
 }
 
@@ -43,11 +49,13 @@ type nodeFrame struct {
 	seq    frame.Sequence
 	domain context.Domain
 	data   map[interface{}]interface{}
+	num    int64
 }
 
 func (f *nodeFrame) Do() frame.WAIT {
 	assert.For(f.seq != nil, 20)
 	next, ret := f.seq(f)
+	fmt.Println(f.num, ret, reflect.TypeOf(f.ir))
 	if next != nil {
 		assert.For(ret != frame.STOP, 40)
 		f.seq = next

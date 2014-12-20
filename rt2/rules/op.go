@@ -9,10 +9,11 @@ import (
 	"rt2/frame"
 	"rt2/nodeframe"
 	"rt2/scope"
+	"ypk/assert"
 )
 
 func int32Of(x interface{}) (a int32) {
-	fmt.Println(reflect.TypeOf(x))
+	//fmt.Println(reflect.TypeOf(x))
 	switch x.(type) {
 	case *int32:
 		z := *x.(*int32)
@@ -20,7 +21,7 @@ func int32Of(x interface{}) (a int32) {
 	case int32:
 		a = x.(int32)
 	default:
-		panic("unsupported type")
+		panic(fmt.Sprintln("unsupported type", reflect.TypeOf(x)))
 	}
 	return a
 }
@@ -31,7 +32,11 @@ func sum(_a interface{}, _b interface{}) interface{} {
 	return a + b
 }
 
-func opSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+	return frame.End()
+}
+
+func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	var fu nodeframe.FrameUtils
 
 	m := new(frame.SetDataMsg)
@@ -55,15 +60,25 @@ func opSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case node.ConstantNode:
 			fu.DataOf(f)[n.Right()] = n.Right().(node.ConstantNode).Data()
 			return op, frame.DO
-		case node.VariableNode:
+		case node.VariableNode, node.ParameterNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 				fu.DataOf(f)[n.Right()] = sc.Select(n.Right().Object())
+				//fmt.Println(n.Right().Object(), reflect.TypeOf(n.Right().Object()))
+				assert.For(fu.DataOf(f)[n.Right()] != nil, 60)
 				return op, frame.DO
 			}
 			ret = frame.DO
 			return seq, ret
+		case node.OperationNode:
+			fu.Push(fu.New(n.Right()), f)
+			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+				return frame.End()
+			}
+			ret = frame.SKIP
+			return seq, ret
 		default:
+			fmt.Println(reflect.TypeOf(n.Right()))
 			panic("wrong right")
 		}
 	}
@@ -74,7 +89,7 @@ func opSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case node.ConstantNode:
 			fu.DataOf(f)[n.Left()] = n.Left().(node.ConstantNode).Data()
 			return right, frame.DO
-		case node.VariableNode:
+		case node.VariableNode, node.ParameterNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 				fu.DataOf(f)[n.Left()] = sc.Select(n.Left().Object())
@@ -82,10 +97,17 @@ func opSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			}
 			ret = frame.DO
 			return seq, ret
+		case node.OperationNode:
+			fu.Push(fu.New(n.Left()), f)
+			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+				return frame.End()
+			}
+			ret = frame.SKIP
+			return seq, ret
 		default:
+			fmt.Println(reflect.TypeOf(n.Left()))
 			panic("wrong left")
 		}
 	}
-
 	return left, frame.DO
 }

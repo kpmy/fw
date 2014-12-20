@@ -15,25 +15,40 @@ import (
 
 func prologue(n node.Node) frame.Sequence {
 	var fu nodeframe.FrameUtils
-	fmt.Println(reflect.TypeOf(n))
+	//fmt.Println(reflect.TypeOf(n))
 	switch n.(type) {
 	case node.EnterNode:
 		return func(f frame.Frame) (frame.Sequence, frame.WAIT) {
-			node := fu.NodeOf(f).Right()
-			assert.For(node != nil, 40)
+			body := fu.NodeOf(f).Right()
+			assert.For(body != nil, 40)
 			sm := scope.This(f.Domain().Discover(context.SCOPE))
 			sm.Allocate(n)
-			f.Root().Push(fu.New(node))
+			if n.Object() != nil {
+				par, ok := fu.DataOf(f)[n.Object()].(node.Node)
+				if ok {
+					sm.Initialize(n, n.Object().Link(), par)
+				}
+			}
+			f.Root().Push(fu.New(body))
 			return frame.Tail(frame.STOP), frame.SKIP
 		}
 	case node.AssignNode:
 		return assignSeq
 	case node.OperationNode:
-		return opSeq
+		switch n.(type) {
+		case node.DyadicNode:
+			return dopSeq
+		case node.MonadicNode:
+			return mopSeq
+		default:
+			panic("no such op")
+		}
 	case node.CallNode:
 		return callSeq
+	case node.ReturnNode:
+		return returnSeq
 	default:
-		panic("unknown node")
+		panic(fmt.Sprintln("unknown node", reflect.TypeOf(n)))
 	}
 }
 
@@ -56,6 +71,9 @@ func epilogue(n node.Node) frame.Sequence {
 		}
 	case node.OperationNode:
 		return nil //do nothing
+	case node.ReturnNode:
+		fmt.Println("return")
+		return nil
 	default:
 		fmt.Println(reflect.TypeOf(n))
 		panic("unhandled epilogue")

@@ -33,6 +33,12 @@ func New(class constant.Class) Node {
 		return new(callNode)
 	case constant.PROCEDURE:
 		return new(procedureNode)
+	case constant.PARAMETER:
+		return new(parameterNode)
+	case constant.RETURN:
+		return new(returnNode)
+	case constant.MONADIC:
+		return new(monadicNode)
 	default:
 		panic("no such class")
 	}

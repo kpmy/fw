@@ -13,6 +13,7 @@ type Manager interface {
 	Select(o object.Object) interface{}
 	Allocate(n node.Node)
 	Dispose(n node.Node)
+	Initialize(n node.Node, o object.Object, val node.Node)
 }
 
 //средство обновления значения
