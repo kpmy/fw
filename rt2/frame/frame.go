@@ -15,7 +15,6 @@ const (
 
 // LIFO-стек, позволяет затолкнуть фрейм связанный с другим фреймом
 type Stack interface {
-	Push(f Frame)
 	PushFor(f, parent Frame)
 	Pop()
 	Top() Frame

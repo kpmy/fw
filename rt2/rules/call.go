@@ -23,12 +23,14 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		m := mod.DomainModule(f.Domain())
 		proc := m.NodeByObject(n.Left().Object())
 		nf := fu.New(proc)
-		f.Root().Push(nf)
+		fu.Push(nf, f)
 		//передаем ссылку на цепочку значений параметров в данные фрейма входа в процедуру
 		if (n.Right() != nil) && (proc.Object() != nil) {
 			fu.DataOf(nf)[proc.Object()] = n.Right()
 		}
 		seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+			var fu nodeframe.FrameUtils
+			fu.DataOf(f.Parent())[n] = fu.DataOf(f)[n.Left().Object()]
 			return frame.End()
 		}
 		ret = frame.SKIP

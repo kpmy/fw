@@ -20,10 +20,6 @@ func NewRoot() *RootFrame {
 	return new(RootFrame).init()
 }
 
-func (f *RootFrame) Push(frame Frame) {
-	f.PushFor(frame, nil)
-}
-
 func (f *RootFrame) PushFor(frame, parent Frame) {
 	_, ok := frame.(*RootFrame)
 	if ok {

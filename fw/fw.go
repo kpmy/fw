@@ -15,16 +15,17 @@ func main() {
 	global := new(stdDomain)
 	modList := module.New()
 	global.ConnectTo(context.MOD, modList)
-	ret, err := modList.Load("PrivDemo1")
-	assert.For(err == nil, 20)
+	ret, err := modList.Load("XevDemo2")
+	assert.For(ret != nil, 40)
+	assert.For(err == nil, 41)
 	{
 		domain := new(stdDomain)
-		global.ConnectTo("PrivDemo1", domain)
+		global.ConnectTo("XevDemo2", domain)
 		root := frame.NewRoot()
 		domain.ConnectTo(context.STACK, root)
 		domain.ConnectTo(context.SCOPE, scope.New())
 		var fu nodeframe.FrameUtils
-		root.Push(fu.New(ret.Enter))
+		root.PushFor(fu.New(ret.Enter), nil)
 		i := 0
 		for x := frame.DO; x == frame.DO; x = root.Do() {
 			//fmt.Println(x)
