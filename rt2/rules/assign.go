@@ -53,9 +53,6 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	}
 	switch a.(node.AssignNode).Statement() {
 	case statement.ASSIGN:
-		m := new(frame.SetDataMsg)
-		m.Data = make(map[interface{}]interface{})
-		f.(context.ContextAware).Handle(m)
 		switch a.Left().(type) {
 		case node.VariableNode, node.ParameterNode:
 			seq, ret = right(f)

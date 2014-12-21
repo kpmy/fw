@@ -3,6 +3,7 @@ package rules
 import (
 	"cp/constant/operation"
 	"cp/node"
+	"cp/object"
 	"fmt"
 	"reflect"
 	"rt2/context"
@@ -27,21 +28,47 @@ func int32Of(x interface{}) (a int32) {
 }
 
 func sum(_a interface{}, _b interface{}) interface{} {
+	assert.For(_a != nil, 20)
+	assert.For(_b != nil, 21)
 	var a int32 = int32Of(_a)
 	var b int32 = int32Of(_b)
 	return a + b
 }
 
 func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-	return frame.End()
+	var fu nodeframe.FrameUtils
+	n := fu.NodeOf(f).(node.MonadicNode)
+	switch n.Operation() {
+	case operation.CONVERT:
+		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+		switch n.Left().(type) {
+		case node.VariableNode, node.ParameterNode:
+			x := sc.Select(n.Left().Object())
+			assert.For(x != nil, 40)
+			switch n.Type() {
+			case object.INTEGER:
+				switch x.(type) {
+				case int8:
+					fu.DataOf(f.Parent())[n] = int32(x.(int8))
+				default:
+					panic(fmt.Sprintln("ooops", reflect.TypeOf(x)))
+				}
+			default:
+				panic("wrong type")
+			}
+			return frame.End()
+		default:
+			panic(fmt.Sprintln("unsupported left", reflect.TypeOf(n.Left())))
+
+		}
+	default:
+		panic(fmt.Sprintln("no such operation", n.(node.MonadicNode).Operation()))
+	}
+
 }
 
 func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	var fu nodeframe.FrameUtils
-
-	m := new(frame.SetDataMsg)
-	m.Data = make(map[interface{}]interface{}, 2)
-	f.(context.ContextAware).Handle(m)
 
 	op := func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		n := fu.NodeOf(f)
@@ -73,7 +100,7 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case node.OperationNode:
 			fu.Push(fu.New(n.Right()), f)
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				return frame.End()
+				return op, frame.DO
 			}
 			ret = frame.SKIP
 			return seq, ret
@@ -100,7 +127,7 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case node.OperationNode:
 			fu.Push(fu.New(n.Left()), f)
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				return frame.End()
+				return right, frame.DO
 			}
 			ret = frame.SKIP
 			return seq, ret

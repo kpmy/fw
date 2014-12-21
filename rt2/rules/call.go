@@ -2,7 +2,6 @@ package rules
 
 import (
 	"cp/node"
-	"rt2/context"
 	"rt2/frame"
 	mod "rt2/module"
 	"rt2/nodeframe"
@@ -27,11 +26,7 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		f.Root().Push(nf)
 		//передаем ссылку на цепочку значений параметров в данные фрейма входа в процедуру
 		if (n.Right() != nil) && (proc.Object() != nil) {
-			dd := make(map[interface{}]interface{})
-			dd[proc.Object()] = n.Right()
-			m := new(frame.SetDataMsg)
-			m.Data = dd
-			nf.(context.ContextAware).Handle(m)
+			fu.DataOf(nf)[proc.Object()] = n.Right()
 		}
 		seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			return frame.End()

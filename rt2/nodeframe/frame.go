@@ -19,6 +19,7 @@ func (fu FrameUtils) New(n node.Node) (f frame.Frame) {
 	f = new(nodeFrame)
 	f.(*nodeFrame).ir = n
 	f.(*nodeFrame).num = count
+	f.(*nodeFrame).data = make(map[interface{}]interface{})
 	count++
 	return f
 }
@@ -37,9 +38,7 @@ func (fu FrameUtils) NodeOf(f frame.Frame) node.Node {
 }
 
 func (fu FrameUtils) DataOf(f frame.Frame) map[interface{}]interface{} {
-	m := new(frame.GetDataMsg)
-	f.(context.ContextAware).Handle(m)
-	return m.Data.(map[interface{}]interface{})
+	return f.(*nodeFrame).data
 }
 
 type nodeFrame struct {
@@ -96,10 +95,5 @@ func (f *nodeFrame) Init(d context.Domain) {
 }
 func (f *nodeFrame) Handle(msg interface{}) {
 	assert.For(msg != nil, 20)
-	switch msg.(type) {
-	case *frame.SetDataMsg:
-		f.data = msg.(*frame.SetDataMsg).Data.(map[interface{}]interface{})
-	case *frame.GetDataMsg:
-		msg.(*frame.GetDataMsg).Data = f.data
-	}
+
 }
