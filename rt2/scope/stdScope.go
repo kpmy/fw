@@ -130,6 +130,7 @@ func (m *manager) Update(o object.Object, val Value) {
 	} else {
 		tmp = val(tmp)
 	}
+	assert.For(tmp != nil, 40) //если устанавливают значение NIL, значит делают что-то неверно
 	if tmp == nil {
 		tmp = undef
 	}
