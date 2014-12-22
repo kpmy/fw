@@ -26,15 +26,50 @@ type manager struct {
 }
 
 type area struct {
-	heap map[object.Object]interface{}
+	heap map[object.Object]value
 	root node.Node
 }
 
-type undefined struct{}
-type param struct{}
+type value interface {
+	Set(x interface{})
+	Get() interface{}
+}
 
-var undef *undefined = new(undefined)
-var par *param = new(param)
+type direct struct {
+	value
+	data interface{}
+}
+
+type indirect struct {
+	value
+	ref object.Object
+	mgr Manager
+}
+
+type dummy struct{}
+
+var def *dummy = &dummy{}
+
+func (v *direct) Set(x interface{}) {
+	assert.For(x != nil, 20)
+	v.data = x
+	fmt.Println("set", x, reflect.TypeOf(x))
+}
+
+func (v *direct) Get() interface{} { return v.data }
+
+func (v *indirect) Set(x interface{}) {
+	assert.For(x != nil, 20)
+	assert.For(v.ref != nil, 21)
+	v.mgr.Update(v.ref, func(old interface{}) interface{} {
+		return x
+	})
+}
+
+func (v *indirect) Get() interface{} {
+	assert.For(v.ref != nil, 20)
+	return v.mgr.Select(v.ref)
+}
 
 func (m *manager) init() *manager {
 	m.areas = list.New()
@@ -44,15 +79,15 @@ func (m *manager) init() *manager {
 func (m *manager) Allocate(n node.Node) {
 	mod := rt_mod.DomainModule(m.Domain())
 	h := new(area)
-	h.heap = make(map[object.Object]interface{})
+	h.heap = make(map[object.Object]value)
 	h.root = n
 	for _, o := range mod.Objects[n] {
 		//fmt.Println(reflect.TypeOf(o))
 		switch o.(type) {
 		case object.VariableObject:
-			h.heap[o] = undef
+			h.heap[o] = &direct{data: def}
 		case object.ParameterObject:
-			h.heap[o] = par
+			h.heap[o] = &indirect{mgr: m}
 		}
 	}
 	m.areas.PushFront(h)
@@ -66,9 +101,14 @@ func (m *manager) set(a *area, o object.Object, val node.Node) {
 			return val.(node.ConstantNode).Data()
 		})
 	case node.VariableNode, node.ParameterNode:
-		m.Update(o, func(old interface{}) interface{} {
-			return m.Select(val.Object())
-		})
+		switch o.(type) {
+		case object.VariableObject:
+			m.Update(o, func(old interface{}) interface{} {
+				return m.Select(val.Object())
+			})
+		case object.ParameterObject:
+			a.heap[o].(*indirect).ref = val.Object()
+		}
 	default:
 		panic("unknown value")
 	}
@@ -80,6 +120,7 @@ func (m *manager) Initialize(n node.Node, o object.Object, _val node.Node) {
 	h := e.Value.(*area)
 	assert.For(h.root == n, 21)
 	val := _val
+	fmt.Println("initialize")
 	for next := o; next != nil; next = next.Link() {
 		assert.For(val != nil, 40)
 		fmt.Println(reflect.TypeOf(next), next.Name(), ":", next.Type())
@@ -105,15 +146,10 @@ func (m *manager) Select(o object.Object) (ret interface{}) {
 		ret = h.heap[o]
 	}
 	assert.For(ret != nil, 40)
-	if ret == undef {
-		ret = nil
-	} else if ret == par {
-		panic("")
-	}
-	return ret
+	return ret.(value).Get()
 }
 
-func (m *manager) Update(o object.Object, val Value) {
+func (m *manager) Update(o object.Object, val ValueFor) {
 	assert.For(o != nil, 20)
 	assert.For(val != nil, 21)
 	var x *area
@@ -124,18 +160,13 @@ func (m *manager) Update(o object.Object, val Value) {
 		}
 	}
 	assert.For(x != nil, 40)
-	tmp := x.heap[o]
-	if tmp == undef {
-		tmp = val(nil)
-	} else {
-		tmp = val(tmp)
+	old := x.heap[o].Get()
+	if old == def {
+		old = nil
 	}
+	tmp := val(old)
 	assert.For(tmp != nil, 40) //если устанавливают значение NIL, значит делают что-то неверно
-	if tmp == nil {
-		tmp = undef
-	}
-	x.heap[o] = tmp
-	fmt.Println("set", x.heap[o], reflect.TypeOf(x.heap[o]))
+	x.heap[o].Set(tmp)
 }
 
 func (m *manager) Init(d context.Domain) {

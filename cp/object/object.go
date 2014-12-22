@@ -36,7 +36,7 @@ type Object interface {
 
 type VariableObject interface {
 	Object
-	This() VariableObject
+	self() VariableObject
 }
 
 type ConstantObject interface {
@@ -47,6 +47,7 @@ type ConstantObject interface {
 
 type ParameterObject interface {
 	Object
+	self() ParameterObject
 }
 
 func New(mode Mode) Object {
@@ -91,7 +92,7 @@ type localProcedureObject struct {
 	objectFields
 }
 
-func (v *variableObject) This() VariableObject { return v }
+func (v *variableObject) self() VariableObject { return v }
 
 type constantObject struct {
 	objectFields
@@ -107,6 +108,8 @@ func (o *constantObject) Data() interface{} { return o.val }
 type parameterObject struct {
 	objectFields
 }
+
+func (v *parameterObject) self() ParameterObject { return v }
 
 func (t Type) String() string {
 	switch t {
