@@ -72,6 +72,14 @@ type MonadicNode interface {
 	self() MonadicNode
 }
 
+type ConditionalNode interface {
+	self() ConditionalNode
+}
+
+type IfNode interface {
+	self() IfNode
+}
+
 type enterNode struct {
 	nodeFields
 	enter enter.Enter
@@ -160,3 +168,15 @@ func (v *monadicNode) Operation() operation.Operation { return v.operation }
 
 func (v *monadicNode) SetType(t object.Type) { v.typ = t }
 func (v *monadicNode) Type() object.Type     { return v.typ }
+
+type conditionalNode struct {
+	nodeFields
+}
+
+func (v *conditionalNode) self() ConditionalNode { return v }
+
+type ifNode struct {
+	nodeFields
+}
+
+func (v *ifNode) self() IfNode { return v }

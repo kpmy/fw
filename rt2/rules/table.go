@@ -32,6 +32,8 @@ func prologue(n node.Node) frame.Sequence {
 		return callSeq
 	case node.ReturnNode:
 		return returnSeq
+	case node.ConditionalNode:
+		return ifSeq
 	default:
 		panic(fmt.Sprintln("unknown node", reflect.TypeOf(n)))
 	}
@@ -40,7 +42,7 @@ func prologue(n node.Node) frame.Sequence {
 func epilogue(n node.Node) frame.Sequence {
 	var fu nodeframe.FrameUtils
 	switch n.(type) {
-	case node.AssignNode:
+	case node.AssignNode, node.CallNode, node.ConditionalNode:
 		return func(f frame.Frame) (frame.Sequence, frame.WAIT) {
 			next := n.Link()
 			if next != nil {
@@ -54,17 +56,7 @@ func epilogue(n node.Node) frame.Sequence {
 			sm.Dispose(n)
 			return frame.End()
 		}
-	case node.OperationNode:
-		return nil //do nothing
-	case node.CallNode:
-		return func(f frame.Frame) (frame.Sequence, frame.WAIT) {
-			next := n.Link()
-			if next != nil {
-				f.Root().PushFor(fu.New(next), f.Parent())
-			}
-			return frame.End()
-		}
-	case node.ReturnNode:
+	case node.OperationNode, node.ReturnNode:
 		return nil
 	default:
 		fmt.Println(reflect.TypeOf(n))

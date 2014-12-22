@@ -39,6 +39,10 @@ func New(class constant.Class) Node {
 		return new(returnNode)
 	case constant.MONADIC:
 		return new(monadicNode)
+	case constant.CONDITIONAL:
+		return new(conditionalNode)
+	case constant.IF:
+		return new(ifNode)
 	default:
 		panic("no such class")
 	}

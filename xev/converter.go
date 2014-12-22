@@ -223,6 +223,8 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			switch n.Data.Nod.Operation {
 			case "plus":
 				ret.(node.OperationNode).SetOperation(operation.PLUS)
+			case "equal":
+				ret.(node.OperationNode).SetOperation(operation.EQUAL)
 			default:
 				panic("no such operation")
 			}
@@ -255,6 +257,10 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			default:
 				panic("no such operation")
 			}
+		case "conditional":
+			ret = node.New(constant.CONDITIONAL)
+		case "if":
+			ret = node.New(constant.IF)
 		default:
 			fmt.Println(n.Data.Nod.Class)
 			panic("no such node type")
