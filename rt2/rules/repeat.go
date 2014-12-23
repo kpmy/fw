@@ -8,39 +8,40 @@ import (
 	"reflect"
 )
 
-func whileSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+func repeatSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	var fu nodeframe.FrameUtils
 	n := fu.NodeOf(f)
 
+	fu.DataOf(f)[n.Right()] = false
 	var cond func(f frame.Frame) (frame.Sequence, frame.WAIT)
 	next := func(f frame.Frame) (frame.Sequence, frame.WAIT) {
-		done := fu.DataOf(f)[n.Left()].(bool)
-		fu.DataOf(f)[n.Left()] = nil
-		if done && n.Right() != nil {
-			fu.Push(fu.New(n.Right()), f)
+		done := fu.DataOf(f)[n.Right()].(bool)
+		fu.DataOf(f)[n.Right()] = nil
+		if !done && n.Right() != nil {
+			fu.Push(fu.New(n.Left()), f)
 			return cond, frame.LATER
-		} else if !done {
+		} else if done {
 			return frame.End()
-		} else if n.Right() == nil {
+		} else if n.Left() == nil {
 			return frame.End()
 		} else {
-			panic("unexpected while seq")
+			panic("unexpected repeat seq")
 		}
 	}
 
 	cond = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
-		switch n.Left().(type) {
+		switch n.Right().(type) {
 		case node.OperationNode:
-			fu.Push(fu.New(n.Left()), f)
+			fu.Push(fu.New(n.Right()), f)
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				fu.DataOf(f.Parent())[n] = fu.DataOf(f)[n.Left()]
+				fu.DataOf(f.Parent())[n] = fu.DataOf(f)[n.Right()]
 				return next, frame.LATER
 			}
 			ret = frame.LATER
 			return seq, ret
 		default:
-			panic(fmt.Sprintf("unknown while expression", reflect.TypeOf(n.Left())))
+			panic(fmt.Sprintf("unknown repeat expression", reflect.TypeOf(n.Left())))
 		}
 	}
-	return cond, frame.NOW
+	return next, frame.NOW
 }

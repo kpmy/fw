@@ -35,6 +35,14 @@ func sum(_a interface{}, _b interface{}) interface{} {
 	return a + b
 }
 
+func sub(_a interface{}, _b interface{}) interface{} {
+	assert.For(_a != nil, 20)
+	assert.For(_b != nil, 21)
+	var a int32 = int32Of(_a)
+	var b int32 = int32Of(_b)
+	return a - b
+}
+
 func eq(_a interface{}, _b interface{}) bool {
 	assert.For(_a != nil, 20)
 	assert.For(_b != nil, 21)
@@ -91,6 +99,9 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		switch n.(node.OperationNode).Operation() {
 		case operation.PLUS:
 			fu.DataOf(f.Parent())[n] = sum(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			return frame.End()
+		case operation.MINUS:
+			fu.DataOf(f.Parent())[n] = sub(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
 			return frame.End()
 		case operation.EQUAL:
 			fu.DataOf(f.Parent())[n] = eq(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])

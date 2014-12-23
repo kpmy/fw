@@ -223,6 +223,8 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			switch n.Data.Nod.Operation {
 			case "plus":
 				ret.(node.OperationNode).SetOperation(operation.PLUS)
+			case "minus":
+				ret.(node.OperationNode).SetOperation(operation.MINUS)
 			case "equal":
 				ret.(node.OperationNode).SetOperation(operation.EQUAL)
 			case "lesser":
@@ -265,6 +267,8 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			ret = node.New(constant.IF)
 		case "while":
 			ret = node.New(constant.WHILE)
+		case "repeat":
+			ret = node.New(constant.REPEAT)
 		default:
 			fmt.Println(n.Data.Nod.Class)
 			panic("no such node type")

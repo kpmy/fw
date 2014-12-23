@@ -16,4 +16,5 @@ const (
 	CONDITIONAL
 	IF
 	WHILE
+	REPEAT
 )

@@ -1,8 +1,10 @@
 package node
 
 import (
-	"fw/cp/constant"
+	"fw/cp/constant/enter"
+	"fw/cp/constant/operation"
 	"fw/cp/object"
+	"fw/cp/statement"
 )
 
 type Node interface {
@@ -17,56 +19,87 @@ type Node interface {
 	Object() object.Object
 }
 
-func New(class constant.Class) Node {
-	switch class {
-	case constant.ENTER:
-		return new(enterNode)
-	case constant.ASSIGN:
-		return new(assignNode)
-	case constant.VARIABLE:
-		return new(variableNode)
-	case constant.DYADIC:
-		return new(dyadicNode)
-	case constant.CONSTANT:
-		return new(constantNode)
-	case constant.CALL:
-		return new(callNode)
-	case constant.PROCEDURE:
-		return new(procedureNode)
-	case constant.PARAMETER:
-		return new(parameterNode)
-	case constant.RETURN:
-		return new(returnNode)
-	case constant.MONADIC:
-		return new(monadicNode)
-	case constant.CONDITIONAL:
-		return new(conditionalNode)
-	case constant.IF:
-		return new(ifNode)
-	case constant.WHILE:
-		return new(whileNode)
-	default:
-		panic("no such class")
-	}
+type EnterNode interface {
+	Enter() enter.Enter
+	SetEnter(enter enter.Enter)
+	Node
 }
 
-type nodeFields struct {
-	left, right, link Node
-	obj               object.Object
+type OperationNode interface {
+	SetOperation(op operation.Operation)
+	Operation() operation.Operation
+	Node
 }
 
-func (nf *nodeFields) SetLeft(n Node) { nf.left = n }
+type ConstantNode interface {
+	SetType(typ object.Type)
+	SetData(data interface{})
+	Data() interface{}
+	Type() object.Type
+	Node
+}
 
-func (nf *nodeFields) SetRight(n Node) { nf.right = n }
+// Self-designator for empty interfaces
+type AssignNode interface {
+	self() AssignNode
+	SetStatement(statement.Statement)
+	Statement() statement.Statement
+	Node
+}
 
-func (nf *nodeFields) SetLink(n Node) { nf.link = n }
+type VariableNode interface {
+	self() VariableNode
+	Node
+}
 
-func (nf *nodeFields) SetObject(o object.Object) { nf.obj = o }
+type CallNode interface {
+	self() CallNode
+	Node
+}
 
-func (nf *nodeFields) Left() Node { return nf.left }
+type ProcedureNode interface {
+	self() ProcedureNode
+	Node
+}
 
-func (nf *nodeFields) Right() Node { return nf.right }
+type ParameterNode interface {
+	Node
+	self() ParameterNode
+}
 
-func (nf *nodeFields) Link() Node { return nf.link }
+type ReturnNode interface {
+	Node
+	self() ReturnNode
+}
 
-func (nf *nodeFields) Object() object.Object { return nf.obj }
+type DyadicNode interface {
+	OperationNode
+	self() DyadicNode
+}
+
+type MonadicNode interface {
+	OperationNode
+	SetType(typ object.Type)
+	Type() object.Type
+	self() MonadicNode
+}
+
+type ConditionalNode interface {
+	self() ConditionalNode
+	Node
+}
+
+type IfNode interface {
+	self() IfNode
+	Node
+}
+
+type WhileNode interface {
+	self() WhileNode
+	Node
+}
+
+type RepeatNode interface {
+	self() RepeatNode
+	Node
+}
