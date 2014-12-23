@@ -9,8 +9,8 @@ type WAIT int
 const (
 	WRONG WAIT = iota
 	STOP
-	SKIP
-	DO
+	LATER
+	NOW
 )
 
 // LIFO-стек, позволяет затолкнуть фрейм связанный с другим фреймом

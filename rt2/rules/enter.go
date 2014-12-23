@@ -25,7 +25,7 @@ func enterSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	if f.Parent() != nil {
 		//Вход в процедуру не несет значимых действий и просто заменяет себя в цепочке родителей на своего родителя
 		fu.Push(fu.New(body), f.Parent())
-		return frame.Tail(frame.STOP), frame.SKIP
+		return frame.Tail(frame.STOP), frame.LATER
 	} else {
 		//Особый случай, вход в модуль, секция BEGIN
 		fu.Push(fu.New(body), f)
@@ -34,12 +34,12 @@ func enterSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		if next != nil {
 			seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
 				f.Root().PushFor(fu.New(next), f)
-				return frame.Tail(frame.STOP), frame.SKIP
+				return frame.Tail(frame.STOP), frame.LATER
 			}
 		} else {
 			seq = frame.Tail(frame.STOP)
 		}
-		return seq, frame.SKIP
+		return seq, frame.LATER
 
 	}
 }

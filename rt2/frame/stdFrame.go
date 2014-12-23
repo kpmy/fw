@@ -56,23 +56,25 @@ func (f *RootFrame) Do() (res WAIT) {
 		for {
 			wait := x.Do()
 			//fmt.Println(wait)
-			if wait == SKIP {
+			if wait == LATER {
 				break
-			} else if wait == DO {
+			} else if wait == NOW {
 			} else if wait == WRONG {
 				panic("something wrong")
-			} else {
+			} else if wait == STOP {
 				if x == f.Top() {
 					f.Pop()
 				} else {
 					panic("do not stop if not top on stack")
 				}
 				break
+			} else {
+				panic("wrong wait code")
 			}
 		}
 	}
 	if f.Top() != nil {
-		res = DO
+		res = NOW
 	} else {
 		res = STOP
 	}
@@ -89,14 +91,15 @@ func (f *RootFrame) Init(d context.Domain) {
 	assert.For(d != nil, 21)
 	f.domain = d
 }
+
 func (f *RootFrame) Handle(msg interface{}) {}
 
 func (w WAIT) String() string {
 	switch w {
-	case DO:
-		return "DO"
-	case SKIP:
-		return "SKIP"
+	case NOW:
+		return "NOW"
+	case LATER:
+		return "LATER"
 	case STOP:
 		return "STOP"
 	case WRONG:

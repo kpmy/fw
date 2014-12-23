@@ -21,26 +21,26 @@ func returnSeq(f frame.Frame) (frame.Sequence, frame.WAIT) {
 				fu.DataOf(f.Parent())[a.Object()] = a.Left().(node.ConstantNode).Data()
 				return frame.End()
 			}
-			ret = frame.DO
+			ret = frame.NOW
 		case node.VariableNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 				fu.DataOf(f.Parent())[a.Object()] = sc.Select(a.Left().Object())
 				return frame.End()
 			}
-			ret = frame.DO
+			ret = frame.NOW
 		case node.OperationNode, node.CallNode:
 			fu.Push(fu.New(a.Left()), f)
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				fu.DataOf(f.Parent())[a.Object()] = fu.DataOf(f)[a.Left()]
 				return frame.End()
 			}
-			ret = frame.SKIP
+			ret = frame.LATER
 		default:
 			fmt.Println(reflect.TypeOf(a.Left()))
 			panic("wrong right")
 		}
 		return seq, ret
 	}
-	return left, frame.DO
+	return left, frame.NOW
 }

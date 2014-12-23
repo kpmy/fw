@@ -27,7 +27,7 @@ func main() {
 		var fu nodeframe.FrameUtils
 		root.PushFor(fu.New(ret.Enter), nil)
 		i := 0
-		for x := frame.DO; x == frame.DO; x = root.Do() {
+		for x := frame.NOW; x == frame.NOW; x = root.Do() {
 			//fmt.Println(x)
 			i++
 		}

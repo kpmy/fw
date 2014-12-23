@@ -25,7 +25,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				})
 				return frame.End()
 			}
-			ret = frame.DO
+			ret = frame.NOW
 		case node.VariableNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
@@ -34,7 +34,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				})
 				return frame.End()
 			}
-			ret = frame.DO
+			ret = frame.NOW
 		case node.OperationNode, node.CallNode:
 			fu.Push(fu.New(a.Right()), f)
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
@@ -44,7 +44,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				})
 				return frame.End()
 			}
-			ret = frame.SKIP
+			ret = frame.LATER
 		default:
 			fmt.Println(reflect.TypeOf(a.Right()))
 			panic("wrong right")

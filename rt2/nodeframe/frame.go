@@ -18,9 +18,8 @@ func (fu FrameUtils) New(n node.Node) (f frame.Frame) {
 	assert.For(n != nil, 20)
 	f = new(nodeFrame)
 	f.(*nodeFrame).ir = n
-	f.(*nodeFrame).num = count
 	f.(*nodeFrame).data = make(map[interface{}]interface{})
-	count++
+	fmt.Println("_", "NEW", reflect.TypeOf(n))
 	return f
 }
 
@@ -65,10 +64,15 @@ func (f *nodeFrame) Do() frame.WAIT {
 }
 
 func (f *nodeFrame) onPush() {
+	f.num = count
+	count++
+	fmt.Println("_", "PUSH", reflect.TypeOf(f.ir))
 	f.seq = decision.PrologueFor(f.ir)
 }
 
 func (f *nodeFrame) OnPop() {
+	count--
+	fmt.Println("_", "POP", reflect.TypeOf(f.ir))
 	f.seq = decision.EpilogueFor(f.ir)
 	if f.seq != nil {
 		_, _ = f.seq(f)
@@ -93,6 +97,7 @@ func (f *nodeFrame) Init(d context.Domain) {
 	assert.For(d != nil, 21)
 	f.domain = d
 }
+
 func (f *nodeFrame) Handle(msg interface{}) {
 	assert.For(msg != nil, 20)
 

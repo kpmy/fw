@@ -33,7 +33,7 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			fu.DataOf(f.Parent())[n] = fu.DataOf(f)[n.Left().Object()]
 			return frame.End()
 		}
-		ret = frame.SKIP
+		ret = frame.LATER
 	default:
 		panic("unknown call left")
 	}
