@@ -1,10 +1,10 @@
 package module
 
 import (
-	mod "cp/module"
+	mod "fw/cp/module"
+	"fw/rt2/context"
+	"fw/xev"
 	"os"
-	"rt2/context"
-	"xev"
 	"ypk/assert"
 )
 

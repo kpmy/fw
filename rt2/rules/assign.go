@@ -1,14 +1,14 @@
 package rules
 
 import (
-	"cp/node"
-	"cp/statement"
 	"fmt"
+	"fw/cp/node"
+	"fw/cp/statement"
+	"fw/rt2/context"
+	"fw/rt2/frame"
+	"fw/rt2/nodeframe"
+	"fw/rt2/scope"
 	"reflect"
-	"rt2/context"
-	"rt2/frame"
-	"rt2/nodeframe"
-	"rt2/scope"
 )
 
 func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {

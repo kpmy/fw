@@ -1,10 +1,10 @@
 package context
 
 const (
-	STACK    = "rt2/frame"
-	SCOPE    = "rt2/scope"
-	MOD      = "rt2/module"
-	UNIVERSE = "rt2/ctx"
+	STACK    = "fw/rt2/frame"
+	SCOPE    = "fw/rt2/scope"
+	MOD      = "fw/rt2/module"
+	UNIVERSE = "fw/rt2/ctx"
 )
 
 type Domain interface {

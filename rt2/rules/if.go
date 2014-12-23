@@ -1,11 +1,11 @@
 package rules
 
 import (
-	"cp/node"
 	"fmt"
+	"fw/cp/node"
+	"fw/rt2/frame"
+	"fw/rt2/nodeframe"
 	"reflect"
-	"rt2/frame"
-	"rt2/nodeframe"
 )
 
 func ifExpr(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {

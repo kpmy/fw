@@ -1,13 +1,13 @@
 package rules
 
 import (
-	"cp/node"
 	"fmt"
+	"fw/cp/node"
+	"fw/rt2/context"
+	"fw/rt2/frame"
+	"fw/rt2/nodeframe"
+	"fw/rt2/scope"
 	"reflect"
-	"rt2/context"
-	"rt2/frame"
-	"rt2/nodeframe"
-	"rt2/scope"
 )
 
 func returnSeq(f frame.Frame) (frame.Sequence, frame.WAIT) {

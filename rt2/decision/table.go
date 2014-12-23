@@ -1,8 +1,8 @@
 package decision
 
 import (
-	"cp/node"
-	"rt2/frame"
+	"fw/cp/node"
+	"fw/rt2/frame"
 )
 
 var (

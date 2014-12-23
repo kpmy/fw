@@ -1,15 +1,15 @@
 package rules
 
 import (
-	"cp/constant/operation"
-	"cp/node"
-	"cp/object"
 	"fmt"
+	"fw/cp/constant/operation"
+	"fw/cp/node"
+	"fw/cp/object"
+	"fw/rt2/context"
+	"fw/rt2/frame"
+	"fw/rt2/nodeframe"
+	"fw/rt2/scope"
 	"reflect"
-	"rt2/context"
-	"rt2/frame"
-	"rt2/nodeframe"
-	"rt2/scope"
 	"ypk/assert"
 )
 

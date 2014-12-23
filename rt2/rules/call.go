@@ -1,10 +1,10 @@
 package rules
 
 import (
-	"cp/node"
-	"rt2/frame"
-	mod "rt2/module"
-	"rt2/nodeframe"
+	"fw/cp/node"
+	"fw/rt2/frame"
+	mod "fw/rt2/module"
+	"fw/rt2/nodeframe"
 )
 
 /**

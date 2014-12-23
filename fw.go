@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"rt2/context"
-	"rt2/frame"
-	"rt2/module"
-	"rt2/nodeframe"
-	_ "rt2/rules"
-	"rt2/scope"
+	"fw/rt2/context"
+	"fw/rt2/frame"
+	"fw/rt2/module"
+	"fw/rt2/nodeframe"
+	_ "fw/rt2/rules"
+	"fw/rt2/scope"
 	"ypk/assert"
 )
 

@@ -1,8 +1,8 @@
 package node
 
 import (
-	"cp/constant"
-	"cp/object"
+	"fw/cp/constant"
+	"fw/cp/object"
 )
 
 type Node interface {

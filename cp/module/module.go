@@ -1,8 +1,8 @@
 package module
 
 import (
-	"cp/node"
-	"cp/object"
+	"fw/cp/node"
+	"fw/cp/object"
 	"ypk/assert"
 )
 

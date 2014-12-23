@@ -1,11 +1,11 @@
 package rules
 
 import (
-	"cp/node"
-	"rt2/context"
-	"rt2/frame"
-	"rt2/nodeframe"
-	"rt2/scope"
+	"fw/cp/node"
+	"fw/rt2/context"
+	"fw/rt2/frame"
+	"fw/rt2/nodeframe"
+	"fw/rt2/scope"
 	"ypk/assert"
 )
 

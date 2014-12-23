@@ -1,10 +1,10 @@
 package node
 
 import (
-	"cp/constant/enter"
-	"cp/constant/operation"
-	"cp/object"
-	"cp/statement"
+	"fw/cp/constant/enter"
+	"fw/cp/constant/operation"
+	"fw/cp/object"
+	"fw/cp/statement"
 )
 
 type EnterNode interface {

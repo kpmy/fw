@@ -1,14 +1,14 @@
 package xev
 
 import (
-	"cp/constant"
-	"cp/constant/enter"
-	"cp/constant/operation"
-	"cp/module"
-	"cp/node"
-	"cp/object"
-	"cp/statement"
 	"fmt"
+	"fw/cp/constant"
+	"fw/cp/constant/enter"
+	"fw/cp/constant/operation"
+	"fw/cp/module"
+	"fw/cp/node"
+	"fw/cp/object"
+	"fw/cp/statement"
 	"math/big"
 	"strconv"
 	"unicode/utf16"

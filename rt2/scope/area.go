@@ -1,9 +1,9 @@
 package scope
 
 import (
-	"cp/node"
-	"cp/object"
-	"rt2/context"
+	"fw/cp/node"
+	"fw/cp/object"
+	"fw/rt2/context"
 )
 
 //менеджер зон видимости, зоны видимости динамические, создаются в момент входа в EnterNode

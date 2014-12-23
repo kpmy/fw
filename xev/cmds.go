@@ -1,8 +1,8 @@
 package xev
 
 import (
-	"cp/module"
 	"fmt"
+	"fw/cp/module"
 	"io/ioutil"
 	"path/filepath"
 )

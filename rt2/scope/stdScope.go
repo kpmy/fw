@@ -2,12 +2,12 @@ package scope
 
 import (
 	"container/list"
-	"cp/node"
-	"cp/object"
 	"fmt"
+	"fw/cp/node"
+	"fw/cp/object"
+	"fw/rt2/context"
+	rt_mod "fw/rt2/module"
 	"reflect"
-	"rt2/context"
-	rt_mod "rt2/module"
 	"ypk/assert"
 )
 
