@@ -43,6 +43,8 @@ func New(class constant.Class) Node {
 		return new(conditionalNode)
 	case constant.IF:
 		return new(ifNode)
+	case constant.WHILE:
+		return new(whileNode)
 	default:
 		panic("no such class")
 	}

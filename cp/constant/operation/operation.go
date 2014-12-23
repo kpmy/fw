@@ -6,4 +6,5 @@ const (
 	PLUS Operation = iota
 	CONVERT
 	EQUAL
+	LESSER
 )

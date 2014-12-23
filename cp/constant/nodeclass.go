@@ -15,4 +15,5 @@ const (
 	MONADIC
 	CONDITIONAL
 	IF
+	WHILE
 )

@@ -80,6 +80,9 @@ type IfNode interface {
 	self() IfNode
 }
 
+type WhileNode interface {
+	self() WhileNode
+}
 type enterNode struct {
 	nodeFields
 	enter enter.Enter
@@ -180,3 +183,9 @@ type ifNode struct {
 }
 
 func (v *ifNode) self() IfNode { return v }
+
+type whileNode struct {
+	nodeFields
+}
+
+func (v *whileNode) self() WhileNode { return v }
