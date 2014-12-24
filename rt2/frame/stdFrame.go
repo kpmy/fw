@@ -81,6 +81,15 @@ func (f *RootFrame) Do() (res WAIT) {
 	return res
 }
 
+func (f *RootFrame) ForEach(run func(x Frame) bool) {
+	e := f.inner.Front()
+	ok := true
+	for (e != nil) && ok {
+		ok = run(e.Value.(Frame))
+		e = e.Next()
+	}
+}
+
 func (f *RootFrame) OnPush(a Stack, b Frame) {}
 func (f *RootFrame) OnPop()                  {}
 func (f *RootFrame) Parent() Frame           { return nil }

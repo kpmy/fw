@@ -229,6 +229,8 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 				ret.(node.OperationNode).SetOperation(operation.EQUAL)
 			case "lesser":
 				ret.(node.OperationNode).SetOperation(operation.LESSER)
+			case "less or equal":
+				ret.(node.OperationNode).SetOperation(operation.LESS_EQUAL)
 			default:
 				panic("no such operation")
 			}
@@ -241,6 +243,8 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			switch n.Data.Nod.Statement {
 			case "assign":
 				ret.(node.AssignNode).SetStatement(statement.ASSIGN)
+			case "inc":
+				ret.(node.AssignNode).SetStatement(statement.INC)
 			default:
 				panic("unknown assign statement")
 			}
@@ -269,6 +273,10 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			ret = node.New(constant.WHILE)
 		case "repeat":
 			ret = node.New(constant.REPEAT)
+		case "loop":
+			ret = node.New(constant.LOOP)
+		case "exit":
+			ret = node.New(constant.EXIT)
 		default:
 			fmt.Println(n.Data.Nod.Class)
 			panic("no such node type")

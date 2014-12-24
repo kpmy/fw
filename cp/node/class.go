@@ -38,6 +38,10 @@ func New(class constant.Class) Node {
 		return new(repeatNode)
 	case constant.WHILE:
 		return new(whileNode)
+	case constant.EXIT:
+		return new(exitNode)
+	case constant.LOOP:
+		return new(loopNode)
 	default:
 		panic("no such class")
 	}
@@ -176,3 +180,15 @@ type repeatNode struct {
 }
 
 func (v *repeatNode) self() RepeatNode { return v }
+
+type exitNode struct {
+	nodeFields
+}
+
+func (v *exitNode) self() ExitNode { return v }
+
+type loopNode struct {
+	nodeFields
+}
+
+func (v *loopNode) self() LoopNode { return v }

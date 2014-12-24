@@ -17,7 +17,7 @@ func repeatSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	next := func(f frame.Frame) (frame.Sequence, frame.WAIT) {
 		done := fu.DataOf(f)[n.Right()].(bool)
 		fu.DataOf(f)[n.Right()] = nil
-		if !done && n.Right() != nil {
+		if !done && n.Left() != nil {
 			fu.Push(fu.New(n.Left()), f)
 			return cond, frame.LATER
 		} else if done {

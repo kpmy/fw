@@ -8,4 +8,5 @@ const (
 	CONVERT
 	EQUAL
 	LESSER
+	LESS_EQUAL
 )

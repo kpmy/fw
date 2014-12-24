@@ -17,4 +17,6 @@ const (
 	IF
 	WHILE
 	REPEAT
+	EXIT
+	LOOP
 )

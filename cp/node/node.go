@@ -103,3 +103,13 @@ type RepeatNode interface {
 	self() RepeatNode
 	Node
 }
+
+type ExitNode interface {
+	self() ExitNode
+	Node
+}
+
+type LoopNode interface {
+	self() LoopNode
+	Node
+}

@@ -18,6 +18,7 @@ type Stack interface {
 	PushFor(f, parent Frame)
 	Pop()
 	Top() Frame
+	ForEach(run func(this Frame) bool)
 }
 
 //фрейм

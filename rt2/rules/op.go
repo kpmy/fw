@@ -59,6 +59,14 @@ func lss(_a interface{}, _b interface{}) bool {
 	return a < b
 }
 
+func leq(_a interface{}, _b interface{}) bool {
+	assert.For(_a != nil, 20)
+	assert.For(_b != nil, 21)
+	var a int32 = int32Of(_a)
+	var b int32 = int32Of(_b)
+	return a <= b
+}
+
 func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	var fu nodeframe.FrameUtils
 	n := fu.NodeOf(f).(node.MonadicNode)
@@ -108,6 +116,9 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			return frame.End()
 		case operation.LESSER:
 			fu.DataOf(f.Parent())[n] = lss(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			return frame.End()
+		case operation.LESS_EQUAL:
+			fu.DataOf(f.Parent())[n] = leq(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
 			return frame.End()
 		default:
 			panic("unknown operation")
