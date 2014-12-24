@@ -1,11 +1,11 @@
 package nodeframe
 
 import (
-	"fmt"
 	"fw/cp/node"
 	"fw/rt2/context"
 	"fw/rt2/decision"
 	"fw/rt2/frame"
+	"fw/utils"
 	"reflect"
 	"ypk/assert"
 )
@@ -19,7 +19,7 @@ func (fu FrameUtils) New(n node.Node) (f frame.Frame) {
 	f = new(nodeFrame)
 	f.(*nodeFrame).ir = n
 	f.(*nodeFrame).data = make(map[interface{}]interface{})
-	fmt.Println("_", "NEW", reflect.TypeOf(n))
+	utils.Println("_", "NEW", reflect.TypeOf(n))
 	return f
 }
 
@@ -53,7 +53,7 @@ type nodeFrame struct {
 func (f *nodeFrame) Do() frame.WAIT {
 	assert.For(f.seq != nil, 20)
 	next, ret := f.seq(f)
-	fmt.Println(f.num, ret, reflect.TypeOf(f.ir))
+	utils.Println(f.num, ret, reflect.TypeOf(f.ir))
 	if next != nil {
 		assert.For(ret != frame.STOP, 40)
 		f.seq = next
@@ -66,13 +66,13 @@ func (f *nodeFrame) Do() frame.WAIT {
 func (f *nodeFrame) onPush() {
 	f.num = count
 	count++
-	fmt.Println("_", "PUSH", reflect.TypeOf(f.ir))
+	utils.Println("_", "PUSH", reflect.TypeOf(f.ir))
 	f.seq = decision.PrologueFor(f.ir)
 }
 
 func (f *nodeFrame) OnPop() {
 	count--
-	fmt.Println("_", "POP", reflect.TypeOf(f.ir))
+	utils.Println("_", "POP", reflect.TypeOf(f.ir))
 	f.seq = decision.EpilogueFor(f.ir)
 	if f.seq != nil {
 		_, _ = f.seq(f)

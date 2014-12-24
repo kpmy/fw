@@ -8,6 +8,7 @@ import (
 	"fw/rt2/nodeframe"
 	_ "fw/rt2/rules"
 	"fw/rt2/scope"
+	"time"
 	"ypk/assert"
 )
 
@@ -15,7 +16,10 @@ func main() {
 	global := new(stdDomain)
 	modList := module.New()
 	global.ConnectTo(context.MOD, modList)
+	t0 := time.Now()
 	ret, err := modList.Load("XevDemo5")
+	t1 := time.Now()
+	fmt.Println("load", t1.Sub(t0))
 	assert.For(ret != nil, 40)
 	assert.For(err == nil, 41)
 	{
@@ -27,10 +31,13 @@ func main() {
 		var fu nodeframe.FrameUtils
 		root.PushFor(fu.New(ret.Enter), nil)
 		i := 0
+		t0 := time.Now()
 		for x := frame.NOW; x == frame.NOW; x = root.Do() {
 			//fmt.Println(x)
 			i++
 		}
+		t1 := time.Now()
 		fmt.Println("total steps", i)
+		fmt.Println("spent", t1.Sub(t0))
 	}
 }

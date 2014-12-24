@@ -7,6 +7,7 @@ import (
 	"fw/cp/object"
 	"fw/rt2/context"
 	rt_mod "fw/rt2/module"
+	"fw/utils"
 	"reflect"
 	"ypk/assert"
 )
@@ -53,7 +54,7 @@ var def *dummy = &dummy{}
 func (v *direct) Set(x interface{}) {
 	assert.For(x != nil, 20)
 	v.data = x
-	fmt.Println("set", x, reflect.TypeOf(x))
+	utils.Println("set", x, reflect.TypeOf(x))
 }
 
 func (v *direct) Get() interface{} { return v.data }
