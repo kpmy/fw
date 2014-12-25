@@ -10,6 +10,7 @@ import (
 	"fw/rt2/nodeframe"
 	"fw/rt2/scope"
 	"reflect"
+	"unicode/utf8"
 	"ypk/assert"
 )
 
@@ -80,7 +81,7 @@ func length(a object.Object, _a, _b interface{}) (ret int64) {
 		case object.DynArrayType:
 			switch _a.(type) {
 			case string:
-				ret = int64(len(_a.(string)))
+				ret = int64(utf8.RuneCountInString(_a.(string)))
 			default:
 				ret = 0
 				fmt.Sprintln("unsupported", reflect.TypeOf(_a))
@@ -91,7 +92,7 @@ func length(a object.Object, _a, _b interface{}) (ret int64) {
 	} else {
 		switch _a.(type) {
 		case string:
-			ret = int64(len(_a.(string)))
+			ret = int64(utf8.RuneCountInString(_a.(string)))
 		default:
 			panic(fmt.Sprintln("unsupported", reflect.TypeOf(_a)))
 		}

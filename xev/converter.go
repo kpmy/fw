@@ -170,6 +170,9 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 		case "CHAR":
 			n := object.NewDynArrayType(object.CHAR)
 			ret = n
+		case "BYTE":
+			n := object.NewDynArrayType(object.BYTE)
+			ret = n
 		default:
 			panic(fmt.Sprintln("unknown type", n.Data.Typ.Typ))
 		}
