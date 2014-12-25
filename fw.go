@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"fw/rt2/context"
 	"fw/rt2/frame"
@@ -12,19 +13,29 @@ import (
 	"ypk/assert"
 )
 
+var name string
+
+func init() {
+	flag.StringVar(&name, "i", "", "-i name.ext")
+}
+
 func main() {
+	flag.Parse()
+	if name == "" {
+		name = "XevDemo6"
+	}
 	global := new(stdDomain)
 	modList := module.New()
 	global.ConnectTo(context.MOD, modList)
 	t0 := time.Now()
-	ret, err := modList.Load("XevDemo5")
+	ret, err := modList.Load(name)
 	t1 := time.Now()
 	fmt.Println("load", t1.Sub(t0))
 	assert.For(ret != nil, 40)
 	assert.For(err == nil, 41)
 	{
 		domain := new(stdDomain)
-		global.ConnectTo("XevDemo5", domain)
+		global.ConnectTo(name, domain)
 		root := frame.NewRoot()
 		domain.ConnectTo(context.STACK, root)
 		domain.ConnectTo(context.SCOPE, scope.New())

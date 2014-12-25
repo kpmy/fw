@@ -2,9 +2,12 @@ package rules
 
 import (
 	"fw/cp/node"
+	"fw/cp/object"
+	"fw/rt2/context"
 	"fw/rt2/frame"
 	mod "fw/rt2/module"
 	"fw/rt2/nodeframe"
+	"fw/rt2/scope"
 )
 
 /**
@@ -18,10 +21,8 @@ import (
 func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	var fu nodeframe.FrameUtils
 	n := fu.NodeOf(f)
-	switch n.Left().(type) {
-	case node.ProcedureNode:
-		m := mod.DomainModule(f.Domain())
-		proc := m.NodeByObject(n.Left().Object())
+
+	call := func(proc node.Node) {
 		nf := fu.New(proc)
 		fu.Push(nf, f)
 		//передаем ссылку на цепочку значений параметров в данные фрейма входа в процедуру
@@ -34,6 +35,19 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			return frame.End()
 		}
 		ret = frame.LATER
+	}
+
+	switch n.Left().(type) {
+	case node.ProcedureNode:
+		m := mod.DomainModule(f.Domain())
+		proc := m.NodeByObject(n.Left().Object())
+		call(proc)
+	case node.VariableNode:
+		m := mod.DomainModule(f.Domain())
+		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+		obj := sc.Select(n.Left().Object()).(object.Object)
+		proc := m.NodeByObject(obj)
+		call(proc)
 	default:
 		panic("unknown call left")
 	}

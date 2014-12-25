@@ -42,6 +42,8 @@ func New(class constant.Class) Node {
 		return new(exitNode)
 	case constant.LOOP:
 		return new(loopNode)
+	case constant.DEREF:
+		return new(derefNode)
 	default:
 		panic("no such class")
 	}
@@ -192,3 +194,9 @@ type loopNode struct {
 }
 
 func (v *loopNode) self() LoopNode { return v }
+
+type derefNode struct {
+	nodeFields
+}
+
+func (v *derefNode) self() DerefNode { return v }

@@ -66,6 +66,12 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				return frame.End()
 			}
 			ret = frame.LATER
+		case node.ProcedureNode:
+			sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+			sc.Update(a.Left().Object(), func(interface{}) interface{} {
+				return a.Right().Object()
+			})
+			return frame.End()
 		default:
 			fmt.Println(reflect.TypeOf(a.Right()))
 			panic("wrong right")

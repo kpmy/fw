@@ -137,17 +137,57 @@ func convertData(typ string, val string, conv convertable) {
 		} else {
 			panic("wrong bool")
 		}
+	case "STRING":
+		conv.SetType(object.STRING)
+		conv.SetData(val)
 	case "":
 		conv.SetType(object.NOTYPE)
 	default:
-		panic("no such constant type")
+		panic(fmt.Sprintln("no such constant type", typ))
 	}
 }
 
 var nodeMap map[string]node.Node
 var objectMap map[string]object.Object
 
-func (r *Result) buildObject(n *Node) object.Object {
+func (r *Result) doType(n *Node) (ret object.ComplexType) {
+	switch n.Data.Typ.Form {
+	case "BASIC":
+		switch n.Data.Typ.Typ {
+		case "PROCEDURE":
+			t := object.NewBasicType(object.PROCEDURE)
+			link := r.findLink(n, "link")
+			if link != nil {
+				t.SetLink(r.doObject(link))
+				assert.For(t.Link() != nil, 40)
+			}
+			ret = t
+		default:
+			panic(fmt.Sprintln("unknown type", n.Data.Typ.Typ))
+		}
+	case "DYNAMIC":
+		switch n.Data.Typ.Base {
+		case "CHAR":
+			n := object.NewDynArrayType(object.CHAR)
+			ret = n
+		default:
+			panic(fmt.Sprintln("unknown type", n.Data.Typ.Typ))
+		}
+	case "ARRAY":
+		switch n.Data.Typ.Base {
+		case "CHAR":
+			n := object.NewArrayType(object.CHAR, int64(n.Data.Typ.Par))
+			ret = n
+		default:
+			panic(fmt.Sprintln("unknown type", n.Data.Typ.Typ))
+		}
+	default:
+		panic(fmt.Sprintln("unknown form", n.Data.Typ.Form))
+	}
+	return ret
+}
+
+func (r *Result) doObject(n *Node) object.Object {
 	assert.For(n != nil, 20)
 	var ret object.Object
 	ret = objectMap[n.Id]
@@ -159,7 +199,9 @@ func (r *Result) buildObject(n *Node) object.Object {
 			ret = object.New(object.VARIABLE)
 			initType(n.Data.Obj.Typ, ret.(object.VariableObject))
 		case "local procedure":
-			ret = object.New(object.LOCAL_PROCEDURE)
+			ret = object.New(object.LOCAL_PROC)
+		case "external procedure":
+			ret = object.New(object.EXTERNAL_PROC)
 		case "constant":
 			ret = object.New(object.CONSTANT)
 			convertData(n.Data.Obj.Typ, n.Data.Obj.Value, ret.(object.ConstantObject))
@@ -178,24 +220,39 @@ func (r *Result) buildObject(n *Node) object.Object {
 
 		link := r.findLink(n, "link")
 		if link != nil {
-			ret.SetLink(r.buildObject(link))
+			ret.SetLink(r.doObject(link))
 			if ret.Link() == nil {
 				panic("error in object")
 			}
+		}
+
+		typ := r.findLink(n, "type")
+		if typ != nil {
+			ret.SetComplex(r.doType(typ))
+			assert.For(ret.Complex() != nil, 60)
+			ret.SetType(object.COMPLEX)
 		}
 
 	}
 	return ret
 }
 
-func (r *Result) buildObjectList(list []Node) []object.Object {
+func (r *Result) buildScope(list []Node) []object.Object {
 	assert.For(list != nil, 20)
 	ret := make([]object.Object, 0)
 	for i := range list {
-		obj := r.buildObject(&list[i])
-		if obj != nil {
-			ret = append(ret, obj)
+		switch {
+		case list[i].Data.Obj != nil:
+			obj := r.doObject(&list[i])
+			if obj != nil {
+				ret = append(ret, obj)
+			}
+		case list[i].Data.Typ != nil:
+			_ = r.doType(&list[i])
+		default:
+			panic("no such object type")
 		}
+
 	}
 
 	return ret
@@ -204,6 +261,7 @@ func (r *Result) buildObjectList(list []Node) []object.Object {
 func (r *Result) buildNode(n *Node) (ret node.Node) {
 	assert.For(n != nil, 20)
 	ret = nodeMap[n.Id]
+	var proc node.ProcedureNode
 	if ret == nil {
 		switch n.Data.Nod.Class {
 		case "enter":
@@ -231,8 +289,10 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 				ret.(node.OperationNode).SetOperation(operation.LESSER)
 			case "less or equal":
 				ret.(node.OperationNode).SetOperation(operation.LESS_EQUAL)
+			case "len":
+				ret.(node.OperationNode).SetOperation(operation.LEN)
 			default:
-				panic("no such operation")
+				panic(fmt.Sprintln("no such operation", n.Data.Nod.Operation))
 			}
 		case "constant":
 			ret = node.New(constant.CONSTANT)
@@ -252,6 +312,7 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			ret = node.New(constant.CALL)
 		case "procedure":
 			ret = node.New(constant.PROCEDURE)
+			proc = ret.(node.ProcedureNode)
 		case "parameter":
 			ret = node.New(constant.PARAMETER)
 		case "return":
@@ -277,6 +338,8 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			ret = node.New(constant.LOOP)
 		case "exit":
 			ret = node.New(constant.EXIT)
+		case "dereferencing":
+			ret = node.New(constant.DEREF)
 		default:
 			fmt.Println(n.Data.Nod.Class)
 			panic("no such node type")
@@ -307,10 +370,12 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 		}
 		object := r.findLink(n, "object")
 		if object != nil {
-			ret.SetObject(r.buildObject(object))
+			ret.SetObject(r.doObject(object))
 			if ret.Object() == nil {
 				panic("error in node")
 			}
+		} else {
+			assert.For(proc == nil, 60) //у процедуры просто не может не быть объекта
 		}
 	}
 	return ret
@@ -320,7 +385,7 @@ func buildMod(r *Result) (nodeList []node.Node, scopeList map[node.Node][]object
 	scopes := make(map[string][]object.Object, 0)
 	for i := range r.GraphList {
 		if r.GraphList[i].CptScope != "" {
-			scopes[r.GraphList[i].CptScope] = r.buildObjectList(r.GraphList[i].NodeList)
+			scopes[r.GraphList[i].CptScope] = r.buildScope(r.GraphList[i].NodeList)
 		}
 	}
 	scopeList = make(map[node.Node][]object.Object, 0)

@@ -9,4 +9,5 @@ const (
 	EQUAL
 	LESSER
 	LESS_EQUAL
+	LEN
 )

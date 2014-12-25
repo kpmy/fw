@@ -67,6 +67,38 @@ func leq(_a interface{}, _b interface{}) bool {
 	return a <= b
 }
 
+func length(a object.Object, _a, _b interface{}) (ret int64) {
+	//assert.For(a != nil, 20)
+	assert.For(_b != nil, 21)
+	var b int32 = int32Of(_b)
+	assert.For(b == 0, 22)
+	if a != nil {
+		assert.For(a.Type() == object.COMPLEX, 23)
+		switch a.Complex().(type) {
+		case object.ArrayType:
+			ret = a.Complex().(object.ArrayType).Len()
+		case object.DynArrayType:
+			switch _a.(type) {
+			case string:
+				ret = int64(len(_a.(string)))
+			default:
+				ret = 0
+				fmt.Sprintln("unsupported", reflect.TypeOf(_a))
+			}
+		default:
+			panic(fmt.Sprintln("unsupported", reflect.TypeOf(a.Complex())))
+		}
+	} else {
+		switch _a.(type) {
+		case string:
+			ret = int64(len(_a.(string)))
+		default:
+			panic(fmt.Sprintln("unsupported", reflect.TypeOf(_a)))
+		}
+	}
+	return ret
+}
+
 func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	var fu nodeframe.FrameUtils
 	n := fu.NodeOf(f).(node.MonadicNode)
@@ -120,6 +152,9 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case operation.LESS_EQUAL:
 			fu.DataOf(f.Parent())[n] = leq(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
 			return frame.End()
+		case operation.LEN:
+			fu.DataOf(f.Parent())[n] = length(n.Left().Object(), fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			return frame.End()
 		default:
 			panic("unknown operation")
 		}
@@ -168,7 +203,7 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			}
 			ret = frame.NOW
 			return seq, ret
-		case node.OperationNode:
+		case node.OperationNode, node.DerefNode:
 			fu.Push(fu.New(n.Left()), f)
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				return right, frame.NOW

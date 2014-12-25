@@ -19,4 +19,5 @@ const (
 	REPEAT
 	EXIT
 	LOOP
+	DEREF
 )

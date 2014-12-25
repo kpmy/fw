@@ -1,34 +1,22 @@
 package object
 
 type Mode int
-type Type int
 
 const (
 	HEAD Mode = iota
 	VARIABLE
-	LOCAL_PROCEDURE
+	LOCAL_PROC
+	EXTERNAL_PROC
 	CONSTANT
 	PARAMETER
-)
-
-const (
-	NOTYPE Type = iota
-	INTEGER
-	SHORTINT
-	LONGINT
-	BYTE
-	BOOLEAN
-	SHORTREAL
-	REAL
-	CHAR
-	SHORTCHAR
-	SET
 )
 
 type Object interface {
 	SetName(name string)
 	SetType(typ Type)
 	Type() Type
+	SetComplex(typ ComplexType)
+	Complex() ComplexType
 	Link() Object
 	SetLink(o Object)
 	Name() string
@@ -56,12 +44,14 @@ func New(mode Mode) Object {
 		return new(headObject)
 	case VARIABLE:
 		return new(variableObject)
-	case LOCAL_PROCEDURE:
+	case LOCAL_PROC:
 		return new(localProcedureObject)
 	case CONSTANT:
 		return new(constantObject)
 	case PARAMETER:
 		return new(parameterObject)
+	case EXTERNAL_PROC:
+		return new(externalProcedureObject)
 	default:
 		panic("no such object mode")
 	}
@@ -71,14 +61,17 @@ type objectFields struct {
 	name string
 	typ  Type
 	link Object
+	comp ComplexType
 }
 
-func (of *objectFields) SetType(typ Type)    { of.typ = typ }
-func (of *objectFields) SetName(name string) { of.name = name }
-func (of *objectFields) Name() string        { return of.name }
-func (of *objectFields) Type() Type          { return of.typ }
-func (of *objectFields) Link() Object        { return of.link }
-func (of *objectFields) SetLink(o Object)    { of.link = o }
+func (of *objectFields) SetType(typ Type)         { of.typ = typ }
+func (of *objectFields) SetName(name string)      { of.name = name }
+func (of *objectFields) Name() string             { return of.name }
+func (of *objectFields) Type() Type               { return of.typ }
+func (of *objectFields) Link() Object             { return of.link }
+func (of *objectFields) SetLink(o Object)         { of.link = o }
+func (of *objectFields) SetComplex(t ComplexType) { of.comp = t }
+func (of *objectFields) Complex() ComplexType     { return of.comp }
 
 type variableObject struct {
 	objectFields
@@ -89,6 +82,10 @@ type headObject struct {
 }
 
 type localProcedureObject struct {
+	objectFields
+}
+
+type externalProcedureObject struct {
 	objectFields
 }
 
@@ -110,32 +107,3 @@ type parameterObject struct {
 }
 
 func (v *parameterObject) self() ParameterObject { return v }
-
-func (t Type) String() string {
-	switch t {
-	case NOTYPE:
-		return "NO TYPE"
-	case INTEGER:
-		return "INTEGER"
-	case SHORTINT:
-		return "SHORTINT"
-	case LONGINT:
-		return "LONGINT"
-	case BYTE:
-		return "BYTE"
-	case BOOLEAN:
-		return "BOOLEAN"
-	case SHORTREAL:
-		return "SHORTREAL"
-	case REAL:
-		return "REAL"
-	case CHAR:
-		return "CHAR"
-	case SHORTCHAR:
-		return "SHORTCHAR"
-	case SET:
-		return "SET"
-	default:
-		panic("looks like new type here")
-	}
-}

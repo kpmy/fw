@@ -2,6 +2,13 @@ package xev
 
 import "encoding/xml"
 
+type CptType struct {
+	Form string `xml:"urn:bbcb:component:dev:cpt form,attr"`
+	Typ  string `xml:"urn:bbcb:component:dev:cpt type,attr"`
+	Base string `xml:"urn:bbcb:component:dev:cpt base,attr"`
+	Par  int    `xml:"urn:bbcb:component:dev:cpt par,attr"`
+}
+
 type CptObject struct {
 	Name string `xml:"urn:bbcb:component:dev:cpt name,attr"`
 	Mode string `xml:"urn:bbcb:component:dev:cpt mode,attr"`
@@ -19,11 +26,13 @@ type CptNode struct {
 	Value     string `xml:",chardata"`
 	Statement string `xml:"urn:bbcb:component:dev:cpt statement,attr"`
 	Proto     string `xml:"urn:bbcb:component:dev:cpt proto,attr"`
+	From      string `xml:"urn:bbcb:component:dev:cpt from,attr"`
 }
 
 type NodeData struct {
 	Obj *CptObject `xml:"urn:bbcb:component:dev:cpt object"`
 	Nod *CptNode   `xml:"urn:bbcb:component:dev:cpt node"`
+	Typ *CptType   `xml:"urn:bbcb:component:dev:cpt type"`
 }
 
 type Node struct {

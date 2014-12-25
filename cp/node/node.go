@@ -113,3 +113,8 @@ type LoopNode interface {
 	self() LoopNode
 	Node
 }
+
+type DerefNode interface {
+	self() DerefNode
+	Node
+}

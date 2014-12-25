@@ -47,6 +47,10 @@ type indirect struct {
 	mgr Manager
 }
 
+type mask struct {
+	object.Object
+}
+
 type dummy struct{}
 
 var def *dummy = &dummy{}
@@ -98,9 +102,19 @@ func (m *manager) Allocate(n node.Node) {
 func (m *manager) set(a *area, o object.Object, val node.Node) {
 	switch val.(type) {
 	case node.ConstantNode:
-		m.Update(o, func(old interface{}) interface{} {
-			return val.(node.ConstantNode).Data()
-		})
+		switch o.(type) {
+		case object.VariableObject:
+			m.Update(o, func(old interface{}) interface{} {
+				return val.(node.ConstantNode).Data()
+			})
+		case object.ParameterObject:
+			assert.For(a.heap[o].(*indirect).ref == nil, 40)
+			m := &mask{}
+			a.heap[o].(*indirect).ref = m
+			a.heap[m] = &direct{data: val.(node.ConstantNode).Data()}
+		default:
+			panic("unknown value")
+		}
 	case node.VariableNode, node.ParameterNode:
 		switch o.(type) {
 		case object.VariableObject:
