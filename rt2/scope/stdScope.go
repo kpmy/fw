@@ -159,7 +159,6 @@ func (m *manager) FindObjByName(name string) (ret object.Object) {
 	for e := m.areas.Front(); (e != nil) && (ret == nil); e = e.Next() {
 		h := e.Value.(*area)
 		for k, _ := range h.heap {
-			fmt.Println(k.Name())
 			if k.Name() == name {
 				ret = k
 			}
