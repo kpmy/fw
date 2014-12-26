@@ -7,9 +7,7 @@ import (
 type Type int
 
 const (
-	NOTYPE Type = iota
-	COMPLEX
-	INTEGER
+	INTEGER Type = iota
 	SHORTINT
 	LONGINT
 	BYTE
@@ -20,7 +18,11 @@ const (
 	SHORTCHAR
 	SET
 	PROCEDURE
+	//фиктивные типы
+	NOTYPE
+	COMPLEX
 	STRING
+	SHORTSTRING
 )
 
 func (t Type) String() string {

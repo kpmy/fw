@@ -29,6 +29,7 @@ func enterSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	} else {
 		//Особый случай, вход в модуль, секция BEGIN
 		fu.Push(fu.New(body), f)
+
 		//Выход из модуля, секция CLOSE
 		next := n.Link()
 		if next != nil {

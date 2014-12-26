@@ -154,6 +154,20 @@ func (m *manager) Dispose(n node.Node) {
 	fmt.Println("dispose")
 }
 
+func (m *manager) FindObjByName(name string) (ret object.Object) {
+	assert.For(name != "", 20)
+	for e := m.areas.Front(); (e != nil) && (ret == nil); e = e.Next() {
+		h := e.Value.(*area)
+		for k, _ := range h.heap {
+			fmt.Println(k.Name())
+			if k.Name() == name {
+				ret = k
+			}
+		}
+	}
+	return ret
+}
+
 func (m *manager) Select(o object.Object) (ret interface{}) {
 	assert.For(o != nil, 20)
 	for e := m.areas.Front(); (e != nil) && (ret == nil); e = e.Next() {
@@ -161,7 +175,11 @@ func (m *manager) Select(o object.Object) (ret interface{}) {
 		ret = h.heap[o]
 	}
 	assert.For(ret != nil, 40)
-	return ret.(value).Get()
+	ret = ret.(value).Get()
+	if _, ok := ret.(*dummy); ok {
+		ret = nil
+	}
+	return ret
 }
 
 func (m *manager) Update(o object.Object, val ValueFor) {
@@ -193,3 +211,5 @@ func (m *manager) Domain() context.Domain {
 }
 
 func (m *manager) Handle(msg interface{}) {}
+
+func (m *mask) Name() string { return "" }

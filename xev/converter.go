@@ -140,6 +140,9 @@ func convertData(typ string, val string, conv convertable) {
 	case "STRING":
 		conv.SetType(object.STRING)
 		conv.SetData(val)
+	case "SHORTSTRING":
+		conv.SetType(object.SHORTSTRING)
+		conv.SetData(val)
 	case "":
 		conv.SetType(object.NOTYPE)
 	default:
@@ -172,6 +175,9 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 			ret = n
 		case "BYTE":
 			n := object.NewDynArrayType(object.BYTE)
+			ret = n
+		case "SHORTCHAR":
+			n := object.NewDynArrayType(object.SHORTCHAR)
 			ret = n
 		default:
 			panic(fmt.Sprintln("unknown type", n.Data.Typ.Typ))
