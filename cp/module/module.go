@@ -10,6 +10,22 @@ type Module struct {
 	Enter   node.Node
 	Objects map[node.Node][]object.Object
 	Nodes   []node.Node
+	Types   map[node.Node][]object.ComplexType
+}
+
+type named interface {
+	Name() string
+}
+
+func (m *Module) TypeByName(scope node.Node, name string) (ret object.ComplexType) {
+	assert.For(name != "", 20)
+	for _, typ := range m.Types[scope] {
+		if v, ok := typ.(named); ok && v.Name() == name {
+			ret = typ
+			break
+		}
+	}
+	return ret
 }
 
 func (m *Module) NodeByObject(obj object.Object) (ret node.Node) {

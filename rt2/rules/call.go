@@ -88,6 +88,8 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		//передаем ссылку на цепочку значений параметров в данные фрейма входа в процедуру
 		if (n.Right() != nil) && (proc.Object() != nil) {
 			fu.DataOf(nf)[proc.Object()] = n.Right()
+		} else {
+			//fmt.Println("no data for call")
 		}
 		seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			var fu nodeframe.FrameUtils
@@ -105,7 +107,7 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	case node.VariableNode:
 		m := mod.DomainModule(f.Domain())
 		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-		obj := sc.Select(n.Left().Object())
+		obj := sc.SelectObj(n.Left().Object())
 
 		if obj, ok := obj.(object.Object); ok {
 			proc := m.NodeByObject(obj)

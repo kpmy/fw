@@ -86,6 +86,8 @@ type DynArrayType interface {
 
 type RecordType interface {
 	ComplexType
+	Base() string
+	Name() string
 }
 
 func NewBasicType(t Type) BasicType {
@@ -126,8 +128,15 @@ func (a *arr) Len() int64 { return a.length }
 
 type rec struct {
 	comp
+	name, base string
 }
 
-func NewRecordType() RecordType {
-	return &rec{}
+func (r *rec) Name() string { return r.name }
+func (r *rec) Base() string { return r.base }
+func NewRecordType(n string, par ...string) RecordType {
+	if len(par) == 0 {
+		return &rec{name: n}
+	} else {
+		return &rec{name: n, base: par[0]}
+	}
 }

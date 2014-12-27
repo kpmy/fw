@@ -193,10 +193,16 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 	case "RECORD":
 		switch n.Data.Typ.Base {
 		case "NOTYP":
-			n := object.NewRecordType()
+			n := object.NewRecordType(n.Data.Typ.Name)
 			ret = n
 		default:
-			panic("unknown record base")
+			n := object.NewRecordType(n.Data.Typ.Name, n.Data.Typ.Base)
+			ret = n
+		}
+		link := r.findLink(n, "link")
+		if link != nil {
+			ret.SetLink(r.doObject(link))
+			assert.For(ret.Link() != nil, 40)
 		}
 	default:
 		panic(fmt.Sprintln("unknown form", n.Data.Typ.Form))
@@ -257,25 +263,28 @@ func (r *Result) doObject(n *Node) object.Object {
 	return ret
 }
 
-func (r *Result) buildScope(list []Node) []object.Object {
+func (r *Result) buildScope(list []Node) (ro []object.Object, rt []object.ComplexType) {
 	assert.For(list != nil, 20)
-	ret := make([]object.Object, 0)
+	ro = make([]object.Object, 0)
+	rt = make([]object.ComplexType, 0)
 	for i := range list {
 		switch {
 		case list[i].Data.Obj != nil:
 			obj := r.doObject(&list[i])
 			if obj != nil {
-				ret = append(ret, obj)
+				ro = append(ro, obj)
 			}
 		case list[i].Data.Typ != nil:
-			_ = r.doType(&list[i])
+			typ := r.doType(&list[i])
+			if typ != nil {
+				rt = append(rt, typ)
+			}
 		default:
 			panic("no such object type")
 		}
 
 	}
-
-	return ret
+	return ro, rt
 }
 
 func (r *Result) buildNode(n *Node) (ret node.Node) {
@@ -405,14 +414,16 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 	return ret
 }
 
-func buildMod(r *Result) (nodeList []node.Node, scopeList map[node.Node][]object.Object, root node.Node) {
+func buildMod(r *Result) (nodeList []node.Node, scopeList map[node.Node][]object.Object, typeList map[node.Node][]object.ComplexType, root node.Node) {
 	scopes := make(map[string][]object.Object, 0)
+	types := make(map[string][]object.ComplexType, 0)
 	for i := range r.GraphList {
 		if r.GraphList[i].CptScope != "" {
-			scopes[r.GraphList[i].CptScope] = r.buildScope(r.GraphList[i].NodeList)
+			scopes[r.GraphList[i].CptScope], types[r.GraphList[i].CptScope] = r.buildScope(r.GraphList[i].NodeList)
 		}
 	}
 	scopeList = make(map[node.Node][]object.Object, 0)
+	typeList = make(map[node.Node][]object.ComplexType, 0)
 	for i := range r.GraphList {
 		if r.GraphList[i].CptProc != "" {
 			nodeList = make([]node.Node, 0)
@@ -423,20 +434,23 @@ func buildMod(r *Result) (nodeList []node.Node, scopeList map[node.Node][]object
 				if scopes[node.Id] != nil {
 					scopeList[ret] = scopes[node.Id]
 				}
+				if types[node.Id] != nil {
+					typeList[ret] = types[node.Id]
+				}
 				if (node.Data.Nod.Class == "enter") && (node.Data.Nod.Enter == "module") {
 					root = ret
 				}
 			}
 		}
 	}
-	return nodeList, scopeList, root
+	return nodeList, scopeList, typeList, root
 }
 
 func DoAST(r *Result) (mod *module.Module) {
 	nodeMap = make(map[string]node.Node)
 	objectMap = make(map[string]object.Object)
 	mod = new(module.Module)
-	mod.Nodes, mod.Objects, mod.Enter = buildMod(r)
+	mod.Nodes, mod.Objects, mod.Types, mod.Enter = buildMod(r)
 	fmt.Println(len(mod.Nodes), len(mod.Objects))
 	nodeMap = nil
 	objectMap = nil

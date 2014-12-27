@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"fmt"
 	"fw/cp/node"
 	"fw/rt2/context"
 	"fw/rt2/frame"
@@ -16,8 +17,11 @@ func enterSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	assert.For(body != nil, 40)
 	sm := scope.This(f.Domain().Discover(context.SCOPE))
 	sm.Allocate(n)
+	fmt.Println(n.Object())
 	if n.Object() != nil {
 		par, ok := fu.DataOf(f)[n.Object()].(node.Node)
+		//fmt.Println(fu.DataOf(f)[n.Object()])
+		//fmt.Println(ok)
 		if ok {
 			sm.Initialize(n, n.Object().Link(), par)
 		}

@@ -7,6 +7,7 @@ type CptType struct {
 	Typ  string `xml:"urn:bbcb:component:dev:cpt type,attr"`
 	Base string `xml:"urn:bbcb:component:dev:cpt base,attr"`
 	Par  int    `xml:"urn:bbcb:component:dev:cpt par,attr"`
+	Name string `xml:"urn:bbcb:component:dev:cpt name,attr"`
 }
 
 type CptObject struct {

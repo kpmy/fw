@@ -44,6 +44,11 @@ type FieldObject interface {
 	self() FieldObject
 }
 
+type ProcedureObject interface {
+	Object
+	self() ProcedureObject
+}
+
 func New(mode Mode) Object {
 	switch mode {
 	case HEAD:
@@ -93,11 +98,14 @@ type localProcedureObject struct {
 	objectFields
 }
 
+func (p *localProcedureObject) self() ProcedureObject { return p }
+
 type externalProcedureObject struct {
 	objectFields
 }
 
-func (v *variableObject) self() VariableObject { return v }
+func (p *externalProcedureObject) self() ProcedureObject { return p }
+func (v *variableObject) self() VariableObject           { return v }
 
 type constantObject struct {
 	objectFields

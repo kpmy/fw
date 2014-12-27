@@ -25,7 +25,7 @@ func returnSeq(f frame.Frame) (frame.Sequence, frame.WAIT) {
 		case node.VariableNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				fu.DataOf(f.Parent())[a.Object()] = sc.Select(a.Left().Object())
+				fu.DataOf(f.Parent())[a.Object()] = sc.SelectObj(a.Left().Object())
 				return frame.End()
 			}
 			ret = frame.NOW

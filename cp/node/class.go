@@ -12,6 +12,7 @@ const INIT constant.Class = -1
 
 type InitNode interface {
 	Node
+	self() InitNode
 }
 
 func New(class constant.Class) Node {

@@ -9,8 +9,10 @@ import (
 //менеджер зон видимости, зоны видимости динамические, создаются в момент входа в EnterNode
 type Manager interface {
 	context.ContextAware
-	Update(o object.Object, val ValueFor)
-	Select(o object.Object) interface{}
+	UpdateObj(o object.Object, val ValueFor)
+	SelectObj(o object.Object) interface{}
+	UpdateNode(n node.Node, val ValueFor)
+	SelectNode(n node.Node) interface{}
 	FindObjByName(name string) object.Object
 	Allocate(n node.Node)
 	Dispose(n node.Node)

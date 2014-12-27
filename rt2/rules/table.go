@@ -59,6 +59,8 @@ func epilogue(n node.Node) frame.Sequence {
 	case node.AssignNode, node.InitNode, node.CallNode, node.ConditionalNode, node.WhileNode, node.RepeatNode, node.ExitNode:
 		return func(f frame.Frame) (frame.Sequence, frame.WAIT) {
 			next := n.Link()
+			//fmt.Println("from", reflect.TypeOf(n))
+			//fmt.Println("next", reflect.TypeOf(next))
 			if next != nil {
 				f.Root().PushFor(fu.New(next), f.Parent())
 			}

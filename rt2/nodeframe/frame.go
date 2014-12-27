@@ -19,7 +19,7 @@ func (fu FrameUtils) New(n node.Node) (f frame.Frame) {
 	f = new(nodeFrame)
 	f.(*nodeFrame).ir = n
 	f.(*nodeFrame).data = make(map[interface{}]interface{})
-	utils.Println("_", "NEW", reflect.TypeOf(n))
+	//utils.Println("_", "NEW", reflect.TypeOf(n))
 	return f
 }
 
