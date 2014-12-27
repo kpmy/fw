@@ -46,6 +46,8 @@ func prologue(n node.Node) frame.Sequence {
 		return exitSeq
 	case node.DerefNode:
 		return derefSeq
+	case node.InitNode:
+		return frame.Tail(frame.STOP)
 	default:
 		panic(fmt.Sprintln("unknown node", reflect.TypeOf(n)))
 	}
@@ -54,7 +56,7 @@ func prologue(n node.Node) frame.Sequence {
 func epilogue(n node.Node) frame.Sequence {
 	var fu nodeframe.FrameUtils
 	switch n.(type) {
-	case node.AssignNode, node.CallNode, node.ConditionalNode, node.WhileNode, node.RepeatNode, node.ExitNode:
+	case node.AssignNode, node.InitNode, node.CallNode, node.ConditionalNode, node.WhileNode, node.RepeatNode, node.ExitNode:
 		return func(f frame.Frame) (frame.Sequence, frame.WAIT) {
 			next := n.Link()
 			if next != nil {

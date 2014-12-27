@@ -20,4 +20,5 @@ const (
 	EXIT
 	LOOP
 	DEREF
+	FIELD
 )

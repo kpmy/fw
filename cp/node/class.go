@@ -8,6 +8,12 @@ import (
 	"fw/cp/statement"
 )
 
+const INIT constant.Class = -1
+
+type InitNode interface {
+	Node
+}
+
 func New(class constant.Class) Node {
 	switch class {
 	case constant.ENTER:
@@ -44,6 +50,10 @@ func New(class constant.Class) Node {
 		return new(loopNode)
 	case constant.DEREF:
 		return new(derefNode)
+	case constant.FIELD:
+		return new(fieldNode)
+	case INIT:
+		return new(initNode)
 	default:
 		panic("no such class")
 	}
@@ -200,3 +210,15 @@ type derefNode struct {
 }
 
 func (v *derefNode) self() DerefNode { return v }
+
+type fieldNode struct {
+	nodeFields
+}
+
+func (v *fieldNode) self() FieldNode { return v }
+
+type initNode struct {
+	nodeFields
+}
+
+func (v *initNode) self() InitNode { return v }

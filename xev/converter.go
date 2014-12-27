@@ -190,6 +190,14 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 		default:
 			panic(fmt.Sprintln("unknown type", n.Data.Typ.Typ))
 		}
+	case "RECORD":
+		switch n.Data.Typ.Base {
+		case "NOTYP":
+			n := object.NewRecordType()
+			ret = n
+		default:
+			panic("unknown record base")
+		}
 	default:
 		panic(fmt.Sprintln("unknown form", n.Data.Typ.Form))
 	}
@@ -218,6 +226,9 @@ func (r *Result) doObject(n *Node) object.Object {
 		case "parameter":
 			ret = object.New(object.PARAMETER)
 			initType(n.Data.Obj.Typ, ret.(object.ParameterObject))
+		case "field":
+			ret = object.New(object.FIELD)
+			initType(n.Data.Obj.Typ, ret.(object.FieldObject))
 		default:
 			fmt.Println(n.Data.Obj.Mode)
 			panic("no such object mode")
@@ -349,6 +360,10 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			ret = node.New(constant.EXIT)
 		case "dereferencing":
 			ret = node.New(constant.DEREF)
+		case "field":
+			ret = node.New(constant.FIELD)
+		case "init":
+			ret = node.New(node.INIT)
 		default:
 			fmt.Println(n.Data.Nod.Class)
 			panic("no such node type")

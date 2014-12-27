@@ -81,7 +81,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	switch a.(node.AssignNode).Statement() {
 	case statement.ASSIGN:
 		switch a.Left().(type) {
-		case node.VariableNode, node.ParameterNode:
+		case node.VariableNode, node.ParameterNode, node.FieldNode:
 			seq, ret = right(f)
 		default:
 			fmt.Println(reflect.TypeOf(a.Left()))

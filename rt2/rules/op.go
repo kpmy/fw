@@ -196,7 +196,7 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case node.ConstantNode:
 			fu.DataOf(f)[n.Left()] = n.Left().(node.ConstantNode).Data()
 			return right, frame.NOW
-		case node.VariableNode, node.ParameterNode:
+		case node.VariableNode, node.ParameterNode, node.FieldNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 				fu.DataOf(f)[n.Left()] = sc.Select(n.Left().Object())

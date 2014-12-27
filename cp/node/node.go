@@ -118,3 +118,8 @@ type DerefNode interface {
 	self() DerefNode
 	Node
 }
+
+type FieldNode interface {
+	self() FieldNode
+	Node
+}

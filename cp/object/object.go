@@ -9,6 +9,7 @@ const (
 	EXTERNAL_PROC
 	CONSTANT
 	PARAMETER
+	FIELD
 )
 
 type Object interface {
@@ -38,6 +39,11 @@ type ParameterObject interface {
 	self() ParameterObject
 }
 
+type FieldObject interface {
+	Object
+	self() FieldObject
+}
+
 func New(mode Mode) Object {
 	switch mode {
 	case HEAD:
@@ -52,6 +58,8 @@ func New(mode Mode) Object {
 		return new(parameterObject)
 	case EXTERNAL_PROC:
 		return new(externalProcedureObject)
+	case FIELD:
+		return new(fieldObject)
 	default:
 		panic("no such object mode")
 	}
@@ -107,3 +115,9 @@ type parameterObject struct {
 }
 
 func (v *parameterObject) self() ParameterObject { return v }
+
+type fieldObject struct {
+	objectFields
+}
+
+func (v *fieldObject) self() FieldObject { return v }

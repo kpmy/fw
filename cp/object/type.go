@@ -123,3 +123,11 @@ type arr struct {
 
 func (a *arr) Base() Type { return a.base }
 func (a *arr) Len() int64 { return a.length }
+
+type rec struct {
+	comp
+}
+
+func NewRecordType() RecordType {
+	return &rec{}
+}

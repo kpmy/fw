@@ -89,10 +89,12 @@ func (m *manager) Allocate(n node.Node) {
 	for _, o := range mod.Objects[n] {
 		//fmt.Println(reflect.TypeOf(o))
 		switch o.(type) {
-		case object.VariableObject:
+		case object.VariableObject, object.FieldObject:
 			h.heap[o] = &direct{data: def}
 		case object.ParameterObject:
 			h.heap[o] = &indirect{mgr: m}
+		default:
+			panic(fmt.Sprintln("wrong object type", reflect.TypeOf(o)))
 		}
 	}
 	m.areas.PushFront(h)
@@ -103,7 +105,7 @@ func (m *manager) set(a *area, o object.Object, val node.Node) {
 	switch val.(type) {
 	case node.ConstantNode:
 		switch o.(type) {
-		case object.VariableObject:
+		case object.VariableObject, object.FieldObject:
 			m.Update(o, func(old interface{}) interface{} {
 				return val.(node.ConstantNode).Data()
 			})
@@ -115,9 +117,9 @@ func (m *manager) set(a *area, o object.Object, val node.Node) {
 		default:
 			panic("unknown value")
 		}
-	case node.VariableNode, node.ParameterNode:
+	case node.VariableNode, node.ParameterNode, node.FieldNode:
 		switch o.(type) {
-		case object.VariableObject:
+		case object.VariableObject, object.FieldObject:
 			m.Update(o, func(old interface{}) interface{} {
 				return m.Select(val.Object())
 			})
