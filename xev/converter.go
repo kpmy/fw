@@ -264,7 +264,9 @@ func (r *Result) doObject(n *Node) object.Object {
 }
 
 func (r *Result) buildScope(list []Node) (ro []object.Object, rt []object.ComplexType) {
-	assert.For(list != nil, 20)
+	if list == nil {
+		return nil, nil
+	}
 	ro = make([]object.Object, 0)
 	rt = make([]object.ComplexType, 0)
 	for i := range list {

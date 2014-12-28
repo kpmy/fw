@@ -6,14 +6,15 @@ import (
 	"fw/rt2/frame"
 	"fw/rt2/nodeframe"
 	"fw/rt2/scope"
-	"ypk/assert"
 )
 
 func enterSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	var fu nodeframe.FrameUtils
 	n := fu.NodeOf(f)
 	body := fu.NodeOf(f).Right()
-	assert.For(body != nil, 40)
+	if body == nil {
+		return frame.End()
+	}
 	sm := scope.This(f.Domain().Discover(context.SCOPE))
 	//fmt.Println(n.Object())
 	if n.Object() != nil {

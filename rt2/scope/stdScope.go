@@ -211,11 +211,12 @@ func (m *manager) Initialize(n node.Node, o object.Object, _val node.Node) {
 
 func (m *manager) Dispose(n node.Node) {
 	e := m.areas.Front()
-	assert.For(e != nil, 20)
-	h := e.Value.(*area)
-	assert.For(h.root == n, 21)
-	m.areas.Remove(e)
-	fmt.Println("dispose")
+	if e != nil {
+		h := e.Value.(*area)
+		assert.For(h.root == n, 21)
+		m.areas.Remove(e)
+		fmt.Println("dispose")
+	}
 }
 
 func FindObjByName(mgr Manager, name string) (ret object.Object) {
