@@ -23,7 +23,7 @@ func incSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	rt2.Utils.Push(rt2.Utils.New(op), f)
 	seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-		sc.UpdateObj(n.Left().Object(), func(interface{}) interface{} {
+		sc.Update(scope.Id(n.Left().Object()), func(interface{}) interface{} {
 			return rt2.Utils.DataOf(f)[op]
 		})
 		return frame.End()
@@ -41,7 +41,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case node.ConstantNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				sc.UpdateObj(a.Left().Object(), func(interface{}) interface{} {
+				sc.Update(scope.Id(a.Left().Object()), func(interface{}) interface{} {
 					return a.Right().(node.ConstantNode).Data()
 				})
 				return frame.End()
@@ -50,8 +50,8 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case node.VariableNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				sc.UpdateObj(a.Left().Object(), func(interface{}) interface{} {
-					return sc.SelectObj(a.Right().Object())
+				sc.Update(scope.Id(a.Left().Object()), func(interface{}) interface{} {
+					return sc.Select(scope.Id(a.Right().Object()))
 				})
 				return frame.End()
 			}
@@ -60,7 +60,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			fu.Push(fu.New(a.Right()), f)
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				sc.UpdateObj(a.Left().Object(), func(interface{}) interface{} {
+				sc.Update(scope.Id(a.Left().Object()), func(interface{}) interface{} {
 					return fu.DataOf(f)[a.Right()]
 				})
 				return frame.End()
@@ -68,7 +68,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			ret = frame.LATER
 		case node.ProcedureNode:
 			sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-			sc.UpdateObj(a.Left().Object(), func(interface{}) interface{} {
+			sc.Update(scope.Id(a.Left().Object()), func(interface{}) interface{} {
 				return a.Right().Object()
 			})
 			return frame.End()

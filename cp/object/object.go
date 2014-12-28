@@ -1,5 +1,9 @@
 package object
 
+import (
+	"ypk/assert"
+)
+
 type Mode int
 
 const (
@@ -21,6 +25,12 @@ type Object interface {
 	Link() Object
 	SetLink(o Object)
 	Name() string
+	SetRef(n Ref)
+	Ref() []Ref
+}
+
+type Ref interface {
+	Object() Object
 }
 
 type VariableObject interface {
@@ -75,6 +85,7 @@ type objectFields struct {
 	typ  Type
 	link Object
 	comp ComplexType
+	ref  []Ref
 }
 
 func (of *objectFields) SetType(typ Type)         { of.typ = typ }
@@ -85,6 +96,23 @@ func (of *objectFields) Link() Object             { return of.link }
 func (of *objectFields) SetLink(o Object)         { of.link = o }
 func (of *objectFields) SetComplex(t ComplexType) { of.comp = t }
 func (of *objectFields) Complex() ComplexType     { return of.comp }
+
+func (of *objectFields) SetRef(n Ref) {
+	assert.For(n != nil, 20)
+	exists := func() bool {
+		for _, v := range of.ref {
+			if v == n {
+				return true
+			}
+		}
+		return false
+	}
+	if !exists() {
+		of.ref = append(of.ref, n)
+	}
+}
+
+func (of *objectFields) Ref() []Ref { return of.ref }
 
 type variableObject struct {
 	objectFields

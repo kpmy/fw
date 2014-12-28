@@ -57,7 +57,7 @@ func process(f frame.Frame, par node.Node) {
 			switch msg.Type {
 			case "log":
 				fmt.Println(msg.Data)
-				callHandler(f, sm.FindObjByName("go_handler"), `{"type":"log"}`)
+				callHandler(f, scope.FindObjByName(sm, "go_handler"), `{"type":"log"}`)
 			default:
 				panic(40)
 			}
@@ -107,7 +107,7 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	case node.VariableNode:
 		m := mod.DomainModule(f.Domain())
 		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-		obj := sc.SelectObj(n.Left().Object())
+		obj := sc.Select(scope.Id(n.Left().Object()))
 
 		if obj, ok := obj.(object.Object); ok {
 			proc := m.NodeByObject(obj)

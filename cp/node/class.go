@@ -71,7 +71,7 @@ func (nf *nodeFields) SetRight(n Node) { nf.right = n }
 
 func (nf *nodeFields) SetLink(n Node) { nf.link = n }
 
-func (nf *nodeFields) SetObject(o object.Object) { nf.obj = o }
+func (nf *nodeFields) SetObject(o object.Object) { nf.obj = o; o.SetRef(nf) }
 
 func (nf *nodeFields) Left() Node { return nf.left }
 

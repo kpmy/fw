@@ -8,9 +8,26 @@ import (
 	"fw/rt2/context"
 	rt_mod "fw/rt2/module"
 	"fw/utils"
+	"math/rand"
 	"reflect"
+	"strconv"
 	"ypk/assert"
 )
+
+func Id(of interface{}) (ret string) {
+	assert.For(of != nil, 20)
+	switch of.(type) {
+	case object.Object:
+		fmt.Println("id", of.(object.Object).Name(), reflect.TypeOf(of))
+		//panic("fuck objects, use nodes")
+		ret = of.(object.Object).Name()
+	default:
+		fmt.Println(reflect.TypeOf(of))
+		panic("cannot identify")
+	}
+	assert.For(ret != "", 60)
+	return ret
+}
 
 func This(i interface{}) Manager {
 	assert.For(i != nil, 20)
@@ -24,11 +41,16 @@ func New() Manager {
 type manager struct {
 	d     context.Domain
 	areas *list.List
+	opts  struct {
+		startFromArea *area
+	}
 }
 
 type area struct {
-	heap map[object.Object]value
-	root node.Node
+	heap  map[string]value
+	cache map[string]object.Object
+	root  node.Node
+	ready bool
 }
 
 type value interface {
@@ -43,12 +65,19 @@ type direct struct {
 
 type indirect struct {
 	value
-	ref object.Object
-	mgr Manager
+	ref  object.Object
+	mgr  *manager
+	area *area
 }
 
+// маскирует объект-параметр
 type mask struct {
 	object.Object
+	id int
+}
+
+func nextMask() int {
+	return rand.Int()
 }
 
 type dummy struct{}
@@ -66,14 +95,20 @@ func (v *direct) Get() interface{} { return v.data }
 func (v *indirect) Set(x interface{}) {
 	assert.For(x != nil, 20)
 	assert.For(v.ref != nil, 21)
-	v.mgr.UpdateObj(v.ref, func(old interface{}) interface{} {
+	v.mgr.Update(Id(v.ref), func(old interface{}) interface{} {
 		return x
 	})
 }
 
-func (v *indirect) Get() interface{} {
+func (v *indirect) Get() (ret interface{}) {
 	assert.For(v.ref != nil, 20)
-	return v.mgr.SelectObj(v.ref)
+	_, ok := v.ref.(*mask)
+	if !ok {
+		v.mgr.opts.startFromArea = v.area
+	}
+	ret = v.mgr.Select(Id(v.ref))
+	v.mgr.opts.startFromArea = nil
+	return ret
 }
 
 func (m *manager) init() *manager {
@@ -81,10 +116,12 @@ func (m *manager) init() *manager {
 	return m
 }
 
-func (m *manager) Allocate(n node.Node) {
+func (m *manager) Allocate(n node.Node, final bool) {
 	mod := rt_mod.DomainModule(m.Domain())
 	h := new(area)
-	h.heap = make(map[object.Object]value)
+	h.ready = final
+	h.heap = make(map[string]value)
+	h.cache = make(map[string]object.Object)
 	h.root = n
 	for _, o := range mod.Objects[n] {
 		//fmt.Println(reflect.TypeOf(o))
@@ -105,13 +142,16 @@ func (m *manager) Allocate(n node.Node) {
 						}
 					}
 				default:
-					h.heap[o] = &direct{data: def}
+					h.heap[Id(o)] = &direct{data: def}
+					h.cache[Id(o)] = o
 				}
 			default:
-				h.heap[o] = &direct{data: def}
+				h.heap[Id(o)] = &direct{data: def}
+				h.cache[Id(o)] = o
 			}
 		case object.ParameterObject:
-			h.heap[o] = &indirect{mgr: m}
+			h.heap[Id(o)] = &indirect{mgr: m, area: h}
+			h.cache[Id(o)] = o
 		default:
 			fmt.Println("wrong object type", reflect.TypeOf(o))
 		}
@@ -125,25 +165,26 @@ func (m *manager) set(a *area, o object.Object, val node.Node) {
 	case node.ConstantNode:
 		switch o.(type) {
 		case object.VariableObject:
-			m.UpdateObj(o, func(old interface{}) interface{} {
+			m.Update(Id(o), func(old interface{}) interface{} {
 				return val.(node.ConstantNode).Data()
 			})
 		case object.ParameterObject:
-			assert.For(a.heap[o].(*indirect).ref == nil, 40)
-			m := &mask{}
-			a.heap[o].(*indirect).ref = m
-			a.heap[m] = &direct{data: val.(node.ConstantNode).Data()}
+			assert.For(a.heap[Id(o)].(*indirect).ref == nil, 40)
+			m := &mask{id: nextMask()}
+			a.heap[Id(o)].(*indirect).ref = m
+			a.heap[Id(m)] = &direct{data: val.(node.ConstantNode).Data()}
 		default:
 			panic("unknown value")
 		}
-	case node.VariableNode, node.ParameterNode, node.FieldNode:
+	case node.VariableNode, node.ParameterNode:
 		switch o.(type) {
 		case object.VariableObject:
-			m.UpdateObj(o, func(old interface{}) interface{} {
-				return m.SelectObj(val.Object())
+			m.Update(Id(o), func(old interface{}) interface{} {
+				return m.Select(Id(val.Object()))
 			})
 		case object.ParameterObject:
-			a.heap[o].(*indirect).ref = val.Object()
+			a.heap[Id(o)].(*indirect).ref = val.Object()
+			fmt.Println(val.Object())
 		}
 	default:
 		panic("unknown value")
@@ -155,6 +196,7 @@ func (m *manager) Initialize(n node.Node, o object.Object, _val node.Node) {
 	assert.For(e != nil, 20)
 	h := e.Value.(*area)
 	assert.For(h.root == n, 21)
+	assert.For(!h.ready, 22)
 	val := _val
 	fmt.Println("initialize")
 	for next := o; next != nil; next = next.Link() {
@@ -164,6 +206,7 @@ func (m *manager) Initialize(n node.Node, o object.Object, _val node.Node) {
 		m.set(h, next, val)
 		val = val.Link()
 	}
+	h.ready = true
 }
 
 func (m *manager) Dispose(n node.Node) {
@@ -175,24 +218,23 @@ func (m *manager) Dispose(n node.Node) {
 	fmt.Println("dispose")
 }
 
-func (m *manager) FindObjByName(name string) (ret object.Object) {
+func FindObjByName(mgr Manager, name string) (ret object.Object) {
 	assert.For(name != "", 20)
+	m := mgr.(*manager)
 	for e := m.areas.Front(); (e != nil) && (ret == nil); e = e.Next() {
 		h := e.Value.(*area)
-		for k, _ := range h.heap {
-			if k.Name() == name {
-				ret = k
-			}
-		}
+		ret = h.cache[name]
 	}
 	return ret
 }
 
-func (m *manager) SelectObj(o object.Object) (ret interface{}) {
-	assert.For(o != nil, 20)
+func (m *manager) Select(id string) (ret interface{}) {
+	assert.For(id != "", 20)
 	for e := m.areas.Front(); (e != nil) && (ret == nil); e = e.Next() {
 		h := e.Value.(*area)
-		ret = h.heap[o]
+		if (h != m.opts.startFromArea) && h.ready {
+			ret = h.heap[id]
+		}
 	}
 	assert.For(ret != nil, 40)
 	ret = ret.(value).Get()
@@ -202,33 +244,26 @@ func (m *manager) SelectObj(o object.Object) (ret interface{}) {
 	return ret
 }
 
-func (m *manager) UpdateObj(o object.Object, val ValueFor) {
-	assert.For(o != nil, 20)
+func (m *manager) Update(id string, val ValueFor) {
+	assert.For(id != "", 20)
 	assert.For(val != nil, 21)
 	var x *area
 	for e := m.areas.Front(); (e != nil) && (x == nil); e = e.Next() {
 		h := e.Value.(*area)
-		if h.heap[o] != nil {
+		if h.heap[id] != nil {
 			x = h
 		}
 	}
 	assert.For(x != nil, 40)
-	old := x.heap[o].Get()
+	old := x.heap[id].Get()
 	if old == def {
 		old = nil
 	}
 	tmp := val(old)
 	assert.For(tmp != nil, 40) //если устанавливают значение NIL, значит делают что-то неверно
-	x.heap[o].Set(tmp)
+	x.heap[id].Set(tmp)
 }
 
-func (m *manager) SelectNode(n node.Node) interface{} {
-	return nil
-}
-
-func (m *manager) UpdateNode(n node.Node, val ValueFor) {
-
-}
 func (m *manager) Init(d context.Domain) {
 	m.d = d
 }
@@ -239,4 +274,4 @@ func (m *manager) Domain() context.Domain {
 
 func (m *manager) Handle(msg interface{}) {}
 
-func (m *mask) Name() string { return "" }
+func (m *mask) Name() string { return strconv.Itoa(m.id) }
