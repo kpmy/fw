@@ -14,6 +14,8 @@ import (
 	"ypk/assert"
 )
 
+const NONE int64 = -1
+
 func Id(of interface{}) (ret ID) {
 	assert.For(of != nil, 20)
 	ret.Index = -1
@@ -64,8 +66,8 @@ type area struct {
 }
 
 type value interface {
-	Set(x interface{})
-	Get() interface{}
+	Set(id ID, x interface{})
+	Get(id ID) interface{}
 }
 
 type direct struct {
@@ -94,29 +96,60 @@ type dummy struct{}
 
 var def *dummy = &dummy{}
 
-func (v *direct) Set(x interface{}) {
-	assert.For(x != nil, 20)
-	v.data = x
-	utils.Println("set", x, reflect.TypeOf(x))
+func defval(x ...interface{}) interface{} {
+	if x != nil {
+		return x[0]
+	}
+	return def
 }
 
-func (v *direct) Get() interface{} { return v.data }
+func (v *direct) Set(id ID, x interface{}) {
+	assert.For(x != nil, 20)
+	if id.Index == NONE {
+		v.data = x
+		utils.PrintScope("set", x, reflect.TypeOf(x))
+	} else {
+		_, ok := v.data.([]rune)
+		if ok {
+			utils.PrintScope("set indexed", x)
+		} else {
+			panic("unsupported")
+		}
+	}
+}
 
-func (v *indirect) Set(x interface{}) {
+func (v *direct) Get(id ID) interface{} {
+	if id.Index == -1 {
+		return v.data
+	} else {
+		v, ok := v.data.([]rune)
+		if ok {
+			v := string(v)
+			return v[id.Index]
+		}
+		panic("unsupported")
+	}
+}
+
+func (v *indirect) Set(id ID, x interface{}) {
 	assert.For(x != nil, 20)
 	assert.For(v.ref != nil, 21)
-	v.mgr.Update(Id(v.ref), func(old interface{}) interface{} {
+	t := Id(v.ref)
+	t.Index = id.Index
+	v.mgr.Update(t, func(old interface{}) interface{} {
 		return x
 	})
 }
 
-func (v *indirect) Get() (ret interface{}) {
+func (v *indirect) Get(id ID) (ret interface{}) {
 	assert.For(v.ref != nil, 20)
 	_, ok := v.ref.(*mask)
 	if !ok {
 		v.mgr.opts.startFromArea = v.area
 	}
-	ret = v.mgr.Select(Id(v.ref))
+	t := Id(v.ref)
+	t.Index = id.Index
+	ret = v.mgr.Select(t)
 	v.mgr.opts.startFromArea = nil
 	return ret
 }
@@ -144,7 +177,7 @@ func (m *manager) Allocate(n node.Node, final bool) {
 					for rec := o.(object.VariableObject).Complex().(object.RecordType); rec != nil; {
 						for x := rec.Link(); x != nil; x = x.Link() {
 							//fmt.Println(o.Name(), ".", x.Name())
-							h.heap[o.Name()+"."+x.Name()] = &direct{data: def}
+							h.heap[o.Name()+"."+x.Name()] = &direct{data: defval()}
 						}
 						if rec.Base() != "" {
 							rec = mod.TypeByName(n, rec.Base()).(object.RecordType)
@@ -152,13 +185,16 @@ func (m *manager) Allocate(n node.Node, final bool) {
 							rec = nil
 						}
 					}
-
+				case object.ArrayType:
+					arr := o.(object.VariableObject).Complex().(object.ArrayType)
+					h.heap[Id(o).Name] = &direct{data: defval(make([]rune, arr.Len()), arr.Len())}
+					h.cache[Id(o).Name] = o
 				default:
-					h.heap[Id(o).Name] = &direct{data: def}
+					h.heap[Id(o).Name] = &direct{data: defval()}
 					h.cache[Id(o).Name] = o
 				}
 			default:
-				h.heap[Id(o).Name] = &direct{data: def}
+				h.heap[Id(o).Name] = &direct{data: defval()}
 				h.cache[Id(o).Name] = o
 			}
 		case object.ParameterObject:
@@ -245,7 +281,6 @@ func FindObjByName(mgr Manager, name string) (ret object.Object) {
 
 func (m *manager) Select(id ID) (ret interface{}) {
 	assert.For(id.Name != "", 20)
-	fmt.Println(id.Index)
 	for e := m.areas.Front(); (e != nil) && (ret == nil); e = e.Next() {
 		h := e.Value.(*area)
 		if (h != m.opts.startFromArea) && h.ready {
@@ -253,7 +288,7 @@ func (m *manager) Select(id ID) (ret interface{}) {
 		}
 	}
 	assert.For(ret != nil, 40)
-	ret = ret.(value).Get()
+	ret = ret.(value).Get(id)
 	if _, ok := ret.(*dummy); ok {
 		ret = nil
 	}
@@ -271,13 +306,13 @@ func (m *manager) Update(id ID, val ValueFor) {
 		}
 	}
 	assert.For(x != nil, 40)
-	old := x.heap[id.Name].Get()
+	old := x.heap[id.Name].Get(id)
 	if old == def {
 		old = nil
 	}
 	tmp := val(old)
 	assert.For(tmp != nil, 40) //если устанавливают значение NIL, значит делают что-то неверно
-	x.heap[id.Name].Set(tmp)
+	x.heap[id.Name].Set(id, tmp)
 }
 
 func (m *manager) Init(d context.Domain) {

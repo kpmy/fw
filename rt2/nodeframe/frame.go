@@ -53,7 +53,7 @@ type nodeFrame struct {
 func (f *nodeFrame) Do() frame.WAIT {
 	assert.For(f.seq != nil, 20)
 	next, ret := f.seq(f)
-	utils.Println(f.num, ret, reflect.TypeOf(f.ir))
+	utils.PrintFrame(f.num, ret, reflect.TypeOf(f.ir))
 	if next != nil {
 		assert.For(ret != frame.STOP, 40)
 		f.seq = next
@@ -66,13 +66,13 @@ func (f *nodeFrame) Do() frame.WAIT {
 func (f *nodeFrame) onPush() {
 	f.num = count
 	count++
-	utils.Println("_", "PUSH", reflect.TypeOf(f.ir))
+	utils.PrintFrame("_", "PUSH", reflect.TypeOf(f.ir))
 	f.seq = decision.PrologueFor(f.ir)
 }
 
 func (f *nodeFrame) OnPop() {
 	count--
-	utils.Println("_", "POP", reflect.TypeOf(f.ir))
+	utils.PrintFrame("_", "POP", reflect.TypeOf(f.ir))
 	f.seq = decision.EpilogueFor(f.ir)
 	if f.seq != nil {
 		_, _ = f.seq(f)
