@@ -48,6 +48,8 @@ func prologue(n node.Node) frame.Sequence {
 		return derefSeq
 	case node.InitNode:
 		return frame.Tail(frame.STOP)
+	case node.IndexNode:
+		return indexSeq
 	default:
 		panic(fmt.Sprintln("unknown node", reflect.TypeOf(n)))
 	}
@@ -72,7 +74,7 @@ func epilogue(n node.Node) frame.Sequence {
 			sm.Dispose(n)
 			return frame.End()
 		}
-	case node.OperationNode, node.ReturnNode, node.IfNode, node.LoopNode, node.DerefNode:
+	case node.OperationNode, node.ReturnNode, node.IfNode, node.LoopNode, node.DerefNode, node.IndexNode:
 		return nil
 	default:
 		fmt.Println(reflect.TypeOf(n))

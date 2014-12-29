@@ -36,12 +36,15 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	var fu nodeframe.FrameUtils
 	a := fu.NodeOf(f)
 
+	leftId := scope.ID{Name: "", Index: -1}
+	rightId := scope.ID{Name: "", Index: -1}
+
 	right := func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		switch a.Right().(type) {
 		case node.ConstantNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				sc.Update(scope.Id(a.Left().Object()), func(interface{}) interface{} {
+				sc.Update(leftId, func(interface{}) interface{} {
 					return a.Right().(node.ConstantNode).Data()
 				})
 				return frame.End()
@@ -50,7 +53,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case node.VariableNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				sc.Update(scope.Id(a.Left().Object()), func(interface{}) interface{} {
+				sc.Update(leftId, func(interface{}) interface{} {
 					return sc.Select(scope.Id(a.Right().Object()))
 				})
 				return frame.End()
@@ -60,15 +63,27 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			fu.Push(fu.New(a.Right()), f)
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				sc.Update(scope.Id(a.Left().Object()), func(interface{}) interface{} {
+				sc.Update(leftId, func(interface{}) interface{} {
 					return fu.DataOf(f)[a.Right()]
+				})
+				return frame.End()
+			}
+			ret = frame.LATER
+		case node.IndexNode:
+			rightId = scope.Id(a.Right())
+			rt2.Utils.Push(rt2.Utils.New(a.Right()), f)
+			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+				rightId.Index = int64(rt2.Utils.DataOf(f)[a.Right()].(int32))
+				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+				sc.Update(leftId, func(interface{}) interface{} {
+					return sc.Select(rightId)
 				})
 				return frame.End()
 			}
 			ret = frame.LATER
 		case node.ProcedureNode:
 			sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-			sc.Update(scope.Id(a.Left().Object()), func(interface{}) interface{} {
+			sc.Update(leftId, func(interface{}) interface{} {
 				return a.Right().Object()
 			})
 			return frame.End()
@@ -78,11 +93,24 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		}
 		return seq, ret
 	}
+
 	switch a.(node.AssignNode).Statement() {
 	case statement.ASSIGN:
 		switch a.Left().(type) {
 		case node.VariableNode, node.ParameterNode:
+			leftId = scope.Id(a.Left().Object())
 			seq, ret = right(f)
+		case node.FieldNode:
+			leftId = scope.Id(a.Left())
+			seq, ret = right(f)
+		case node.IndexNode:
+			leftId = scope.Id(a.Left())
+			rt2.Utils.Push(rt2.Utils.New(a.Left()), f)
+			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+				leftId.Index = int64(rt2.Utils.DataOf(f)[a.Left()].(int32))
+				return right(f)
+			}
+			ret = frame.LATER
 		default:
 			fmt.Println(reflect.TypeOf(a.Left()))
 			panic("wrong left")

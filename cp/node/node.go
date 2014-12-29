@@ -123,3 +123,8 @@ type FieldNode interface {
 	self() FieldNode
 	Node
 }
+
+type IndexNode interface {
+	self() IndexNode
+	Node
+}

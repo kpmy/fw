@@ -88,19 +88,19 @@ func convertData(typ string, val string, conv convertable) {
 	switch typ {
 	case "INTEGER":
 		conv.SetType(object.INTEGER)
-		x, _ := strconv.ParseInt(val, 16, 32)
+		x, _ := strconv.ParseInt(val, 10, 32)
 		conv.SetData(int32(x))
 	case "SHORTINT":
 		conv.SetType(object.SHORTINT)
-		x, _ := strconv.ParseInt(val, 16, 16)
+		x, _ := strconv.ParseInt(val, 10, 16)
 		conv.SetData(int16(x))
 	case "LONGINT":
 		conv.SetType(object.LONGINT)
-		x, _ := strconv.ParseInt(val, 16, 64)
+		x, _ := strconv.ParseInt(val, 10, 64)
 		conv.SetData(x)
 	case "BYTE":
 		conv.SetType(object.BYTE)
-		x, _ := strconv.ParseInt(val, 16, 8)
+		x, _ := strconv.ParseInt(val, 10, 8)
 		conv.SetData(int8(x))
 	case "CHAR":
 		conv.SetType(object.CHAR)
@@ -375,6 +375,8 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			ret = node.New(constant.FIELD)
 		case "init":
 			ret = node.New(node.INIT)
+		case "index":
+			ret = node.New(constant.INDEX)
 		default:
 			fmt.Println(n.Data.Nod.Class)
 			panic("no such node type")

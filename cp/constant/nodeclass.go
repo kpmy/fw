@@ -21,4 +21,5 @@ const (
 	LOOP
 	DEREF
 	FIELD
+	INDEX
 )

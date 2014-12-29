@@ -55,6 +55,8 @@ func New(class constant.Class) Node {
 		return new(fieldNode)
 	case INIT:
 		return new(initNode)
+	case constant.INDEX:
+		return new(indexNode)
 	default:
 		panic("no such class")
 	}
@@ -223,3 +225,9 @@ type initNode struct {
 }
 
 func (v *initNode) self() InitNode { return v }
+
+type indexNode struct {
+	nodeFields
+}
+
+func (v *indexNode) self() IndexNode { return v }
