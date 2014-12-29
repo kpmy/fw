@@ -18,6 +18,9 @@ var name string
 func init() {
 	flag.StringVar(&name, "i", "", "-i name.ext")
 }
+func close() {
+	fmt.Println("closed")
+}
 
 func main() {
 	flag.Parse()
@@ -33,6 +36,7 @@ func main() {
 	fmt.Println("load", t1.Sub(t0))
 	assert.For(ret != nil, 40)
 	assert.For(err == nil, 41)
+	defer close()
 	{
 		domain := new(stdDomain)
 		global.ConnectTo(name, domain)
