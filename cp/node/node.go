@@ -133,3 +133,8 @@ type TrapNode interface {
 	self() TrapNode
 	Node
 }
+
+type WithNode interface {
+	self() WithNode
+	Node
+}

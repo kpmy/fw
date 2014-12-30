@@ -95,6 +95,11 @@ func not(_a interface{}) bool {
 	return !a
 }
 
+func is(p, typ object.Object) bool {
+	//return p.
+	return false
+}
+
 func length(a object.Object, _a, _b interface{}) (ret int64) {
 	//assert.For(a != nil, 20)
 	assert.For(_b != nil, 21)
@@ -135,6 +140,9 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		switch n.(node.OperationNode).Operation() {
 		case operation.NOT:
 			fu.DataOf(f.Parent())[n] = not(fu.DataOf(f)[n.Left()])
+			return frame.End()
+		case operation.IS:
+			fu.DataOf(f.Parent())[n] = is(n.Left().Object(), n.Object())
 			return frame.End()
 		default:
 			panic("no such op")
@@ -189,6 +197,18 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 				fu.DataOf(f)[n.Left()] = sc.Select(scope.Id(n.Left()))
+				return op, frame.NOW
+			}
+			ret = frame.NOW
+			return seq, ret
+		default:
+			fmt.Println(reflect.TypeOf(n.Left()))
+			panic("wrong left")
+		}
+	case operation.IS:
+		switch n.Left().(type) {
+		case node.VariableNode, node.ParameterNode:
+			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				return op, frame.NOW
 			}
 			ret = frame.NOW

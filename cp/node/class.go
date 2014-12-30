@@ -59,6 +59,8 @@ func New(class constant.Class) Node {
 		return new(indexNode)
 	case constant.TRAP:
 		return new(trapNode)
+	case constant.WITH:
+		return new(withNode)
 	default:
 		panic("no such class")
 	}
@@ -239,3 +241,9 @@ type trapNode struct {
 }
 
 func (v *trapNode) self() TrapNode { return v }
+
+type withNode struct {
+	nodeFields
+}
+
+func (v *withNode) self() WithNode { return v }

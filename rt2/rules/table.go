@@ -61,6 +61,8 @@ func prologue(n node.Node) frame.Sequence {
 				panic(fmt.Sprintln("unsupported code", reflect.TypeOf(code)))
 			}
 		}
+	case node.WithNode:
+		return withSeq
 	default:
 		panic(fmt.Sprintln("unknown node", reflect.TypeOf(n)))
 	}
@@ -69,7 +71,8 @@ func prologue(n node.Node) frame.Sequence {
 func epilogue(n node.Node) frame.Sequence {
 	var fu nodeframe.FrameUtils
 	switch n.(type) {
-	case node.AssignNode, node.InitNode, node.CallNode, node.ConditionalNode, node.WhileNode, node.RepeatNode, node.ExitNode:
+	case node.AssignNode, node.InitNode, node.CallNode, node.ConditionalNode, node.WhileNode,
+		node.RepeatNode, node.ExitNode, node.WithNode:
 		return func(f frame.Frame) (frame.Sequence, frame.WAIT) {
 			next := n.Link()
 			//fmt.Println("from", reflect.TypeOf(n))

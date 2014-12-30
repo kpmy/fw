@@ -166,7 +166,7 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 			}
 			ret = t
 		default:
-			panic(fmt.Sprintln("unknown type", n.Data.Typ.Typ))
+			fmt.Println("unknown type", n.Data.Typ.Typ)
 		}
 	case "DYNAMIC":
 		switch n.Data.Typ.Base {
@@ -235,6 +235,8 @@ func (r *Result) doObject(n *Node) object.Object {
 		case "field":
 			ret = object.New(object.FIELD)
 			initType(n.Data.Obj.Typ, ret.(object.FieldObject))
+		case "type":
+			ret = object.New(object.TYPE)
 		default:
 			fmt.Println(n.Data.Obj.Mode)
 			panic("no such object mode")
@@ -255,8 +257,11 @@ func (r *Result) doObject(n *Node) object.Object {
 		typ := r.findLink(n, "type")
 		if typ != nil {
 			ret.SetComplex(r.doType(typ))
-			assert.For(ret.Complex() != nil, 60)
-			ret.SetType(object.COMPLEX)
+			if ret.Complex() != nil {
+				ret.SetType(object.COMPLEX)
+			} else {
+				fmt.Println("not a complex type")
+			}
 		}
 
 	}
@@ -310,19 +315,19 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 		case "dyadic":
 			ret = node.New(constant.DYADIC)
 			switch n.Data.Nod.Operation {
-			case "plus":
+			case "+":
 				ret.(node.OperationNode).SetOperation(operation.PLUS)
-			case "minus":
+			case "-":
 				ret.(node.OperationNode).SetOperation(operation.MINUS)
-			case "equal":
+			case "=":
 				ret.(node.OperationNode).SetOperation(operation.EQUAL)
-			case "lesser":
+			case "<":
 				ret.(node.OperationNode).SetOperation(operation.LESSER)
-			case "less or equal":
+			case "<=":
 				ret.(node.OperationNode).SetOperation(operation.LESS_EQUAL)
 			case "len":
 				ret.(node.OperationNode).SetOperation(operation.LEN)
-			case "not equal":
+			case "#":
 				ret.(node.OperationNode).SetOperation(operation.NOT_EQUAL)
 			default:
 				panic(fmt.Sprintln("no such operation", n.Data.Nod.Operation))
@@ -358,6 +363,8 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 				initType(n.Data.Nod.Typ, ret.(node.MonadicNode))
 			case "not":
 				ret.(node.OperationNode).SetOperation(operation.NOT)
+			case "is":
+				ret.(node.OperationNode).SetOperation(operation.IS)
 			default:
 				panic("no such operation")
 			}
@@ -383,6 +390,8 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			ret = node.New(constant.INDEX)
 		case "trap":
 			ret = node.New(constant.TRAP)
+		case "with":
+			ret = node.New(constant.WITH)
 		default:
 			fmt.Println(n.Data.Nod.Class)
 			panic("no such node type")

@@ -14,6 +14,7 @@ const (
 	CONSTANT
 	PARAMETER
 	FIELD
+	TYPE
 )
 
 type Object interface {
@@ -59,6 +60,11 @@ type ProcedureObject interface {
 	self() ProcedureObject
 }
 
+type TypeObject interface {
+	Object
+	self() TypeObject
+}
+
 func New(mode Mode) Object {
 	switch mode {
 	case HEAD:
@@ -75,6 +81,8 @@ func New(mode Mode) Object {
 		return new(externalProcedureObject)
 	case FIELD:
 		return new(fieldObject)
+	case TYPE:
+		return new(typeObject)
 	default:
 		panic("no such object mode")
 	}
@@ -157,3 +165,9 @@ type fieldObject struct {
 }
 
 func (v *fieldObject) self() FieldObject { return v }
+
+type typeObject struct {
+	objectFields
+}
+
+func (v *typeObject) self() TypeObject { return v }

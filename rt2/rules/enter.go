@@ -12,9 +12,6 @@ func enterSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	var fu nodeframe.FrameUtils
 	n := fu.NodeOf(f)
 	body := fu.NodeOf(f).Right()
-	if body == nil {
-		return frame.End()
-	}
 	sm := scope.This(f.Domain().Discover(context.SCOPE))
 	//fmt.Println(n.Object())
 	if n.Object() != nil {
@@ -30,7 +27,10 @@ func enterSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	} else {
 		sm.Allocate(n, true)
 	}
-	if f.Parent() != nil {
+	if body == nil {
+		//случай пустого тела процедуры/секции BEGIN
+		return frame.End()
+	} else if f.Parent() != nil {
 		//Вход в процедуру не несет значимых действий и просто заменяет себя в цепочке родителей на своего родителя
 		fu.Push(fu.New(body), f.Parent())
 		return frame.Tail(frame.STOP), frame.LATER

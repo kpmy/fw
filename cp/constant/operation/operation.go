@@ -12,4 +12,5 @@ const (
 	LEN
 	NOT
 	NOT_EQUAL
+	IS
 )

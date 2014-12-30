@@ -23,4 +23,5 @@ const (
 	FIELD
 	INDEX
 	TRAP
+	WITH
 )
