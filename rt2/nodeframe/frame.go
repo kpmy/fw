@@ -1,6 +1,7 @@
 package nodeframe
 
 import (
+	"fmt"
 	"fw/cp/node"
 	"fw/rt2/context"
 	"fw/rt2/decision"
@@ -58,7 +59,11 @@ func (f *nodeFrame) Do() frame.WAIT {
 		assert.For(ret != frame.STOP, 40)
 		f.seq = next
 	} else {
-		assert.For(ret == frame.STOP, 41)
+		assert.For(ret == frame.STOP || ret == frame.WRONG, 41)
+		if ret == frame.WRONG {
+			fmt.Println("stopped by signal")
+		}
+
 	}
 	return ret
 }

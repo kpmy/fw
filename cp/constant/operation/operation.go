@@ -10,4 +10,6 @@ const (
 	LESSER
 	LESS_EQUAL
 	LEN
+	NOT
+	NOT_EQUAL
 )

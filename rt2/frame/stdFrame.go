@@ -50,6 +50,7 @@ func (f *RootFrame) Top() (frame Frame) {
 }
 
 func (f *RootFrame) Do() (res WAIT) {
+	var trapped bool
 	if f.Top() != nil {
 		x := f.Top()
 		//цикл дейкстры
@@ -60,7 +61,9 @@ func (f *RootFrame) Do() (res WAIT) {
 				break
 			} else if wait == NOW {
 			} else if wait == WRONG {
-				panic("something wrong")
+				trapped = true
+				break
+				//panic("something wrong") do nothing, it's a trap
 			} else if wait == STOP {
 				if x == f.Top() {
 					f.Pop()
@@ -73,7 +76,7 @@ func (f *RootFrame) Do() (res WAIT) {
 			}
 		}
 	}
-	if f.Top() != nil {
+	if f.Top() != nil && !trapped {
 		res = NOW
 	} else {
 		res = STOP

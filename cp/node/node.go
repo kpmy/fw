@@ -128,3 +128,8 @@ type IndexNode interface {
 	self() IndexNode
 	Node
 }
+
+type TrapNode interface {
+	self() TrapNode
+	Node
+}

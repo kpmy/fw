@@ -14,6 +14,19 @@ import (
 	"ypk/assert"
 )
 
+func boolOf(x interface{}) (a bool) {
+	switch x.(type) {
+	case *bool:
+		z := *x.(*bool)
+		a = z
+	case bool:
+		a = x.(bool)
+	default:
+		panic(fmt.Sprintln("unsupported type", reflect.TypeOf(x)))
+	}
+	return a
+}
+
 func int32Of(x interface{}) (a int32) {
 	//fmt.Println(reflect.TypeOf(x))
 	switch x.(type) {
@@ -68,6 +81,20 @@ func leq(_a interface{}, _b interface{}) bool {
 	return a <= b
 }
 
+func neq(_a interface{}, _b interface{}) bool {
+	assert.For(_a != nil, 20)
+	assert.For(_b != nil, 21)
+	var a int32 = int32Of(_a)
+	var b int32 = int32Of(_b)
+	return a != b
+}
+
+func not(_a interface{}) bool {
+	assert.For(_a != nil, 20)
+	var a bool = boolOf(_a)
+	return !a
+}
+
 func length(a object.Object, _a, _b interface{}) (ret int64) {
 	//assert.For(a != nil, 20)
 	assert.For(_b != nil, 21)
@@ -75,9 +102,9 @@ func length(a object.Object, _a, _b interface{}) (ret int64) {
 	assert.For(b == 0, 22)
 	if a != nil {
 		assert.For(a.Type() == object.COMPLEX, 23)
-		switch a.Complex().(type) {
+		switch typ := a.Complex().(type) {
 		case object.ArrayType:
-			ret = a.Complex().(object.ArrayType).Len()
+			ret = typ.Len()
 		case object.DynArrayType:
 			switch _a.(type) {
 			case string:
@@ -102,6 +129,19 @@ func length(a object.Object, _a, _b interface{}) (ret int64) {
 
 func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	var fu nodeframe.FrameUtils
+
+	op := func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+		n := fu.NodeOf(f)
+		switch n.(node.OperationNode).Operation() {
+		case operation.NOT:
+			fu.DataOf(f.Parent())[n] = not(fu.DataOf(f)[n.Left()])
+			return frame.End()
+		default:
+			panic("no such op")
+		}
+
+	}
+
 	n := fu.NodeOf(f).(node.MonadicNode)
 	switch n.Operation() {
 	case operation.CONVERT:
@@ -124,12 +164,42 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			return frame.End()
 		default:
 			panic(fmt.Sprintln("unsupported left", reflect.TypeOf(n.Left())))
-
+		}
+	case operation.NOT:
+		switch n.Left().(type) {
+		case node.ConstantNode:
+			fu.DataOf(f)[n.Left()] = n.Left().(node.ConstantNode).Data()
+			return op, frame.NOW
+		case node.VariableNode, node.ParameterNode:
+			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+				fu.DataOf(f)[n.Left()] = sc.Select(scope.Id(n.Left().Object()))
+				return op, frame.NOW
+			}
+			ret = frame.NOW
+			return seq, ret
+		case node.OperationNode, node.DerefNode:
+			fu.Push(fu.New(n.Left()), f)
+			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+				return op, frame.NOW
+			}
+			ret = frame.LATER
+			return seq, ret
+		case node.FieldNode:
+			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+				fu.DataOf(f)[n.Left()] = sc.Select(scope.Id(n.Left()))
+				return op, frame.NOW
+			}
+			ret = frame.NOW
+			return seq, ret
+		default:
+			fmt.Println(reflect.TypeOf(n.Left()))
+			panic("wrong left")
 		}
 	default:
 		panic(fmt.Sprintln("no such operation", n.(node.MonadicNode).Operation()))
 	}
-
 }
 
 func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
@@ -155,6 +225,9 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			return frame.End()
 		case operation.LEN:
 			fu.DataOf(f.Parent())[n] = length(n.Left().Object(), fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			return frame.End()
+		case operation.NOT_EQUAL:
+			fu.DataOf(f.Parent())[n] = neq(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
 			return frame.End()
 		default:
 			panic("unknown operation")

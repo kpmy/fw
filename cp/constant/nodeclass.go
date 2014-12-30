@@ -22,4 +22,5 @@ const (
 	DEREF
 	FIELD
 	INDEX
+	TRAP
 )

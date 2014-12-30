@@ -322,6 +322,8 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 				ret.(node.OperationNode).SetOperation(operation.LESS_EQUAL)
 			case "len":
 				ret.(node.OperationNode).SetOperation(operation.LEN)
+			case "not equal":
+				ret.(node.OperationNode).SetOperation(operation.NOT_EQUAL)
 			default:
 				panic(fmt.Sprintln("no such operation", n.Data.Nod.Operation))
 			}
@@ -354,6 +356,8 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			case "convert":
 				ret.(node.OperationNode).SetOperation(operation.CONVERT)
 				initType(n.Data.Nod.Typ, ret.(node.MonadicNode))
+			case "not":
+				ret.(node.OperationNode).SetOperation(operation.NOT)
 			default:
 				panic("no such operation")
 			}
@@ -377,6 +381,8 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			ret = node.New(node.INIT)
 		case "index":
 			ret = node.New(constant.INDEX)
+		case "trap":
+			ret = node.New(constant.TRAP)
 		default:
 			fmt.Println(n.Data.Nod.Class)
 			panic("no such node type")

@@ -57,6 +57,8 @@ func New(class constant.Class) Node {
 		return new(initNode)
 	case constant.INDEX:
 		return new(indexNode)
+	case constant.TRAP:
+		return new(trapNode)
 	default:
 		panic("no such class")
 	}
@@ -231,3 +233,9 @@ type indexNode struct {
 }
 
 func (v *indexNode) self() IndexNode { return v }
+
+type trapNode struct {
+	nodeFields
+}
+
+func (v *trapNode) self() TrapNode { return v }
