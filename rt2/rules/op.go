@@ -96,8 +96,8 @@ func not(_a interface{}) bool {
 }
 
 func is(p, typ object.Object) bool {
-	//return p.
-	return false
+	fmt.Println(p.Complex().(object.RecordType).Name(), typ.Complex().(object.RecordType).Name())
+	return p.Complex().(object.RecordType).Name() == typ.Complex().(object.RecordType).Name()
 }
 
 func length(a object.Object, _a, _b interface{}) (ret int64) {
