@@ -12,6 +12,7 @@ import (
 	"fw/rt2/nodeframe"
 	"fw/rt2/scope"
 	"reflect"
+	"ypk/halt"
 )
 
 func incSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
@@ -23,7 +24,7 @@ func incSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	rt2.Utils.Push(rt2.Utils.New(op), f)
 	seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-		sc.Update(scope.Id(n.Left().Object()), func(interface{}) interface{} {
+		sc.Update(scope.Designator(n.Left()), func(interface{}) interface{} {
 			return rt2.Utils.DataOf(f)[op]
 		})
 		return frame.End()
@@ -36,8 +37,8 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	var fu nodeframe.FrameUtils
 	a := fu.NodeOf(f)
 
-	leftId := scope.ID{Name: "", Index: -1}
-	rightId := scope.ID{Name: "", Index: -1}
+	var leftId scope.ID
+	var rightId scope.ID
 
 	right := func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		switch a.Right().(type) {
@@ -54,7 +55,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 				sc.Update(leftId, func(interface{}) interface{} {
-					return sc.Select(scope.Id(a.Right().Object()))
+					return sc.Select(scope.Designator(a.Right()))
 				})
 				return frame.End()
 			}
@@ -70,10 +71,11 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			}
 			ret = frame.LATER
 		case node.IndexNode:
-			rightId = scope.Id(a.Right())
+			rightId = scope.Designator(a.Right())
 			rt2.Utils.Push(rt2.Utils.New(a.Right()), f)
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				rightId.Index = int64(rt2.Utils.DataOf(f)[a.Right()].(int32))
+				halt.As(100)
+				//rightId.Index = int64(rt2.Utils.DataOf(f)[a.Right()].(int32))
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 				sc.Update(leftId, func(interface{}) interface{} {
 					return sc.Select(rightId)
@@ -98,16 +100,17 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	case statement.ASSIGN:
 		switch a.Left().(type) {
 		case node.VariableNode, node.ParameterNode:
-			leftId = scope.Id(a.Left().Object())
+			leftId = scope.Designator(a.Left())
 			seq, ret = right(f)
 		case node.FieldNode:
-			leftId = scope.Id(a.Left())
+			leftId = scope.Designator(a.Left())
 			seq, ret = right(f)
 		case node.IndexNode:
-			leftId = scope.Id(a.Left())
+			leftId = scope.Designator(a.Left())
 			rt2.Utils.Push(rt2.Utils.New(a.Left()), f)
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				leftId.Index = int64(rt2.Utils.DataOf(f)[a.Left()].(int32))
+				halt.As(100)
+				//	leftId.Index = int64(rt2.Utils.DataOf(f)[a.Left()].(int32))
 				return right(f)
 			}
 			ret = frame.LATER

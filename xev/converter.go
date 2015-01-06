@@ -165,8 +165,10 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 				assert.For(t.Link() != nil, 40)
 			}
 			ret = t
+		case "CHAR", "SHORTCHAR", "INTEGER", "LONGINT", "BYTE",
+			"SHORTINT", "BOOLEAN", "REAL", "SHORTREAL", "SET":
 		default:
-			fmt.Println("unknown type", n.Data.Typ.Typ)
+			fmt.Println("unknown basic type", n.Data.Typ.Typ)
 		}
 	case "DYNAMIC":
 		switch n.Data.Typ.Base {
@@ -180,7 +182,7 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 			n := object.NewDynArrayType(object.SHORTCHAR)
 			ret = n
 		default:
-			panic(fmt.Sprintln("unknown type", n.Data.Typ.Typ))
+			panic(fmt.Sprintln("unknown dyn type", n.Data.Typ.Typ))
 		}
 	case "ARRAY":
 		switch n.Data.Typ.Base {
@@ -188,7 +190,7 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 			n := object.NewArrayType(object.CHAR, int64(n.Data.Typ.Par))
 			ret = n
 		default:
-			panic(fmt.Sprintln("unknown type", n.Data.Typ.Typ))
+			panic(fmt.Sprintln("unknown array type", n.Data.Typ.Typ))
 		}
 	case "RECORD":
 		switch n.Data.Typ.Base {
@@ -223,8 +225,10 @@ func (r *Result) doObject(n *Node) object.Object {
 			initType(n.Data.Obj.Typ, ret.(object.VariableObject))
 		case "local procedure":
 			ret = object.New(object.LOCAL_PROC)
+			ret.SetType(object.PROCEDURE)
 		case "external procedure":
 			ret = object.New(object.EXTERNAL_PROC)
+			ret.SetType(object.PROCEDURE)
 		case "constant":
 			ret = object.New(object.CONSTANT)
 			convertData(n.Data.Obj.Typ, n.Data.Obj.Value, ret.(object.ConstantObject))

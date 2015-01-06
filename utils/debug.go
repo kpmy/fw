@@ -2,7 +2,7 @@ package utils
 
 import "fmt"
 
-var debugFrame = true
+var debugFrame = false
 var debugScope = true
 var debugTrap = true
 

@@ -11,7 +11,7 @@ import (
 func derefSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	n := rt2.Utils.NodeOf(f)
 	sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-	data := sc.Select(scope.Id(n.Left().Object()))
+	data := sc.Select(scope.Designator(n.Left()))
 	assert.For(data != nil, 40)
 	rt2.Utils.DataOf(f.Parent())[n] = data
 	return frame.End()

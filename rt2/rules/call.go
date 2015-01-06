@@ -107,7 +107,7 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	case node.VariableNode:
 		m := mod.DomainModule(f.Domain())
 		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-		obj := sc.Select(scope.Id(n.Left().Object()))
+		obj := sc.Select(scope.Designator(n.Left()))
 
 		if obj, ok := obj.(object.Object); ok {
 			proc := m.NodeByObject(obj)

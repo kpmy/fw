@@ -7,17 +7,14 @@ import (
 )
 
 type ID struct {
-	Name  string
-	Index int64
+	Name string
+	//Field string
+	Index *int64
 }
 
 //менеджер зон видимости, зоны видимости динамические, создаются в момент входа в EnterNode
 type Manager interface {
 	context.ContextAware
-	//	UpdateObj(o object.Object, val ValueFor)
-	//	SelectObj(o object.Object) interface{}
-	//UpdateNode(n node.Node, val ValueFor)
-	//SelectNode(n node.Node) interface{}
 	Update(id ID, val ValueFor)
 	Select(id ID) interface{}
 	Allocate(n node.Node, final bool)
@@ -27,3 +24,12 @@ type Manager interface {
 
 //средство обновления значения
 type ValueFor func(in interface{}) (out interface{})
+
+var Designator func(n node.Node) ID
+var FindObjByName func(m Manager, name string) object.Object
+
+func This(i interface{}) Manager {
+	return i.(Manager)
+}
+
+var New func() Manager

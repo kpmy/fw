@@ -51,6 +51,8 @@ func (t Type) String() string {
 		return "SET"
 	case COMPLEX:
 		return "COMPLEX"
+	case PROCEDURE:
+		return "PROCEDURE"
 	default:
 		return fmt.Sprint("looks like new type here", int(t))
 	}

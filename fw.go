@@ -9,6 +9,7 @@ import (
 	"fw/rt2/nodeframe"
 	_ "fw/rt2/rules"
 	"fw/rt2/scope"
+	_ "fw/rt2/scope/std"
 	"time"
 	"ypk/assert"
 )
@@ -25,7 +26,7 @@ func close() {
 func main() {
 	flag.Parse()
 	if name == "" {
-		name = "XevDemo11"
+		name = "XevDemo7"
 	}
 	global := new(stdDomain)
 	modList := module.New()

@@ -125,6 +125,8 @@ func length(a object.Object, _a, _b interface{}) (ret int64) {
 		switch _a.(type) {
 		case string:
 			ret = int64(utf8.RuneCountInString(_a.(string)))
+		case []interface{}:
+			ret = int64(len(_a.([]interface{})))
 		default:
 			panic(fmt.Sprintln("unsupported", reflect.TypeOf(_a)))
 		}
@@ -156,7 +158,7 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 		switch n.Left().(type) {
 		case node.VariableNode, node.ParameterNode:
-			x := sc.Select(scope.Id(n.Left().Object()))
+			x := sc.Select(scope.Designator(n.Left()))
 			assert.For(x != nil, 40)
 			switch n.Type() {
 			case object.INTEGER:
@@ -181,7 +183,7 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case node.VariableNode, node.ParameterNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				fu.DataOf(f)[n.Left()] = sc.Select(scope.Id(n.Left().Object()))
+				fu.DataOf(f)[n.Left()] = sc.Select(scope.Designator(n.Left()))
 				return op, frame.NOW
 			}
 			ret = frame.NOW
@@ -196,7 +198,7 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case node.FieldNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				fu.DataOf(f)[n.Left()] = sc.Select(scope.Id(n.Left()))
+				fu.DataOf(f)[n.Left()] = sc.Select(scope.Designator(n.Left()))
 				return op, frame.NOW
 			}
 			ret = frame.NOW
@@ -263,7 +265,7 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case node.VariableNode, node.ParameterNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				fu.DataOf(f)[n.Right()] = sc.Select(scope.Id(n.Right().Object()))
+				fu.DataOf(f)[n.Right()] = sc.Select(scope.Designator(n.Right()))
 				//fmt.Println(n.Right().Object(), reflect.TypeOf(n.Right().Object()))
 				assert.For(fu.DataOf(f)[n.Right()] != nil, 60)
 				return op, frame.NOW
@@ -280,7 +282,7 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case node.FieldNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				fu.DataOf(f)[n.Right()] = sc.Select(scope.Id(n.Right()))
+				fu.DataOf(f)[n.Right()] = sc.Select(scope.Designator(n.Right()))
 				return op, frame.NOW
 			}
 			ret = frame.NOW
@@ -300,7 +302,7 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case node.VariableNode, node.ParameterNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				fu.DataOf(f)[n.Left()] = sc.Select(scope.Id(n.Left().Object()))
+				fu.DataOf(f)[n.Left()] = sc.Select(scope.Designator(n.Left()))
 				return right, frame.NOW
 			}
 			ret = frame.NOW
@@ -315,7 +317,7 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case node.FieldNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				fu.DataOf(f)[n.Left()] = sc.Select(scope.Id(n.Left()))
+				fu.DataOf(f)[n.Left()] = sc.Select(scope.Designator(n.Left()))
 				return right, frame.NOW
 			}
 			ret = frame.NOW

@@ -23,7 +23,7 @@ func indexSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	case node.VariableNode:
 		seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-			rt2.Utils.DataOf(f.Parent())[i] = sc.Select(scope.Id(i.Right().Object()))
+			rt2.Utils.DataOf(f.Parent())[i] = sc.Select(scope.Designator(i.Right()))
 			return frame.End()
 		}
 		ret = frame.NOW
