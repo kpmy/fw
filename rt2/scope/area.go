@@ -4,12 +4,30 @@ import (
 	"fw/cp/node"
 	"fw/cp/object"
 	"fw/rt2/context"
+	"strconv"
 )
 
+const DEPTH = 16
+
 type ID struct {
-	Name string
-	//Field string
+	Name  string
+	Path  [DEPTH]string
 	Index *int64
+}
+
+func (i ID) String() string {
+	if i.Name != "" {
+		ret := i.Name
+		if i.Path[0] != "" {
+			ret = ret + "." + i.Path[0]
+		}
+		if i.Index != nil {
+			ret = ret + "[" + strconv.FormatInt(*i.Index, 10) + "]"
+		}
+		return ret
+	} else {
+		return "<empty id>"
+	}
 }
 
 //менеджер зон видимости, зоны видимости динамические, создаются в момент входа в EnterNode

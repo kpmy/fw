@@ -12,7 +12,6 @@ import (
 	"fw/rt2/nodeframe"
 	"fw/rt2/scope"
 	"reflect"
-	"ypk/halt"
 )
 
 func incSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
@@ -74,8 +73,8 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			rightId = scope.Designator(a.Right())
 			rt2.Utils.Push(rt2.Utils.New(a.Right()), f)
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				halt.As(100)
-				//rightId.Index = int64(rt2.Utils.DataOf(f)[a.Right()].(int32))
+				rightId.Index = new(int64)
+				*rightId.Index = int64(rt2.Utils.DataOf(f)[a.Right()].(int32))
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 				sc.Update(leftId, func(interface{}) interface{} {
 					return sc.Select(rightId)
@@ -109,8 +108,8 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			leftId = scope.Designator(a.Left())
 			rt2.Utils.Push(rt2.Utils.New(a.Left()), f)
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				halt.As(100)
-				//	leftId.Index = int64(rt2.Utils.DataOf(f)[a.Left()].(int32))
+				leftId.Index = new(int64)
+				*leftId.Index = int64(rt2.Utils.DataOf(f)[a.Left()].(int32))
 				return right(f)
 			}
 			ret = frame.LATER

@@ -136,6 +136,8 @@ func length(a object.Object, _a, _b interface{}) (ret int64) {
 
 func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	var fu nodeframe.FrameUtils
+	sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+	n := fu.NodeOf(f).(node.MonadicNode)
 
 	op := func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		n := fu.NodeOf(f)
@@ -144,7 +146,8 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			fu.DataOf(f.Parent())[n] = not(fu.DataOf(f)[n.Left()])
 			return frame.End()
 		case operation.IS:
-			fu.DataOf(f.Parent())[n] = is(n.Left().Object(), n.Object())
+			x := sc.Select(scope.Designator(n.Left())).(object.Object)
+			fu.DataOf(f.Parent())[n] = is(x, n.Object())
 			return frame.End()
 		default:
 			panic("no such op")
@@ -152,10 +155,8 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 
 	}
 
-	n := fu.NodeOf(f).(node.MonadicNode)
 	switch n.Operation() {
 	case operation.CONVERT:
-		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 		switch n.Left().(type) {
 		case node.VariableNode, node.ParameterNode:
 			x := sc.Select(scope.Designator(n.Left()))
