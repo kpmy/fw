@@ -96,8 +96,23 @@ func not(_a interface{}) bool {
 }
 
 func is(p, typ object.Object) bool {
-	fmt.Println(p.Complex().(object.RecordType).Name(), typ.Complex().(object.RecordType).Name())
-	return p.Complex().(object.RecordType).Name() == typ.Complex().(object.RecordType).Name()
+	var compare func(x, a object.RecordType) bool
+	compare = func(x, a object.RecordType) bool {
+		switch {
+		case x.Name() == a.Name():
+			//	fmt.Println("eq")
+			return true //опасно сравнивать имена конеш
+		case x.BaseType() != nil:
+			//	fmt.Println("go base")
+			return compare(x.BaseType(), a)
+		default:
+			return false
+		}
+	}
+	x, a := p.Complex().(object.RecordType)
+	y, b := typ.Complex().(object.RecordType)
+	//fmt.Println("compare", p.Complex(), typ.Complex(), a, b, compare(x, y))
+	return a && b && compare(x, y)
 }
 
 func length(a object.Object, _a, _b interface{}) (ret int64) {

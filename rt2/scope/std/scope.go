@@ -115,9 +115,9 @@ func (r *rec) init(n node.Node) {
 	r.x = make(map[scope.ID]interface{})
 }
 
-func (a *rec) set(k scope.ID, v interface{}) { fmt.Println(k); a.x[k] = v }
+func (a *rec) set(k scope.ID, v interface{}) { a.x[k] = v }
 
-func (a *rec) get(k scope.ID) interface{} { fmt.Println(k); return a.x[k] }
+func (a *rec) get(k scope.ID) interface{} { return a.x[k] }
 
 func nm() scope.Manager {
 	m := &manager{areas: list.New()}
@@ -158,7 +158,7 @@ func obj(o object.Object) (key scope.ID, val interface{}) {
 	switch x := o.(type) {
 	case object.ConstantObject, object.ProcedureObject, object.TypeObject:
 	case object.VariableObject, object.FieldObject:
-		fmt.Println(x.Name())
+		//fmt.Println(x.Name())
 		key = scope.ID{Name: x.Name()}
 		switch t := x.Complex().(type) {
 		case nil:
@@ -175,7 +175,7 @@ func obj(o object.Object) (key scope.ID, val interface{}) {
 			fmt.Println("unexpected", reflect.TypeOf(t))
 		}
 	case object.ParameterObject:
-		fmt.Println("'" + x.Name())
+		//fmt.Println("'" + x.Name())
 		key = scope.ID{Name: x.Name()}
 		val = &ref{link: o}
 	default:
@@ -198,26 +198,22 @@ func (m *manager) Allocate(n node.Node, final bool) {
 				case object.RecordType:
 					for rec := t; rec != nil; {
 						for x := rec.Link(); x != nil; x = x.Link() {
-							fmt.Println(o.Name(), ".", x.Name())
+							//fmt.Println(o.Name(), ".", x.Name())
 							alloc(v.(KVarea), x)
 						}
-						if rec.Base() != "" {
-							rec = mod.TypeByName(n, rec.Base()).(object.RecordType)
-						} else {
-							rec = nil
-						}
+						rec = rec.BaseType()
 					}
 				}
 			}
 		} else {
-			fmt.Println("nil allocated", reflect.TypeOf(o))
+			//fmt.Println("nil allocated", reflect.TypeOf(o))
 		}
 	}
 	for _, o := range mod.Objects[n] {
 		alloc(h, o)
 	}
 	m.areas.PushFront(h)
-	fmt.Println("allocate")
+	//fmt.Println("allocate")
 }
 
 func (m *manager) Initialize(n node.Node, o object.Object, _val node.Node) {
@@ -227,11 +223,11 @@ func (m *manager) Initialize(n node.Node, o object.Object, _val node.Node) {
 	assert.For(h.root == n, 21)
 	assert.For(!h.ready, 22)
 	val := _val
-	fmt.Println("initialize")
+	//fmt.Println("initialize")
 	for next := o; next != nil; next = next.Link() {
 		assert.For(val != nil, 40)
-		fmt.Println(reflect.TypeOf(next), next.Name(), ":", next.Type())
-		fmt.Println(reflect.TypeOf(val))
+		//fmt.Println(reflect.TypeOf(next), next.Name(), ":", next.Type())
+		//fmt.Println(reflect.TypeOf(val))
 		switch ov := val.(type) {
 		case node.ConstantNode:
 			switch next.(type) {
@@ -271,12 +267,12 @@ func (m *manager) Dispose(n node.Node) {
 		h := e.Value.(*area)
 		assert.For(h.root == n, 21)
 		m.areas.Remove(e)
-		fmt.Println("dispose")
+		//fmt.Println("dispose")
 	}
 }
 
 func (m *manager) Select(i scope.ID) interface{} {
-	fmt.Println("select", i)
+	//fmt.Println("select", i)
 	depth := 0
 	type result struct {
 		x interface{}
@@ -320,7 +316,7 @@ func (m *manager) Select(i scope.ID) interface{} {
 		}
 	}
 	assert.For(res != nil, 40)
-	fmt.Println(res.x)
+	//fmt.Println(res.x)
 	return res.x
 }
 
@@ -352,7 +348,7 @@ func (m *manager) Update(i scope.ID, val scope.ValueFor) {
 			old := x.get()
 			tmp := val(old)
 			assert.For(tmp != nil, 40) //если устанавливают значение NIL, значит делают что-то неверно
-			fmt.Println(tmp)
+			//fmt.Println(tmp)
 			x.set(tmp)
 			ret = x
 		case reference:
@@ -363,19 +359,19 @@ func (m *manager) Update(i scope.ID, val scope.ValueFor) {
 				old := x.get(*i.Index)
 				tmp := val(old)
 				assert.For(tmp != nil, 40) //если устанавливают значение NIL, значит делают что-то неверно
-				fmt.Println(tmp)
+				//fmt.Println(tmp)
 				x.set(*i.Index, tmp)
 			} else {
 				old := x.sel()
 				tmp := val(old)
 				assert.For(tmp != nil, 40) //если устанавливают значение NIL, значит делают что-то неверно
-				fmt.Println(tmp)
+				//fmt.Println(tmp)
 				x.upd(arrConv(tmp))
 			}
 			ret = x
 		case record:
 			if i.Path[depth] == "" {
-				fmt.Println(i, depth)
+				//fmt.Println(i, depth)
 				panic(0) //случай выбора всей записи целиком
 			} else {
 				z := x.getField(i.Path[depth])
@@ -414,7 +410,7 @@ func FindObjByName(mgr scope.Manager, name string) (ret object.Object) {
 		case *basic:
 			ret = x.(*basic).link
 		default:
-			fmt.Println("no such object")
+			//fmt.Println("no such object")
 		}
 	}
 	return ret

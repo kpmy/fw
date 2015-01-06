@@ -1,6 +1,7 @@
 package module
 
 import (
+	"fmt"
 	"fw/cp/node"
 	"fw/cp/object"
 	"ypk/assert"
@@ -20,9 +21,10 @@ type named interface {
 func (m *Module) TypeByName(scope node.Node, name string) (ret object.ComplexType) {
 	assert.For(name != "", 20)
 	for _, typ := range m.Types[scope] {
+		fmt.Print(typ)
 		if v, ok := typ.(named); ok && v.Name() == name {
 			ret = typ
-			break
+			break //стыд какой
 		}
 	}
 	return ret

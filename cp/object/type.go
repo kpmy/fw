@@ -89,6 +89,8 @@ type DynArrayType interface {
 type RecordType interface {
 	ComplexType
 	Base() string
+	BaseType() RecordType
+	SetBase(ComplexType)
 	Name() string
 }
 
@@ -131,6 +133,7 @@ func (a *arr) Len() int64 { return a.length }
 type rec struct {
 	comp
 	name, base string
+	basetyp    RecordType
 }
 
 func (r *rec) Name() string { return r.name }
@@ -141,4 +144,9 @@ func NewRecordType(n string, par ...string) RecordType {
 	} else {
 		return &rec{name: n, base: par[0]}
 	}
+}
+
+func (r *rec) BaseType() RecordType { return r.basetyp }
+func (r *rec) SetBase(t ComplexType) {
+	r.basetyp = t.(RecordType)
 }
