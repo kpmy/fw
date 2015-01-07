@@ -401,6 +401,15 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			ret = node.New(constant.TRAP)
 		case "with":
 			ret = node.New(constant.WITH)
+		case "guard":
+			ret = node.New(constant.GUARD)
+			typ := r.findLink(n, "type")
+			if typ != nil {
+				ret.(node.GuardNode).SetType(r.doType(typ))
+				if ret.(node.GuardNode).Type() == nil {
+					panic("error in node")
+				}
+			}
 		default:
 			fmt.Println(n.Data.Nod.Class)
 			panic("no such node type")
@@ -438,6 +447,7 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 		} else {
 			assert.For(proc == nil, 60) //у процедуры просто не может не быть объекта
 		}
+
 	}
 	return ret
 }

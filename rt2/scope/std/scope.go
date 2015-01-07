@@ -130,12 +130,18 @@ func init() {
 	scope.FindObjByName = FindObjByName
 }
 
-func design(n node.Node) (id scope.ID) {
-	switch x := n.(type) {
+func design(n ...node.Node) (id scope.ID) {
+	switch x := n[0].(type) {
 	case node.VariableNode, node.ParameterNode:
 		id = scope.ID{Name: x.Object().Name()}
 	case node.FieldNode:
-		id = scope.ID{Name: x.Left().Object().Name(), Path: [scope.DEPTH]string{x.Object().Name()}}
+		if len(n) == 1 {
+			id = scope.ID{Name: x.Left().Object().Name(), Path: [scope.DEPTH]string{x.Object().Name()}}
+		} else if n[1] != nil {
+			id = scope.ID{Name: n[1].Object().Name(), Path: [scope.DEPTH]string{x.Object().Name()}}
+		} else {
+			panic("wrong params")
+		}
 	case node.IndexNode:
 		id = scope.ID{Name: x.Left().Object().Name()}
 	default:

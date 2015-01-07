@@ -24,4 +24,5 @@ const (
 	INDEX
 	TRAP
 	WITH
+	GUARD
 )

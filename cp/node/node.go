@@ -138,3 +138,10 @@ type WithNode interface {
 	self() WithNode
 	Node
 }
+
+type GuardNode interface {
+	self() GuardNode
+	Node
+	Type() object.ComplexType
+	SetType(object.ComplexType)
+}

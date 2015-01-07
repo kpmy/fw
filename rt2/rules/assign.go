@@ -97,13 +97,25 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 
 	switch a.(node.AssignNode).Statement() {
 	case statement.ASSIGN:
-		switch a.Left().(type) {
+		switch l := a.Left().(type) {
 		case node.VariableNode, node.ParameterNode:
 			leftId = scope.Designator(a.Left())
 			seq, ret = right(f)
 		case node.FieldNode:
-			leftId = scope.Designator(a.Left())
-			seq, ret = right(f)
+			switch l.Left().(type) {
+			case node.GuardNode:
+				rt2.Utils.Push(rt2.Utils.New(l.Left()), f)
+				seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+					x := rt2.Utils.DataOf(f)[l.Left()].(node.Node)
+					leftId = scope.Designator(a.Left(), x)
+					fmt.Println(leftId)
+					return right(f)
+				}
+				ret = frame.LATER
+			default:
+				leftId = scope.Designator(a.Left())
+				seq, ret = right(f)
+			}
 		case node.IndexNode:
 			leftId = scope.Designator(a.Left())
 			rt2.Utils.Push(rt2.Utils.New(a.Left()), f)

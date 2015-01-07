@@ -95,7 +95,7 @@ func not(_a interface{}) bool {
 	return !a
 }
 
-func is(p, typ object.Object) bool {
+func is(p object.Object, typ object.ComplexType) bool {
 	var compare func(x, a object.RecordType) bool
 	compare = func(x, a object.RecordType) bool {
 		switch {
@@ -110,8 +110,8 @@ func is(p, typ object.Object) bool {
 		}
 	}
 	x, a := p.Complex().(object.RecordType)
-	y, b := typ.Complex().(object.RecordType)
-	//fmt.Println("compare", p.Complex(), typ.Complex(), a, b, compare(x, y))
+	y, b := typ.(object.RecordType)
+	fmt.Println("compare", p.Complex(), typ, a, b, a && b && compare(x, y))
 	return a && b && compare(x, y)
 }
 

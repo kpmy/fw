@@ -43,7 +43,7 @@ type Manager interface {
 //средство обновления значения
 type ValueFor func(in interface{}) (out interface{})
 
-var Designator func(n node.Node) ID
+var Designator func(n ...node.Node) ID
 var FindObjByName func(m Manager, name string) object.Object
 
 func This(i interface{}) Manager {

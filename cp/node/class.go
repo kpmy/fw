@@ -61,6 +61,8 @@ func New(class constant.Class) Node {
 		return new(trapNode)
 	case constant.WITH:
 		return new(withNode)
+	case constant.GUARD:
+		return new(guardNode)
 	default:
 		panic("no such class")
 	}
@@ -247,3 +249,12 @@ type withNode struct {
 }
 
 func (v *withNode) self() WithNode { return v }
+
+type guardNode struct {
+	nodeFields
+	typ object.ComplexType
+}
+
+func (v *guardNode) self() GuardNode              { return v }
+func (v *guardNode) SetType(t object.ComplexType) { v.typ = t }
+func (v *guardNode) Type() object.ComplexType     { return v.typ }
