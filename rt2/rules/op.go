@@ -123,7 +123,7 @@ func is(p object.Object, typ object.ComplexType) bool {
 	}
 	x, a := p.Complex().(object.RecordType)
 	y, b := typ.(object.RecordType)
-	fmt.Println("compare", p.Complex(), typ, a, b, a && b && compare(x, y))
+	//fmt.Println("compare", p.Complex(), typ, a, b, a && b && compare(x, y))
 	return a && b && compare(x, y)
 }
 

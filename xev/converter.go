@@ -269,7 +269,7 @@ func (r *Result) doObject(n *Node) object.Object {
 			if ret.Complex() != nil {
 				ret.SetType(object.COMPLEX)
 			} else {
-				fmt.Println("not a complex type")
+				//fmt.Println("not a complex type")
 			}
 		}
 
