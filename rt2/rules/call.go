@@ -43,7 +43,7 @@ func callHandler(f frame.Frame, obj object.Object, data interface{}) {
 	cc := node.New(constant.CONSTANT).(node.ConstantNode)
 	cc.SetData(data)
 	cn.SetRight(cc)
-	rt2.Utils.Push(rt2.Utils.New(cn), f)
+	rt2.Push(rt2.New(cn), f)
 }
 
 func process(f frame.Frame, par node.Node) {
@@ -73,7 +73,7 @@ func init() {
 }
 
 func syscall(f frame.Frame) {
-	n := rt2.Utils.NodeOf(f)
+	n := rt2.NodeOf(f)
 	name := n.Left().Object().Name()
 	sys[name](f, n.Right())
 }

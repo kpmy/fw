@@ -14,7 +14,7 @@ import (
 
 func guardSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	sc := scope.This(f.Domain().Discover(context.SCOPE))
-	n := rt2.Utils.NodeOf(f).(node.GuardNode)
+	n := rt2.NodeOf(f).(node.GuardNode)
 	var obj object.Object
 	switch l := n.Left().(type) {
 	case node.VariableNode:
@@ -25,14 +25,14 @@ func guardSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		panic(fmt.Sprintln("unsupported left", reflect.TypeOf(l)))
 	}
 	if is(obj, n.Type()) {
-		rt2.Utils.DataOf(f.Parent())[n] = n.Left()
+		rt2.DataOf(f.Parent())[n] = n.Left()
 		return frame.End()
 	} else {
 		trap := node.New(constant.TRAP).(node.TrapNode)
 		code := node.New(constant.CONSTANT).(node.ConstantNode)
 		code.SetData(0)
 		trap.SetLeft(code)
-		rt2.Utils.Push(rt2.Utils.New(trap), f)
+		rt2.Push(rt2.New(trap), f)
 		return frame.Tail(frame.STOP), frame.LATER
 	}
 }

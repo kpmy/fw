@@ -11,26 +11,26 @@ import (
 )
 
 func indexSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-	i := rt2.Utils.NodeOf(f)
+	i := rt2.NodeOf(f)
 
 	switch i.Right().(type) {
 	case node.ConstantNode:
 		seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-			rt2.Utils.DataOf(f.Parent())[i] = i.Right().(node.ConstantNode).Data()
+			rt2.DataOf(f.Parent())[i] = i.Right().(node.ConstantNode).Data()
 			return frame.End()
 		}
 		ret = frame.NOW
 	case node.VariableNode:
 		seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-			rt2.Utils.DataOf(f.Parent())[i] = sc.Select(scope.Designator(i.Right()))
+			rt2.DataOf(f.Parent())[i] = sc.Select(scope.Designator(i.Right()))
 			return frame.End()
 		}
 		ret = frame.NOW
 	case node.OperationNode, node.CallNode:
-		rt2.Utils.Push(rt2.Utils.New(i.Right()), f)
+		rt2.Push(rt2.New(i.Right()), f)
 		seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-			rt2.Utils.DataOf(f.Parent())[i] = rt2.Utils.DataOf(f)[i.Right()]
+			rt2.DataOf(f.Parent())[i] = rt2.DataOf(f)[i.Right()]
 			return frame.End()
 		}
 		ret = frame.LATER

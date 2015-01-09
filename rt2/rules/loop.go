@@ -10,10 +10,10 @@ const flag = 0
 
 func exitSeq(x frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	x.Root().ForEach(func(f frame.Frame) (ok bool) {
-		n := rt2.Utils.NodeOf(f)
+		n := rt2.NodeOf(f)
 		_, ok = n.(node.LoopNode)
 		if ok {
-			rt2.Utils.DataOf(f)[flag] = true
+			rt2.DataOf(f)[flag] = true
 		}
 		ok = !ok
 		return ok
@@ -22,13 +22,13 @@ func exitSeq(x frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 }
 
 func loopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-	n := rt2.Utils.NodeOf(f)
-	exit, ok := rt2.Utils.DataOf(f)[flag].(bool)
+	n := rt2.NodeOf(f)
+	exit, ok := rt2.DataOf(f)[flag].(bool)
 	if ok && exit {
 		return frame.End()
 	}
 	if n.Left() != nil {
-		rt2.Utils.Push(rt2.Utils.New(n.Left()), f)
+		rt2.Push(rt2.New(n.Left()), f)
 		return loopSeq, frame.LATER
 	} else if n.Left() == nil {
 		return frame.End()

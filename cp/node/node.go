@@ -36,8 +36,8 @@ type ConstantNode interface {
 	SetData(data interface{})
 	Data() interface{}
 	Type() object.Type
-	Min() int
-	Max() int
+	Min() *int
+	Max() *int
 	SetMin(int)
 	SetMax(int)
 	Node

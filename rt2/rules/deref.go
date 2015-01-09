@@ -9,10 +9,10 @@ import (
 )
 
 func derefSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-	n := rt2.Utils.NodeOf(f)
+	n := rt2.NodeOf(f)
 	sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 	data := sc.Select(scope.Designator(n.Left()))
 	assert.For(data != nil, 40)
-	rt2.Utils.DataOf(f.Parent())[n] = data
+	rt2.DataOf(f.Parent())[n] = data
 	return frame.End()
 }

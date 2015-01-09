@@ -107,7 +107,7 @@ type constantNode struct {
 	nodeFields
 	typ      object.Type
 	data     interface{}
-	min, max int
+	min, max *int
 }
 
 func (c *constantNode) SetType(t object.Type) { c.typ = t }
@@ -118,10 +118,10 @@ func (c *constantNode) Data() interface{} { return c.data }
 
 func (c *constantNode) Type() object.Type { return c.typ }
 
-func (c *constantNode) SetMax(x int) { c.max = x }
-func (c *constantNode) Max() int     { return c.max }
-func (c *constantNode) SetMin(x int) { c.min = x }
-func (c *constantNode) Min() int     { return c.min }
+func (c *constantNode) SetMax(x int) { c.max = new(int); *c.max = x }
+func (c *constantNode) Max() *int    { return c.max }
+func (c *constantNode) SetMin(x int) { c.min = new(int); *c.min = x }
+func (c *constantNode) Min() *int    { return c.min }
 
 type dyadicNode struct {
 	nodeFields

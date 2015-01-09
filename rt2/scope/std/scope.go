@@ -345,7 +345,6 @@ func arrConv(x interface{}) []interface{} {
 func (m *manager) Update(i scope.ID, val scope.ValueFor) {
 	assert.For(val != nil, 21)
 	var x interface{}
-	fmt.Println("update", i)
 	depth := 0
 	var upd func(x interface{}) (ret interface{})
 	upd = func(x interface{}) (ret interface{}) {

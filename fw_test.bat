@@ -27,6 +27,8 @@ fw -i=XevDemo12
 IF ERRORLEVEL 1 GOTO err
 fw -i=XevDemo13
 IF ERRORLEVEL 1 GOTO err
+fw -i=XevDemo14
+IF ERRORLEVEL 1 GOTO err
 
 GOTO ok
 :err
