@@ -3,8 +3,8 @@ package node
 import (
 	"fw/cp/constant/enter"
 	"fw/cp/constant/operation"
+	"fw/cp/constant/statement"
 	"fw/cp/object"
-	"fw/cp/statement"
 )
 
 type Node interface {

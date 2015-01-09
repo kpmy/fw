@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"fw/cp/constant"
 	"fw/cp/constant/operation"
+	"fw/cp/constant/statement"
 	"fw/cp/node"
-	"fw/cp/statement"
 	"fw/rt2"
 	"fw/rt2/context"
 	"fw/rt2/frame"
@@ -18,6 +18,24 @@ func incSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	n := rt2.NodeOf(f)
 	op := node.New(constant.DYADIC).(node.OperationNode)
 	op.SetOperation(operation.PLUS)
+	op.SetLeft(n.Left())
+	op.SetRight(n.Right())
+	rt2.Push(rt2.New(op), f)
+	seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+		sc.Update(scope.Designator(n.Left()), func(interface{}) interface{} {
+			return rt2.DataOf(f)[op]
+		})
+		return frame.End()
+	}
+	ret = frame.LATER
+	return seq, ret
+}
+
+func decSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+	n := rt2.NodeOf(f)
+	op := node.New(constant.DYADIC).(node.OperationNode)
+	op.SetOperation(operation.MINUS)
 	op.SetLeft(n.Left())
 	op.SetRight(n.Right())
 	rt2.Push(rt2.New(op), f)
@@ -133,6 +151,13 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		switch a.Left().(type) {
 		case node.VariableNode, node.ParameterNode:
 			seq, ret = incSeq(f)
+		default:
+			panic(fmt.Sprintln("wrong left", reflect.TypeOf(a.Left())))
+		}
+	case statement.DEC:
+		switch a.Left().(type) {
+		case node.VariableNode, node.ParameterNode:
+			seq, ret = decSeq(f)
 		default:
 			panic(fmt.Sprintln("wrong left", reflect.TypeOf(a.Left())))
 		}

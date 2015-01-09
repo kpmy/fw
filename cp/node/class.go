@@ -4,8 +4,8 @@ import (
 	"fw/cp/constant"
 	"fw/cp/constant/enter"
 	"fw/cp/constant/operation"
+	"fw/cp/constant/statement"
 	"fw/cp/object"
-	"fw/cp/statement"
 )
 
 const INIT constant.Class = -1

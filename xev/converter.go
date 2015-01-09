@@ -5,10 +5,10 @@ import (
 	"fw/cp/constant"
 	"fw/cp/constant/enter"
 	"fw/cp/constant/operation"
+	"fw/cp/constant/statement"
 	"fw/cp/module"
 	"fw/cp/node"
 	"fw/cp/object"
-	"fw/cp/statement"
 	"math/big"
 	"strconv"
 	"unicode/utf16"
@@ -338,6 +338,8 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 				ret.(node.OperationNode).SetOperation(operation.LEN)
 			case "#":
 				ret.(node.OperationNode).SetOperation(operation.NOT_EQUAL)
+			case ">":
+				ret.(node.OperationNode).SetOperation(operation.GREATER)
 			default:
 				panic(fmt.Sprintln("no such operation", n.Data.Nod.Operation))
 			}
@@ -361,6 +363,8 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 				ret.(node.AssignNode).SetStatement(statement.ASSIGN)
 			case "inc":
 				ret.(node.AssignNode).SetStatement(statement.INC)
+			case "dec":
+				ret.(node.AssignNode).SetStatement(statement.DEC)
 			default:
 				panic("unknown assign statement")
 			}

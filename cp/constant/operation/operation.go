@@ -13,4 +13,5 @@ const (
 	NOT
 	NOT_EQUAL
 	IS
+	GREATER
 )

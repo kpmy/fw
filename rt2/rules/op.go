@@ -73,6 +73,13 @@ func lss(_a interface{}, _b interface{}) bool {
 	return a < b
 }
 
+func gtr(_a interface{}, _b interface{}) bool {
+	assert.For(_a != nil, 20)
+	assert.For(_b != nil, 21)
+	var a int32 = int32Of(_a)
+	var b int32 = int32Of(_b)
+	return a > b
+}
 func leq(_a interface{}, _b interface{}) bool {
 	assert.For(_a != nil, 20)
 	assert.For(_b != nil, 21)
@@ -266,6 +273,9 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			return frame.End()
 		case operation.NOT_EQUAL:
 			fu.DataOf(f.Parent())[n] = neq(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			return frame.End()
+		case operation.GREATER:
+			fu.DataOf(f.Parent())[n] = gtr(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
 			return frame.End()
 		default:
 			panic("unknown operation")
