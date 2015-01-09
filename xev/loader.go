@@ -1,6 +1,9 @@
 package xev
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+	"fmt"
+)
 
 type CptType struct {
 	Form string `xml:"urn:bbcb:component:dev:cpt form,attr"`
@@ -18,6 +21,10 @@ type CptObject struct {
 	Value string `xml:",chardata"`
 }
 
+type Value struct {
+	X string `xml:",chardata"`
+}
+
 type CptNode struct {
 	Class string `xml:"urn:bbcb:component:dev:cpt class,attr"`
 	//опциональные параметры
@@ -25,6 +32,8 @@ type CptNode struct {
 	Enter     string `xml:"urn:bbcb:component:dev:cpt enter,attr"`
 	Operation string `xml:"urn:bbcb:component:dev:cpt operation,attr"`
 	Value     string `xml:",chardata"`
+	Min       *Value `xml:"urn:bbcb:component:dev:cpt min"`
+	Max       *Value `xml:"urn:bbcb:component:dev:cpt max"`
 	Statement string `xml:"urn:bbcb:component:dev:cpt statement,attr"`
 	Proto     string `xml:"urn:bbcb:component:dev:cpt proto,attr"`
 	From      string `xml:"urn:bbcb:component:dev:cpt from,attr"`
@@ -62,9 +71,12 @@ type Result struct {
 	GraphList []Graph `xml:"graph"`
 }
 
-/*
 func traverseNode(n *Node) {
 	fmt.Println(n.Id, n.Data)
+	if n.Data.Nod != nil {
+		fmt.Println(n.Data.Nod.Min)
+		fmt.Println(n.Data.Nod.Max)
+	}
 }
 
 func traverseEdge(e *Edge) {
@@ -90,7 +102,7 @@ func traverse(r *Result) {
 		traverseGraph(&r.GraphList[g])
 	}
 }
-*/
+
 func LoadOXF(data []byte) *Result {
 	r := new(Result)
 	err := xml.Unmarshal(data, r)

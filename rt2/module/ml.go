@@ -53,7 +53,7 @@ func (l *list) Load(name string) (*mod.Module, error) {
 	ret := l.Loaded(name)
 	if ret == nil {
 		path, _ := os.Getwd()
-		ret = xev.Load(path, name+".oxf")
+		ret = xev.Load(path, name+".oz")
 		l.inner[name] = ret
 	}
 	return ret, nil
