@@ -14,4 +14,8 @@ const (
 	NOT_EQUAL
 	IS
 	GREATER
+	ABS
+	ODD
+	CAP
+	BITS
 )

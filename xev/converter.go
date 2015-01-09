@@ -387,8 +387,16 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 				ret.(node.OperationNode).SetOperation(operation.NOT)
 			case "is":
 				ret.(node.OperationNode).SetOperation(operation.IS)
+			case "abs":
+				ret.(node.OperationNode).SetOperation(operation.ABS)
+			case "odd":
+				ret.(node.OperationNode).SetOperation(operation.ODD)
+			case "cap":
+				ret.(node.OperationNode).SetOperation(operation.CAP)
+			case "bits":
+				ret.(node.OperationNode).SetOperation(operation.BITS)
 			default:
-				panic("no such operation")
+				panic("no such operation " + n.Data.Nod.Operation)
 			}
 		case "conditional":
 			ret = node.New(constant.CONDITIONAL)

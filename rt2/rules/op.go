@@ -9,7 +9,10 @@ import (
 	"fw/rt2/frame"
 	"fw/rt2/nodeframe"
 	"fw/rt2/scope"
+	"math"
+	"math/big"
 	"reflect"
+	"strings"
 	"unicode/utf8"
 	"ypk/assert"
 )
@@ -29,12 +32,14 @@ func boolOf(x interface{}) (a bool) {
 
 func int32Of(x interface{}) (a int32) {
 	//fmt.Println(reflect.TypeOf(x))
-	switch x.(type) {
+	switch v := x.(type) {
 	case *int32:
 		z := *x.(*int32)
 		a = z
 	case int32:
 		a = x.(int32)
+	case *big.Int:
+		a = int32(v.Int64())
 	default:
 		panic(fmt.Sprintln("unsupported type", reflect.TypeOf(x)))
 	}
@@ -156,6 +161,30 @@ func length(a object.Object, _a, _b interface{}) (ret int64) {
 	return ret
 }
 
+func abs(_a interface{}) interface{} {
+	assert.For(_a != nil, 20)
+	var a int32 = int32Of(_a)
+	return int32(math.Abs(float64(a)))
+}
+
+func odd(_a interface{}) bool {
+	assert.For(_a != nil, 20)
+	var a int32 = int32Of(_a)
+	return int32(math.Abs(float64(a)))%2 == 1
+}
+
+func cap_char(_a interface{}) interface{} {
+	assert.For(_a != nil, 20)
+	var a int32 = int32Of(_a)
+	x := []rune{rune(a), rune(0)}
+	return int32([]rune(strings.ToUpper(string(x)))[0])
+}
+
+func bits(_a interface{}) interface{} {
+	assert.For(_a != nil, 20)
+	return big.NewInt(int64(int32Of(_a)))
+}
+
 func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	var fu nodeframe.FrameUtils
 	sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
@@ -171,6 +200,18 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			x := sc.Select(scope.Designator(n.Left())).(object.Object)
 			fu.DataOf(f.Parent())[n] = is(x, n.Object())
 			return frame.End()
+		case operation.ABS:
+			fu.DataOf(f.Parent())[n] = abs(fu.DataOf(f)[n.Left()])
+			return frame.End()
+		case operation.ODD:
+			fu.DataOf(f.Parent())[n] = odd(fu.DataOf(f)[n.Left()])
+			return frame.End()
+		case operation.CAP:
+			fu.DataOf(f.Parent())[n] = cap_char(fu.DataOf(f)[n.Left()])
+			return frame.End()
+		case operation.BITS:
+			fu.DataOf(f.Parent())[n] = bits(fu.DataOf(f)[n.Left()])
+			return frame.End()
 		default:
 			panic("no such op")
 		}
@@ -185,14 +226,23 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			assert.For(x != nil, 40)
 			switch n.Type() {
 			case object.INTEGER:
-				switch x.(type) {
+				switch v := x.(type) {
 				case int8:
 					fu.DataOf(f.Parent())[n] = int32(x.(int8))
+				case *big.Int:
+					fu.DataOf(f.Parent())[n] = int32(v.Int64())
+				default:
+					panic(fmt.Sprintln("ooops", reflect.TypeOf(x)))
+				}
+			case object.SET:
+				switch v := x.(type) {
+				case int32:
+					fu.DataOf(f.Parent())[n] = big.NewInt(int64(v))
 				default:
 					panic(fmt.Sprintln("ooops", reflect.TypeOf(x)))
 				}
 			default:
-				panic("wrong type")
+				panic(fmt.Sprintln("wrong type", n.Type()))
 			}
 			return frame.End()
 		default:
@@ -242,6 +292,8 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			fmt.Println(reflect.TypeOf(n.Left()))
 			panic("wrong left")
 		}
+	case operation.ABS, operation.ODD, operation.CAP, operation.BITS:
+		return expectExpr(f, n.Left(), op)
 	default:
 		panic(fmt.Sprintln("no such operation", n.(node.MonadicNode).Operation()))
 	}
