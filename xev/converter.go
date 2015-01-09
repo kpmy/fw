@@ -345,6 +345,15 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			ret = node.New(constant.CONSTANT)
 			convertData(n.Data.Nod.Typ, n.Data.Nod.Value, ret.(node.ConstantNode))
 			//fmt.Println(ret.(node.ConstantNode).Data())
+			x := ret.(node.ConstantNode)
+			if n.Data.Nod.Min != nil {
+				val, _ := strconv.Atoi(n.Data.Nod.Min.X)
+				x.SetMin(val)
+			}
+			if n.Data.Nod.Max != nil {
+				val, _ := strconv.Atoi(n.Data.Nod.Max.X)
+				x.SetMax(val)
+			}
 		case "assign":
 			ret = node.New(constant.ASSIGN)
 			switch n.Data.Nod.Statement {
@@ -410,6 +419,21 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 					panic("error in node")
 				}
 			}
+		case "case":
+			ret = node.New(constant.CASE)
+		case "else":
+			ret = node.New(constant.ELSE)
+			x := ret.(node.ElseNode)
+			if n.Data.Nod.Min != nil {
+				val, _ := strconv.Atoi(n.Data.Nod.Min.X)
+				x.Min(val)
+			}
+			if n.Data.Nod.Max != nil {
+				val, _ := strconv.Atoi(n.Data.Nod.Max.X)
+				x.Max(val)
+			}
+		case "do":
+			ret = node.New(constant.DO)
 		default:
 			fmt.Println(n.Data.Nod.Class)
 			panic("no such node type")

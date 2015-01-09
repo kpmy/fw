@@ -36,6 +36,10 @@ type ConstantNode interface {
 	SetData(data interface{})
 	Data() interface{}
 	Type() object.Type
+	Min() int
+	Max() int
+	SetMin(int)
+	SetMax(int)
 	Node
 }
 
@@ -144,4 +148,23 @@ type GuardNode interface {
 	Node
 	Type() object.ComplexType
 	SetType(object.ComplexType)
+}
+
+type CaseNode interface {
+	self() CaseNode
+	Node
+}
+
+type ElseNode interface {
+	Node
+	Min(...int) int
+	Max(...int) int
+	//	SetMin(int)
+	//	SetMax(int)
+
+}
+
+type DoNode interface {
+	self() DoNode
+	Node
 }

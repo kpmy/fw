@@ -63,6 +63,12 @@ func New(class constant.Class) Node {
 		return new(withNode)
 	case constant.GUARD:
 		return new(guardNode)
+	case constant.CASE:
+		return new(caseNode)
+	case constant.ELSE:
+		return new(elseNode)
+	case constant.DO:
+		return new(doNode)
 	default:
 		panic("no such class")
 	}
@@ -99,8 +105,9 @@ func (e *enterNode) Enter() enter.Enter         { return e.enter }
 
 type constantNode struct {
 	nodeFields
-	typ  object.Type
-	data interface{}
+	typ      object.Type
+	data     interface{}
+	min, max int
 }
 
 func (c *constantNode) SetType(t object.Type) { c.typ = t }
@@ -110,6 +117,11 @@ func (c *constantNode) SetData(data interface{}) { c.data = data }
 func (c *constantNode) Data() interface{} { return c.data }
 
 func (c *constantNode) Type() object.Type { return c.typ }
+
+func (c *constantNode) SetMax(x int) { c.max = x }
+func (c *constantNode) Max() int     { return c.max }
+func (c *constantNode) SetMin(x int) { c.min = x }
+func (c *constantNode) Min() int     { return c.min }
 
 type dyadicNode struct {
 	nodeFields
@@ -258,3 +270,37 @@ type guardNode struct {
 func (v *guardNode) self() GuardNode              { return v }
 func (v *guardNode) SetType(t object.ComplexType) { v.typ = t }
 func (v *guardNode) Type() object.ComplexType     { return v.typ }
+
+type caseNode struct {
+	nodeFields
+}
+
+func (v *caseNode) self() CaseNode { return v }
+
+type elseNode struct {
+	nodeFields
+	min, max int
+}
+
+func (v *elseNode) Min(x ...int) int {
+	if len(x) > 0 {
+		v.min = x[0]
+	}
+	return v.min
+}
+
+//func (c *elseNode) SetMax(x int) { c.max = x }
+func (c *elseNode) Max(x ...int) int {
+	if len(x) > 0 {
+		c.max = x[0]
+	}
+	return c.max
+}
+
+//func (c *elseNode) SetMin(x int) { c.min = x }
+
+type doNode struct {
+	nodeFields
+}
+
+func (v *doNode) self() DoNode { return v }

@@ -25,4 +25,7 @@ const (
 	TRAP
 	WITH
 	GUARD
+	CASE
+	ELSE
+	DO
 )
