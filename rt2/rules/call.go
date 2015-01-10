@@ -9,7 +9,7 @@ import (
 	"fw/rt2"
 	"fw/rt2/context"
 	"fw/rt2/frame"
-	mod "fw/rt2/module"
+	rt_mod "fw/rt2/module"
 	"fw/rt2/nodeframe"
 	"fw/rt2/scope"
 	"ypk/assert"
@@ -37,7 +37,7 @@ func callHandler(f frame.Frame, obj object.Object, data interface{}) {
 	if obj == nil {
 		return
 	}
-	m := mod.DomainModule(f.Domain())
+	m := rt_mod.DomainModule(f.Domain())
 	cn := node.New(constant.CALL)
 	cn.SetLeft(m.NodeByObject(obj))
 	cc := node.New(constant.CONSTANT).(node.ConstantNode)
@@ -101,11 +101,11 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 
 	switch n.Left().(type) {
 	case node.ProcedureNode:
-		m := mod.DomainModule(f.Domain())
+		m := rt_mod.DomainModule(f.Domain())
 		proc := m.NodeByObject(n.Left().Object())
 		call(proc)
 	case node.VariableNode:
-		m := mod.DomainModule(f.Domain())
+		m := rt_mod.DomainModule(f.Domain())
 		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 		obj := sc.Select(scope.Designator(n.Left()))
 

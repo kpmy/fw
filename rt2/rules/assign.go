@@ -77,7 +77,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				return frame.End()
 			}
 			ret = frame.NOW
-		case node.OperationNode, node.CallNode:
+		case node.OperationNode, node.CallNode, node.DerefNode:
 			fu.Push(fu.New(a.Right()), f)
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)

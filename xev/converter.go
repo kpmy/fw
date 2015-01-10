@@ -384,6 +384,7 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			ret = node.New(constant.EXIT)
 		case "dereferencing":
 			ret = node.New(constant.DEREF)
+			ret.(node.DerefNode).Ptr(n.Data.Nod.From)
 		case "field":
 			ret = node.New(constant.FIELD)
 		case "init":
@@ -420,6 +421,8 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			ret = node.New(constant.DO)
 		case "range":
 			ret = node.New(constant.RANGE)
+		case "compound":
+			ret = node.New(node.COMPOUND)
 		default:
 			fmt.Println(n.Data.Nod.Class)
 			panic("no such node type")

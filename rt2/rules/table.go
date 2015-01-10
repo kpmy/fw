@@ -4,6 +4,7 @@ package rules
 import (
 	"fmt"
 	"fw/cp/node"
+	"fw/rt2"
 	"fw/rt2/context"
 	"fw/rt2/decision"
 	"fw/rt2/frame"
@@ -69,6 +70,24 @@ func prologue(n node.Node) frame.Sequence {
 		return caseSeq
 	case node.RangeNode:
 		return rangeSeq
+	case node.CompNode:
+		return func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+			right := func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+				if next.Right() != nil {
+					rt2.Push(rt2.New(next.Right()), f)
+					return frame.Tail(frame.STOP), frame.LATER
+				}
+				return frame.End()
+			}
+			left := func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+				if next.Left() != nil {
+					rt2.Push(rt2.New(next.Left()), f)
+					return right, frame.LATER
+				}
+				return right, frame.NOW
+			}
+			return left, frame.NOW
+		}
 	default:
 		panic(fmt.Sprintln("unknown node", reflect.TypeOf(n)))
 	}
@@ -78,7 +97,7 @@ func epilogue(n node.Node) frame.Sequence {
 	var fu nodeframe.FrameUtils
 	switch n.(type) {
 	case node.AssignNode, node.InitNode, node.CallNode, node.ConditionalNode, node.WhileNode,
-		node.RepeatNode, node.ExitNode, node.WithNode, node.CaseNode:
+		node.RepeatNode, node.ExitNode, node.WithNode, node.CaseNode, node.CompNode:
 		return func(f frame.Frame) (frame.Sequence, frame.WAIT) {
 			next := n.Link()
 			//fmt.Println("from", reflect.TypeOf(n))

@@ -9,6 +9,7 @@ import (
 	rt_mod "fw/rt2/module"
 	"fw/rt2/scope"
 	"reflect"
+	"runtime"
 	"ypk/assert"
 )
 
@@ -26,6 +27,10 @@ type area struct {
 	root  node.Node
 	x     map[scope.ID]interface{}
 	ready bool
+}
+
+func area_fin(a interface{}) {
+	fmt.Println("scope cleared")
 }
 
 func (a *area) set(k scope.ID, v interface{}) {
@@ -192,6 +197,7 @@ func obj(o object.Object) (key scope.ID, val interface{}) {
 
 func (m *manager) Allocate(n node.Node, final bool) {
 	h := &area{ready: final, root: n, x: make(map[scope.ID]interface{})}
+	runtime.SetFinalizer(h, area_fin)
 	mod := rt_mod.DomainModule(m.Domain())
 	var alloc func(h KVarea, o object.Object)
 	alloc = func(h KVarea, o object.Object) {
@@ -337,6 +343,9 @@ func arrConv(x interface{}) []interface{} {
 		return ret
 	case []interface{}:
 		return a
+	case int32:
+		fmt.Println("not an array")
+		return []interface{}{rune(0)}
 	default:
 		panic(fmt.Sprintln("unsupported", reflect.TypeOf(x)))
 	}

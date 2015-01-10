@@ -121,6 +121,7 @@ type LoopNode interface {
 type DerefNode interface {
 	self() DerefNode
 	Node
+	Ptr(...string) bool
 }
 
 type FieldNode interface {

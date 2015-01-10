@@ -41,6 +41,22 @@ func int32Of(x interface{}) (a int32) {
 	case *big.Int:
 		a = int32(v.Int64())
 	default:
+		//panic(fmt.Sprintln("unsupported type", reflect.TypeOf(x)))
+	}
+	return a
+}
+
+func float64Of(x interface{}) (a float64) {
+	//fmt.Println(reflect.TypeOf(x))
+	switch v := x.(type) {
+	case *int32:
+		z := *x.(*int32)
+		a = float64(z)
+	case int32:
+		a = float64(x.(int32))
+	case float64:
+		a = v
+	default:
 		panic(fmt.Sprintln("unsupported type", reflect.TypeOf(x)))
 	}
 	return a
@@ -60,6 +76,55 @@ func max(_a interface{}, _b interface{}) interface{} {
 	var a int32 = int32Of(_a)
 	var b int32 = int32Of(_b)
 	return int32(math.Max(float64(a), float64(b)))
+}
+
+func div(_a interface{}, _b interface{}) interface{} {
+	assert.For(_a != nil, 20)
+	assert.For(_b != nil, 21)
+	var a int32 = int32Of(_a)
+	var b int32 = int32Of(_b)
+	return a / b
+}
+
+func mod(_a interface{}, _b interface{}) interface{} {
+	assert.For(_a != nil, 20)
+	assert.For(_b != nil, 21)
+	var a int32 = int32Of(_a)
+	var b int32 = int32Of(_b)
+	return a % b
+}
+
+func times(_a interface{}, _b interface{}) interface{} {
+	assert.For(_a != nil, 20)
+	assert.For(_b != nil, 21)
+	var a int32 = int32Of(_a)
+	var b int32 = int32Of(_b)
+	return a * b
+}
+
+func slash(_a interface{}, _b interface{}) interface{} {
+	assert.For(_a != nil, 20)
+	assert.For(_b != nil, 21)
+	var a float64 = float64Of(_a)
+	var b float64 = float64Of(_b)
+	return a / b
+}
+
+func ash(_a interface{}, _b interface{}) interface{} {
+	assert.For(_a != nil, 20)
+	assert.For(_b != nil, 21)
+	var a int32 = int32Of(_a)
+	var b int32 = int32Of(_b)
+	return a << uint(b)
+}
+
+func in(_a interface{}, _b interface{}) bool {
+	assert.For(_a != nil, 20)
+	assert.For(_b != nil, 21)
+	var a int32 = int32Of(_a)
+	var b int32 = int32Of(_b)
+	fmt.Println("операция IN все врет")
+	return a == b
 }
 
 func sum(_a interface{}, _b interface{}) interface{} {
@@ -86,6 +151,22 @@ func eq(_a interface{}, _b interface{}) bool {
 	return a == b
 }
 
+func and(_a interface{}, _b interface{}) bool {
+	assert.For(_a != nil, 20)
+	assert.For(_b != nil, 21)
+	var a bool = boolOf(_a)
+	var b bool = boolOf(_b)
+	return a && b
+}
+
+func or(_a interface{}, _b interface{}) bool {
+	assert.For(_a != nil, 20)
+	assert.For(_b != nil, 21)
+	var a bool = boolOf(_a)
+	var b bool = boolOf(_b)
+	return a || b
+}
+
 func lss(_a interface{}, _b interface{}) bool {
 	assert.For(_a != nil, 20)
 	assert.For(_b != nil, 21)
@@ -101,6 +182,15 @@ func gtr(_a interface{}, _b interface{}) bool {
 	var b int32 = int32Of(_b)
 	return a > b
 }
+
+func geq(_a interface{}, _b interface{}) bool {
+	assert.For(_a != nil, 20)
+	assert.For(_b != nil, 21)
+	var a int32 = int32Of(_a)
+	var b int32 = int32Of(_b)
+	return a >= b
+}
+
 func leq(_a interface{}, _b interface{}) bool {
 	assert.For(_a != nil, 20)
 	assert.For(_b != nil, 21)
@@ -257,6 +347,13 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				default:
 					panic(fmt.Sprintln("ooops", reflect.TypeOf(x)))
 				}
+			case object.REAL:
+				switch v := x.(type) {
+				case int32:
+					fu.DataOf(f.Parent())[n] = float64(v)
+				default:
+					panic(fmt.Sprintln("ooops", reflect.TypeOf(x)))
+				}
 			default:
 				panic(fmt.Sprintln("wrong type", n.Type()))
 			}
@@ -350,6 +447,33 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			return frame.End()
 		case operation.MIN:
 			fu.DataOf(f.Parent())[n] = min(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			return frame.End()
+		case operation.DIV:
+			fu.DataOf(f.Parent())[n] = div(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			return frame.End()
+		case operation.MOD:
+			fu.DataOf(f.Parent())[n] = mod(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			return frame.End()
+		case operation.TIMES:
+			fu.DataOf(f.Parent())[n] = times(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			return frame.End()
+		case operation.SLASH:
+			fu.DataOf(f.Parent())[n] = slash(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			return frame.End()
+		case operation.IN:
+			fu.DataOf(f.Parent())[n] = in(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			return frame.End()
+		case operation.ASH:
+			fu.DataOf(f.Parent())[n] = ash(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			return frame.End()
+		case operation.AND:
+			fu.DataOf(f.Parent())[n] = and(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			return frame.End()
+		case operation.OR:
+			fu.DataOf(f.Parent())[n] = or(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			return frame.End()
+		case operation.GREAT_EQUAL:
+			fu.DataOf(f.Parent())[n] = geq(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
 			return frame.End()
 		default:
 			panic(fmt.Sprintln("unknown operation", n.(node.OperationNode).Operation()))

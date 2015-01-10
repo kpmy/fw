@@ -9,10 +9,16 @@ import (
 )
 
 const INIT constant.Class = -1
+const COMPOUND constant.Class = -2
 
 type InitNode interface {
 	Node
 	self() InitNode
+}
+
+type CompNode interface {
+	Node
+	self() CompNode
 }
 
 func New(class constant.Class) Node {
@@ -71,6 +77,8 @@ func New(class constant.Class) Node {
 		return new(doNode)
 	case constant.RANGE:
 		return new(rangeNode)
+	case COMPOUND:
+		return new(compNode)
 	default:
 		panic("no such class")
 	}
@@ -230,9 +238,17 @@ func (v *loopNode) self() LoopNode { return v }
 
 type derefNode struct {
 	nodeFields
+	ptr bool
 }
 
 func (v *derefNode) self() DerefNode { return v }
+
+func (c *derefNode) Ptr(x ...string) bool {
+	if len(x) > 0 {
+		c.ptr = x[0] == "ptr"
+	}
+	return c.ptr
+}
 
 type fieldNode struct {
 	nodeFields
@@ -245,6 +261,12 @@ type initNode struct {
 }
 
 func (v *initNode) self() InitNode { return v }
+
+type compNode struct {
+	nodeFields
+}
+
+func (v *compNode) self() CompNode { return v }
 
 type indexNode struct {
 	nodeFields
