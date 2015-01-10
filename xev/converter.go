@@ -323,30 +323,7 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			ret = node.New(constant.VARIABLE)
 		case "dyadic":
 			ret = node.New(constant.DYADIC)
-			switch n.Data.Nod.Operation {
-			case "+":
-				ret.(node.OperationNode).SetOperation(operation.PLUS)
-			case "-":
-				ret.(node.OperationNode).SetOperation(operation.MINUS)
-			case "=":
-				ret.(node.OperationNode).SetOperation(operation.EQUAL)
-			case "<":
-				ret.(node.OperationNode).SetOperation(operation.LESSER)
-			case "<=":
-				ret.(node.OperationNode).SetOperation(operation.LESS_EQUAL)
-			case "len":
-				ret.(node.OperationNode).SetOperation(operation.LEN)
-			case "#":
-				ret.(node.OperationNode).SetOperation(operation.NOT_EQUAL)
-			case ">":
-				ret.(node.OperationNode).SetOperation(operation.GREATER)
-			case "max":
-				ret.(node.OperationNode).SetOperation(operation.MAX)
-			case "min":
-				ret.(node.OperationNode).SetOperation(operation.MIN)
-			default:
-				panic(fmt.Sprintln("no such operation", n.Data.Nod.Operation))
-			}
+			ret.(node.OperationNode).SetOperation(operation.This(n.Data.Nod.Operation))
 		case "constant":
 			ret = node.New(constant.CONSTANT)
 			convertData(n.Data.Nod.Typ, n.Data.Nod.Value, ret.(node.ConstantNode))
@@ -387,24 +364,11 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			ret = node.New(constant.RETURN)
 		case "monadic":
 			ret = node.New(constant.MONADIC)
+			ret.(node.OperationNode).SetOperation(operation.This(n.Data.Nod.Operation))
 			switch n.Data.Nod.Operation {
-			case "convert":
+			case "CONV":
 				ret.(node.OperationNode).SetOperation(operation.CONVERT)
 				initType(n.Data.Nod.Typ, ret.(node.MonadicNode))
-			case "not":
-				ret.(node.OperationNode).SetOperation(operation.NOT)
-			case "is":
-				ret.(node.OperationNode).SetOperation(operation.IS)
-			case "abs":
-				ret.(node.OperationNode).SetOperation(operation.ABS)
-			case "odd":
-				ret.(node.OperationNode).SetOperation(operation.ODD)
-			case "cap":
-				ret.(node.OperationNode).SetOperation(operation.CAP)
-			case "bits":
-				ret.(node.OperationNode).SetOperation(operation.BITS)
-			default:
-				panic("no such operation " + n.Data.Nod.Operation)
 			}
 		case "conditional":
 			ret = node.New(constant.CONDITIONAL)
