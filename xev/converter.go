@@ -79,7 +79,7 @@ func initType(typ string, conv typed) {
 	case "":
 		conv.SetType(object.NOTYPE)
 	default:
-		panic("no such constant type")
+		panic(fmt.Sprintln("no such constant type", typ))
 	}
 }
 
@@ -234,6 +234,9 @@ func (r *Result) doObject(n *Node) object.Object {
 		case "external procedure":
 			ret = object.New(object.EXTERNAL_PROC)
 			ret.SetType(object.PROCEDURE)
+		case "type procedure":
+			ret = object.New(object.TYPE_PROC)
+			ret.SetType(object.PROCEDURE)
 		case "constant":
 			ret = object.New(object.CONSTANT)
 			convertData(n.Data.Obj.Typ, n.Data.Obj.Value, ret.(object.ConstantObject))
@@ -340,15 +343,15 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 		case "assign":
 			ret = node.New(constant.ASSIGN)
 			switch n.Data.Nod.Statement {
-			case "assign":
+			case ":=":
 				ret.(node.AssignNode).SetStatement(statement.ASSIGN)
-			case "inc":
+			case "INC":
 				ret.(node.AssignNode).SetStatement(statement.INC)
-			case "dec":
+			case "DEC":
 				ret.(node.AssignNode).SetStatement(statement.DEC)
-			case "incl":
+			case "INCL":
 				ret.(node.AssignNode).SetStatement(statement.INCL)
-			case "excl":
+			case "EXCL":
 				ret.(node.AssignNode).SetStatement(statement.EXCL)
 			default:
 				panic(fmt.Sprintln("unknown assign statement", n.Data.Nod.Statement))
@@ -358,6 +361,7 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 		case "procedure":
 			ret = node.New(constant.PROCEDURE)
 			proc = ret.(node.ProcedureNode)
+			proc.Super(n.Data.Nod.Proc)
 		case "parameter":
 			ret = node.New(constant.PARAMETER)
 		case "return":

@@ -37,6 +37,7 @@ type CptNode struct {
 	Statement string `xml:"urn:bbcb:component:dev:cpt statement,attr"`
 	Proto     string `xml:"urn:bbcb:component:dev:cpt proto,attr"`
 	From      string `xml:"urn:bbcb:component:dev:cpt from,attr"`
+	Proc      string `xml:"urn:bbcb:component:dev:cpt proc,attr"`
 }
 
 type NodeData struct {

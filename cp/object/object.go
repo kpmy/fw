@@ -11,6 +11,7 @@ const (
 	VARIABLE
 	LOCAL_PROC
 	EXTERNAL_PROC
+	TYPE_PROC
 	CONSTANT
 	PARAMETER
 	FIELD
@@ -79,6 +80,8 @@ func New(mode Mode) Object {
 		return new(parameterObject)
 	case EXTERNAL_PROC:
 		return new(externalProcedureObject)
+	case TYPE_PROC:
+		return new(typeProcedureObject)
 	case FIELD:
 		return new(fieldObject)
 	case TYPE:
@@ -141,7 +144,14 @@ type externalProcedureObject struct {
 }
 
 func (p *externalProcedureObject) self() ProcedureObject { return p }
-func (v *variableObject) self() VariableObject           { return v }
+
+type typeProcedureObject struct {
+	objectFields
+}
+
+func (p *typeProcedureObject) self() ProcedureObject { return p }
+
+func (v *variableObject) self() VariableObject { return v }
 
 type constantObject struct {
 	objectFields

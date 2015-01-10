@@ -169,9 +169,16 @@ func (v *callNode) self() CallNode { return v }
 
 type procedureNode struct {
 	nodeFields
+	super bool
 }
 
 func (v *procedureNode) self() ProcedureNode { return v }
+func (v *procedureNode) Super(x ...string) bool {
+	if len(x) > 0 {
+		v.super = x[0] == "super"
+	}
+	return v.super
+}
 
 type parameterNode struct {
 	nodeFields

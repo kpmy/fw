@@ -63,6 +63,7 @@ type CallNode interface {
 
 type ProcedureNode interface {
 	self() ProcedureNode
+	Super(...string) bool
 	Node
 }
 

@@ -37,7 +37,10 @@ fw -i=XevDemo17
 IF ERRORLEVEL 1 GOTO err
 fw -i=XevDemo18
 IF ERRORLEVEL 1 GOTO err
-
+fw -i=XevDemo19
+IF ERRORLEVEL 1 GOTO err
+fw -i=XevDemo20
+IF ERRORLEVEL 1 GOTO err
 GOTO ok
 :err
 echo FAILED
