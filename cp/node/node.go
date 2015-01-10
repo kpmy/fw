@@ -168,3 +168,8 @@ type DoNode interface {
 	self() DoNode
 	Node
 }
+
+type RangeNode interface {
+	self() RangeNode
+	Node
+}

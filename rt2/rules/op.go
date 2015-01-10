@@ -46,6 +46,22 @@ func int32Of(x interface{}) (a int32) {
 	return a
 }
 
+func min(_a interface{}, _b interface{}) interface{} {
+	assert.For(_a != nil, 20)
+	assert.For(_b != nil, 21)
+	var a int32 = int32Of(_a)
+	var b int32 = int32Of(_b)
+	return int32(math.Min(float64(a), float64(b)))
+}
+
+func max(_a interface{}, _b interface{}) interface{} {
+	assert.For(_a != nil, 20)
+	assert.For(_b != nil, 21)
+	var a int32 = int32Of(_a)
+	var b int32 = int32Of(_b)
+	return int32(math.Max(float64(a), float64(b)))
+}
+
 func sum(_a interface{}, _b interface{}) interface{} {
 	assert.For(_a != nil, 20)
 	assert.For(_b != nil, 21)
@@ -303,8 +319,8 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	var fu nodeframe.FrameUtils
 
 	op := func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-		n := fu.NodeOf(f)
-		switch n.(node.OperationNode).Operation() {
+		n := fu.NodeOf(f).(node.OperationNode)
+		switch n.Operation() {
 		case operation.PLUS:
 			fu.DataOf(f.Parent())[n] = sum(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
 			return frame.End()
@@ -329,8 +345,14 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case operation.GREATER:
 			fu.DataOf(f.Parent())[n] = gtr(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
 			return frame.End()
+		case operation.MAX:
+			fu.DataOf(f.Parent())[n] = max(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			return frame.End()
+		case operation.MIN:
+			fu.DataOf(f.Parent())[n] = min(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			return frame.End()
 		default:
-			panic("unknown operation")
+			panic(fmt.Sprintln("unknown operation", n.(node.OperationNode).Operation()))
 		}
 	}
 
@@ -385,7 +407,7 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			}
 			ret = frame.NOW
 			return seq, ret
-		case node.OperationNode, node.DerefNode:
+		case node.OperationNode, node.DerefNode, node.RangeNode:
 			fu.Push(fu.New(n.Left()), f)
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				return right, frame.NOW

@@ -69,6 +69,8 @@ func New(class constant.Class) Node {
 		return new(elseNode)
 	case constant.DO:
 		return new(doNode)
+	case constant.RANGE:
+		return new(rangeNode)
 	default:
 		panic("no such class")
 	}
@@ -304,3 +306,9 @@ type doNode struct {
 }
 
 func (v *doNode) self() DoNode { return v }
+
+type rangeNode struct {
+	nodeFields
+}
+
+func (v *rangeNode) self() RangeNode { return v }

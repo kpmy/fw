@@ -28,4 +28,5 @@ const (
 	CASE
 	ELSE
 	DO
+	RANGE
 )

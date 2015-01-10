@@ -340,6 +340,10 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 				ret.(node.OperationNode).SetOperation(operation.NOT_EQUAL)
 			case ">":
 				ret.(node.OperationNode).SetOperation(operation.GREATER)
+			case "max":
+				ret.(node.OperationNode).SetOperation(operation.MAX)
+			case "min":
+				ret.(node.OperationNode).SetOperation(operation.MIN)
 			default:
 				panic(fmt.Sprintln("no such operation", n.Data.Nod.Operation))
 			}
@@ -365,8 +369,12 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 				ret.(node.AssignNode).SetStatement(statement.INC)
 			case "dec":
 				ret.(node.AssignNode).SetStatement(statement.DEC)
+			case "incl":
+				ret.(node.AssignNode).SetStatement(statement.INCL)
+			case "excl":
+				ret.(node.AssignNode).SetStatement(statement.EXCL)
 			default:
-				panic("unknown assign statement")
+				panic(fmt.Sprintln("unknown assign statement", n.Data.Nod.Statement))
 			}
 		case "call":
 			ret = node.New(constant.CALL)
@@ -446,6 +454,8 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			}
 		case "do":
 			ret = node.New(constant.DO)
+		case "range":
+			ret = node.New(constant.RANGE)
 		default:
 			fmt.Println(n.Data.Nod.Class)
 			panic("no such node type")

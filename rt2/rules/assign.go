@@ -147,14 +147,14 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			fmt.Println(reflect.TypeOf(a.Left()))
 			panic("wrong left")
 		}
-	case statement.INC:
+	case statement.INC, statement.INCL:
 		switch a.Left().(type) {
 		case node.VariableNode, node.ParameterNode:
 			seq, ret = incSeq(f)
 		default:
 			panic(fmt.Sprintln("wrong left", reflect.TypeOf(a.Left())))
 		}
-	case statement.DEC:
+	case statement.DEC, statement.EXCL:
 		switch a.Left().(type) {
 		case node.VariableNode, node.ParameterNode:
 			seq, ret = decSeq(f)
