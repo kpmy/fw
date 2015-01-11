@@ -79,7 +79,7 @@ func initType(typ string, conv typed) {
 	case "":
 		conv.SetType(object.NOTYPE)
 	default:
-		panic(fmt.Sprintln("no such constant type", typ))
+		panic(fmt.Sprintln("no such type", typ))
 	}
 }
 
@@ -152,74 +152,88 @@ func convertData(typ string, val string, conv convertable) {
 
 var nodeMap map[string]node.Node
 var objectMap map[string]object.Object
+var typeMap map[string]object.ComplexType
 
 func (r *Result) doType(n *Node) (ret object.ComplexType) {
-	switch n.Data.Typ.Form {
-	case "BASIC":
-		switch n.Data.Typ.Typ {
-		case "PROCEDURE":
-			t := object.NewBasicType(object.PROCEDURE)
+	ret = typeMap[n.Id]
+	if ret == nil {
+		switch n.Data.Typ.Form {
+		case "BASIC":
+			switch n.Data.Typ.Typ {
+			case "PROCEDURE":
+				t := object.NewBasicType(object.PROCEDURE)
+				link := r.findLink(n, "link")
+				if link != nil {
+					t.SetLink(r.doObject(link))
+					assert.For(t.Link() != nil, 40)
+				}
+				ret = t
+			case "CHAR", "SHORTCHAR", "INTEGER", "LONGINT", "BYTE",
+				"SHORTINT", "BOOLEAN", "REAL", "SHORTREAL", "SET":
+			case "POINTER":
+				t := object.NewPointerType(n.Data.Typ.Name)
+				base := r.findLink(n, "base")
+				if base != nil {
+					t.Base(r.doType(base))
+					assert.For(t.Base() != nil, 41)
+				}
+				ret = t
+			default:
+				fmt.Println("unknown basic type", n.Data.Typ.Typ)
+			}
+		case "DYNAMIC":
+			switch n.Data.Typ.Base {
+			case "CHAR":
+				n := object.NewDynArrayType(object.CHAR)
+				ret = n
+			case "BYTE":
+				n := object.NewDynArrayType(object.BYTE)
+				ret = n
+			case "SHORTCHAR":
+				n := object.NewDynArrayType(object.SHORTCHAR)
+				ret = n
+			default:
+				panic(fmt.Sprintln("unknown dyn type", n.Data.Typ.Typ))
+			}
+		case "ARRAY":
+			switch n.Data.Typ.Base {
+			case "CHAR":
+				n := object.NewArrayType(object.CHAR, int64(n.Data.Typ.Par))
+				ret = n
+			default:
+				panic(fmt.Sprintln("unknown array type", n.Data.Typ.Typ))
+			}
+		case "RECORD":
+			switch n.Data.Typ.Base {
+			case "NOTYP":
+				n := object.NewRecordType(n.Data.Typ.Name)
+				ret = n
+			default:
+				n := object.NewRecordType(n.Data.Typ.Name, n.Data.Typ.Base)
+				ret = n
+			}
 			link := r.findLink(n, "link")
 			if link != nil {
-				t.SetLink(r.doObject(link))
-				assert.For(t.Link() != nil, 40)
+				ret.SetLink(r.doObject(link))
+				assert.For(ret.Link() != nil, 40)
 			}
-			ret = t
-		case "CHAR", "SHORTCHAR", "INTEGER", "LONGINT", "BYTE",
-			"SHORTINT", "BOOLEAN", "REAL", "SHORTREAL", "SET":
+			base := r.findLink(n, "base")
+			if base != nil {
+				ret.(object.RecordType).SetBase(r.doType(base))
+				assert.For(ret.(object.RecordType).BaseType() != nil, 41)
+			}
 		default:
-			fmt.Println("unknown basic type", n.Data.Typ.Typ)
+			panic(fmt.Sprintln("unknown form", n.Data.Typ.Form))
 		}
-	case "DYNAMIC":
-		switch n.Data.Typ.Base {
-		case "CHAR":
-			n := object.NewDynArrayType(object.CHAR)
-			ret = n
-		case "BYTE":
-			n := object.NewDynArrayType(object.BYTE)
-			ret = n
-		case "SHORTCHAR":
-			n := object.NewDynArrayType(object.SHORTCHAR)
-			ret = n
-		default:
-			panic(fmt.Sprintln("unknown dyn type", n.Data.Typ.Typ))
-		}
-	case "ARRAY":
-		switch n.Data.Typ.Base {
-		case "CHAR":
-			n := object.NewArrayType(object.CHAR, int64(n.Data.Typ.Par))
-			ret = n
-		default:
-			panic(fmt.Sprintln("unknown array type", n.Data.Typ.Typ))
-		}
-	case "RECORD":
-		switch n.Data.Typ.Base {
-		case "NOTYP":
-			n := object.NewRecordType(n.Data.Typ.Name)
-			ret = n
-		default:
-			n := object.NewRecordType(n.Data.Typ.Name, n.Data.Typ.Base)
-			ret = n
-		}
-		link := r.findLink(n, "link")
-		if link != nil {
-			ret.SetLink(r.doObject(link))
-			assert.For(ret.Link() != nil, 40)
-		}
-		base := r.findLink(n, "base")
-		if base != nil {
-			ret.(object.RecordType).SetBase(r.doType(base))
-			assert.For(ret.(object.RecordType).BaseType() != nil, 41)
-		}
-	default:
-		panic(fmt.Sprintln("unknown form", n.Data.Typ.Form))
+	}
+	if ret != nil {
+		typeMap[n.Id] = ret
 	}
 	return ret
 }
 
-func (r *Result) doObject(n *Node) object.Object {
+func (r *Result) doObject(n *Node) (ret object.Object) {
 	assert.For(n != nil, 20)
-	var ret object.Object
 	ret = objectMap[n.Id]
 	if ret == nil {
 		switch n.Data.Obj.Mode {
@@ -254,7 +268,7 @@ func (r *Result) doObject(n *Node) object.Object {
 			panic("no such object mode")
 		}
 	}
-	if ret != nil {
+	if ret != nil && objectMap[n.Id] == nil {
 		objectMap[n.Id] = ret
 		ret.SetName(n.Data.Obj.Name)
 
@@ -342,20 +356,7 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			}
 		case "assign":
 			ret = node.New(constant.ASSIGN)
-			switch n.Data.Nod.Statement {
-			case ":=":
-				ret.(node.AssignNode).SetStatement(statement.ASSIGN)
-			case "INC":
-				ret.(node.AssignNode).SetStatement(statement.INC)
-			case "DEC":
-				ret.(node.AssignNode).SetStatement(statement.DEC)
-			case "INCL":
-				ret.(node.AssignNode).SetStatement(statement.INCL)
-			case "EXCL":
-				ret.(node.AssignNode).SetStatement(statement.EXCL)
-			default:
-				panic(fmt.Sprintln("unknown assign statement", n.Data.Nod.Statement))
-			}
+			ret.(node.AssignNode).SetStatement(statement.This(n.Data.Nod.Statement))
 		case "call":
 			ret = node.New(constant.CALL)
 		case "procedure":
@@ -504,6 +505,7 @@ func buildMod(r *Result) (nodeList []node.Node, scopeList map[node.Node][]object
 func DoAST(r *Result) (mod *module.Module) {
 	nodeMap = make(map[string]node.Node)
 	objectMap = make(map[string]object.Object)
+	typeMap = make(map[string]object.ComplexType)
 	mod = new(module.Module)
 	mod.Nodes, mod.Objects, mod.Types, mod.Enter = buildMod(r)
 	fmt.Println(len(mod.Nodes), len(mod.Objects))

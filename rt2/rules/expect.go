@@ -7,10 +7,12 @@ import (
 	"fw/rt2/frame"
 	"fw/rt2/scope"
 	"reflect"
+	"ypk/assert"
 )
 
 //функция вернет в данные родительского фрейма вычисленное значение expr
 func expectExpr(parent frame.Frame, expr node.Node, next frame.Sequence) (frame.Sequence, frame.WAIT) {
+	assert.For(expr != nil, 20)
 	sm := rt2.ScopeOf(parent)
 	switch e := expr.(type) {
 	case node.ConstantNode:

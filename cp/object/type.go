@@ -75,6 +75,12 @@ type BasicType interface {
 	Type() Type
 }
 
+type PointerType interface {
+	ComplexType
+	Base(...ComplexType) ComplexType
+	Name() string
+}
+
 type ArrayType interface {
 	ComplexType
 	Base() Type
@@ -140,7 +146,7 @@ func (r *rec) Name() string { return r.name }
 func (r *rec) Base() string { return r.base }
 func NewRecordType(n string, par ...string) RecordType {
 	if len(par) == 0 {
-		return &rec{name: n}
+		return &rec{}
 	} else {
 		return &rec{name: n, base: par[0]}
 	}
@@ -149,4 +155,24 @@ func NewRecordType(n string, par ...string) RecordType {
 func (r *rec) BaseType() RecordType { return r.basetyp }
 func (r *rec) SetBase(t ComplexType) {
 	r.basetyp = t.(RecordType)
+}
+
+type ptr struct {
+	comp
+	basetyp ComplexType
+	name    string
+}
+
+func NewPointerType(n string) PointerType {
+	return &ptr{name: n}
+}
+
+func (p *ptr) Name() string { return p.name }
+func (p *ptr) Base(x ...ComplexType) ComplexType {
+	if len(x) == 1 {
+		p.basetyp = x[0]
+	} else if len(x) > 1 {
+		panic("there can be only one")
+	}
+	return p.basetyp
 }

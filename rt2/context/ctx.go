@@ -5,6 +5,7 @@ const (
 	SCOPE    = "fw/rt2/scope"
 	MOD      = "fw/rt2/module"
 	UNIVERSE = "fw/rt2/ctx"
+	HEAP     = "fw/rt2/scope,heap"
 )
 
 type Domain interface {

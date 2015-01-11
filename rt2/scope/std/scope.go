@@ -182,6 +182,8 @@ func obj(o object.Object) (key scope.ID, val interface{}) {
 			val = &arr{link: o}
 		case object.RecordType:
 			val = &rec{link: o}
+		case object.PointerType:
+			val = &basic{link: o}
 		default:
 			fmt.Println("unexpected", reflect.TypeOf(t))
 		}
@@ -265,8 +267,9 @@ func (m *manager) Initialize(n node.Node, o object.Object, _val node.Node) {
 			case object.ParameterObject:
 				h.get(scope.ID{Name: next.Name()}).(*ref).ref = design(ov)
 			}
+
 		default:
-			panic("unknown value")
+			panic(fmt.Sprintln("unknown value", reflect.TypeOf(val)))
 		}
 		val = val.Link()
 	}

@@ -27,8 +27,11 @@ func (d *stdDomain) Discover(name string) (ret context.ContextAware) {
 	if d.list != nil {
 		ret = d.list[name]
 	}
-	if name == context.UNIVERSE {
+	switch name {
+	case context.UNIVERSE:
 		ret = d.global
+	case context.HEAP:
+		ret = d.global.Discover(name)
 	}
 	return ret
 }

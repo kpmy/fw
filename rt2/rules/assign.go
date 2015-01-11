@@ -161,6 +161,15 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		default:
 			panic(fmt.Sprintln("wrong left", reflect.TypeOf(a.Left())))
 		}
+	case statement.NEW:
+		if a.Right() != nil {
+			seq, ret = expectExpr(f, a.Right(), func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+				fmt.Println(rt2.DataOf(f)[a.Right()])
+				return frame.End()
+			})
+		} else {
+			return frame.End()
+		}
 	default:
 		panic(fmt.Sprintln("wrong statement", a.(node.AssignNode).Statement()))
 	}

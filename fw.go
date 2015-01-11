@@ -31,6 +31,7 @@ func main() {
 	global := new(stdDomain)
 	modList := module.New()
 	global.ConnectTo(context.MOD, modList)
+	global.ConnectTo(context.HEAP, scope.New())
 	t0 := time.Now()
 	ret, err := modList.Load(name)
 	t1 := time.Now()
