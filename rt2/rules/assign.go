@@ -171,8 +171,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		} else {
 			fmt.Println("NEW here")
 			heap := scope.This(f.Domain().Discover(context.HEAP))
-			fmt.Println(heap)
-			panic(0)
+			heap.Target().(scope.HeapAllocator).Allocate(a.Left())
 			return frame.End()
 		}
 	default:

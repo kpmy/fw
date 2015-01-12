@@ -187,7 +187,7 @@ func obj(o object.Object) (key scope.ID, val interface{}) {
 		case object.RecordType:
 			val = &rec{link: o}
 		case object.PointerType:
-			val = &basic{link: o}
+			val = &ref{link: o}
 		default:
 			fmt.Println("unexpected", reflect.TypeOf(t))
 		}
@@ -201,6 +201,28 @@ func obj(o object.Object) (key scope.ID, val interface{}) {
 	return key, val
 }
 
+func alloc(root node.Node, h KVarea, o object.Object) {
+	if k, v := obj(o); v != nil {
+		h.set(k, v)
+		switch rv := v.(type) {
+		case record:
+			rv.init(root)
+			switch t := o.Complex().(type) {
+			case object.RecordType:
+				for rec := t; rec != nil; {
+					for x := rec.Link(); x != nil; x = x.Link() {
+						//fmt.Println(o.Name(), ".", x.Name())
+						alloc(root, v.(KVarea), x)
+					}
+					rec = rec.BaseType()
+				}
+			}
+		}
+	} else {
+		//fmt.Println("nil allocated", reflect.TypeOf(o))
+	}
+}
+
 func (m *manager) Target(...scope.Allocator) scope.Allocator {
 	return m
 }
@@ -209,30 +231,8 @@ func (m *manager) Allocate(n node.Node, final bool) {
 	h := &area{ready: final, root: n, x: make(map[scope.ID]interface{})}
 	runtime.SetFinalizer(h, area_fin)
 	mod := rt_mod.DomainModule(m.Domain())
-	var alloc func(h KVarea, o object.Object)
-	alloc = func(h KVarea, o object.Object) {
-		if k, v := obj(o); v != nil {
-			h.set(k, v)
-			switch rv := v.(type) {
-			case record:
-				rv.init(n)
-				switch t := o.Complex().(type) {
-				case object.RecordType:
-					for rec := t; rec != nil; {
-						for x := rec.Link(); x != nil; x = x.Link() {
-							//fmt.Println(o.Name(), ".", x.Name())
-							alloc(v.(KVarea), x)
-						}
-						rec = rec.BaseType()
-					}
-				}
-			}
-		} else {
-			//fmt.Println("nil allocated", reflect.TypeOf(o))
-		}
-	}
 	for _, o := range mod.Objects[n] {
-		alloc(h, o)
+		alloc(n, h, o)
 	}
 	m.areas.PushFront(h)
 	//fmt.Println("allocate")

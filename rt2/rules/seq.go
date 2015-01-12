@@ -62,8 +62,12 @@ func Tail(x WAIT) Do {
 	return func(...IN) OUT { return OUT{next: x} }
 }
 
-func This(o OUT) (frame.Sequence, frame.WAIT) {
-	return Propose(o.do), o.next.wait()
+func This(o OUT) (seq frame.Sequence, ret frame.WAIT) {
+	ret = o.next.wait()
+	if ret != frame.STOP {
+		seq = Propose(o.do)
+	}
+	return seq, ret
 }
 
 func Propose(a Do) frame.Sequence {
