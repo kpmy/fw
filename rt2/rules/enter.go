@@ -45,16 +45,16 @@ func enterSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		//fmt.Println(fu.DataOf(f)[n.Object()])
 		//fmt.Println(ok)
 		if ok {
-			sm.Allocate(n, false)
+			sm.Target().(scope.ScopeAllocator).Allocate(n, false)
 			seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
-				return sm.Initialize(n, scope.PARAM{Objects: n.Object().Link(), Values: par, Frame: f, Tail: tail})
+				return sm.Target().(scope.ScopeAllocator).Initialize(n, scope.PARAM{Objects: n.Object().Link(), Values: par, Frame: f, Tail: tail})
 			}
 		} else {
-			sm.Allocate(n, true)
+			sm.Target().(scope.ScopeAllocator).Allocate(n, true)
 			seq = tail
 		}
 	} else {
-		sm.Allocate(n, true)
+		sm.Target().(scope.ScopeAllocator).Allocate(n, true)
 		seq = tail
 	}
 	return seq, frame.NOW

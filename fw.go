@@ -28,10 +28,10 @@ func main() {
 	if name == "" {
 		name = "XevDemo19"
 	}
-	global := new(stdDomain)
+	global := &stdDomain{god: true}
 	modList := module.New()
 	global.ConnectTo(context.MOD, modList)
-	global.ConnectTo(context.HEAP, scope.New())
+	global.ConnectTo(context.HEAP, scope.NewHeap())
 	t0 := time.Now()
 	ret, err := modList.Load(name)
 	t1 := time.Now()
@@ -44,7 +44,7 @@ func main() {
 		global.ConnectTo(name, domain)
 		root := frame.NewRoot()
 		domain.ConnectTo(context.STACK, root)
-		domain.ConnectTo(context.SCOPE, scope.New())
+		domain.ConnectTo(context.SCOPE, scope.NewStack())
 		var fu nodeframe.FrameUtils
 		root.PushFor(fu.New(ret.Enter), nil)
 		i := 0

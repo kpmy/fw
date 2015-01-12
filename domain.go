@@ -9,6 +9,7 @@ type stdDomain struct {
 	list   map[string]context.ContextAware
 	parent context.Domain
 	global context.Domain
+	god    bool
 }
 
 func (d *stdDomain) ConnectTo(name string, x context.ContextAware) {
@@ -27,11 +28,13 @@ func (d *stdDomain) Discover(name string) (ret context.ContextAware) {
 	if d.list != nil {
 		ret = d.list[name]
 	}
-	switch name {
-	case context.UNIVERSE:
-		ret = d.global
-	case context.HEAP:
-		ret = d.global.Discover(name)
+	if ret == nil {
+		switch {
+		case name == context.UNIVERSE:
+			ret = d.global
+		case name == context.HEAP && !d.god:
+			ret = d.global.Discover(name)
+		}
 	}
 	return ret
 }
@@ -43,14 +46,10 @@ func (d *stdDomain) Domain() context.Domain {
 func (d *stdDomain) Handle(msg interface{}) {}
 
 func (d *stdDomain) Init(dd context.Domain) {
-	glob := dd.(*stdDomain).global
-	assert.For(glob == nil, 20) //допустим только один уровень вложенности доменов пока
+	glob := dd.(*stdDomain)
+	assert.For(glob.god == true, 20) //допустим только один уровень вложенности доменов пока
 	d.parent = dd
-	if dd.(*stdDomain).global == nil {
-		d.global = dd
-	} else {
-		d.global = glob
-	}
+	d.global = dd
 }
 
 func (d *stdDomain) Id(c context.ContextAware) (ret string) {

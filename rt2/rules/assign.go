@@ -165,11 +165,14 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		if a.Right() != nil {
 			seq, ret = This(expectExpr(f, a.Right(), func(...IN) OUT {
 				fmt.Println(rt2.DataOf(f)[a.Right()])
-				fmt.Println("NEW here")
+				panic(fmt.Sprintln("NEW here"))
 				return End()
 			}))
 		} else {
 			fmt.Println("NEW here")
+			heap := scope.This(f.Domain().Discover(context.HEAP))
+			fmt.Println(heap)
+			panic(0)
 			return frame.End()
 		}
 	default:

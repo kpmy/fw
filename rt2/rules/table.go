@@ -110,7 +110,7 @@ func epilogue(n node.Node) frame.Sequence {
 	case node.EnterNode:
 		return func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			sm := scope.This(f.Domain().Discover(context.SCOPE))
-			sm.Dispose(n)
+			sm.Target().(scope.ScopeAllocator).Dispose(n)
 			return frame.End()
 		}
 	case node.OperationNode, node.ReturnNode, node.IfNode, node.LoopNode,

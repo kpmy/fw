@@ -44,9 +44,20 @@ type Manager interface {
 	context.ContextAware
 	Update(id ID, val ValueFor)
 	Select(id ID) interface{}
+	Target(...Allocator) Allocator
+}
+
+type Allocator interface{}
+
+type ScopeAllocator interface {
+	Allocator
 	Allocate(n node.Node, final bool)
 	Dispose(n node.Node)
 	Initialize(n node.Node, par PARAM) (frame.Sequence, frame.WAIT)
+}
+
+type HeapAllocator interface {
+	Allocator
 }
 
 //средство обновления значения
@@ -59,4 +70,5 @@ func This(i interface{}) Manager {
 	return i.(Manager)
 }
 
-var New func() Manager
+var NewStack func() Manager
+var NewHeap func() Manager

@@ -132,9 +132,11 @@ func nm() scope.Manager {
 }
 
 func init() {
-	scope.New = nm
+	scope.NewStack = nm
 	scope.Designator = design
 	scope.FindObjByName = FindObjByName
+
+	scope.NewHeap = nh
 }
 
 func design(n ...node.Node) (id scope.ID) {
@@ -197,6 +199,10 @@ func obj(o object.Object) (key scope.ID, val interface{}) {
 		fmt.Println(reflect.TypeOf(o))
 	}
 	return key, val
+}
+
+func (m *manager) Target(...scope.Allocator) scope.Allocator {
+	return m
 }
 
 func (m *manager) Allocate(n node.Node, final bool) {
