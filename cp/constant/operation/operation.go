@@ -8,9 +8,10 @@ type Operation int
 
 const (
 	WRONG Operation = iota
+	ALIEN_CONV
+	ALIEN_MSK
 	PLUS
 	MINUS
-	CONVERT
 	EQUAL
 	LESSER
 	LESS_EQUAL
@@ -41,7 +42,8 @@ var this map[string]Operation = make(map[string]Operation)
 func init() {
 	this[PLUS.String()] = PLUS
 	this[MINUS.String()] = MINUS
-	this[CONVERT.String()] = CONVERT
+	this[ALIEN_CONV.String()] = ALIEN_CONV
+	this[ALIEN_MSK.String()] = ALIEN_MSK
 	this[EQUAL.String()] = EQUAL
 	this[LESSER.String()] = LESSER
 	this[LESS_EQUAL.String()] = LESS_EQUAL
@@ -79,7 +81,7 @@ func (o Operation) String() string {
 		return "+"
 	case MINUS:
 		return "-"
-	case CONVERT:
+	case ALIEN_CONV:
 		return "CONV"
 	case EQUAL:
 		return "="
@@ -127,6 +129,8 @@ func (o Operation) String() string {
 		return "ASH"
 	case GREAT_EQUAL:
 		return ">="
+	case ALIEN_MSK:
+		return "MSK"
 	default:
 		return "?"
 	}

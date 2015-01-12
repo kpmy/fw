@@ -325,7 +325,7 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	}
 
 	switch n.Operation() {
-	case operation.CONVERT:
+	case operation.ALIEN_CONV:
 		switch n.Left().(type) {
 		case node.VariableNode, node.ParameterNode:
 			x := sc.Select(scope.Designator(n.Left()))
