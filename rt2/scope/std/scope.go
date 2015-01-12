@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"fw/cp/node"
 	"fw/cp/object"
+	"fw/rt2"
 	"fw/rt2/context"
+	"fw/rt2/frame"
 	rt_mod "fw/rt2/module"
 	"fw/rt2/scope"
 	"reflect"
@@ -230,18 +232,29 @@ func (m *manager) Allocate(n node.Node, final bool) {
 	//fmt.Println("allocate")
 }
 
-func (m *manager) Initialize(n node.Node, o object.Object, _val node.Node) {
+func (m *manager) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, ret frame.WAIT) {
 	e := m.areas.Front()
 	assert.For(e != nil, 20)
 	h := e.Value.(*area)
 	assert.For(h.root == n, 21)
 	assert.For(!h.ready, 22)
-	val := _val
-	//fmt.Println("initialize")
-	for next := o; next != nil; next = next.Link() {
+	val := par.Values
+	fmt.Println("initialize")
+	f := par.Frame
+	end := func(frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+		h.ready = true
+		if par.Tail != nil {
+			return par.Tail(f)
+		} else {
+			return frame.End()
+		}
+	}
+	seq = end
+	ret = frame.NOW
+	for next := par.Objects; next != nil; next = next.Link() {
 		assert.For(val != nil, 40)
-		//fmt.Println(reflect.TypeOf(next), next.Name(), ":", next.Type())
-		//fmt.Println(reflect.TypeOf(val))
+		fmt.Println(reflect.TypeOf(next), next.Name(), ":", next.Type())
+		fmt.Println(reflect.TypeOf(val))
 		switch ov := val.(type) {
 		case node.ConstantNode:
 			switch next.(type) {
@@ -250,7 +263,7 @@ func (m *manager) Initialize(n node.Node, o object.Object, _val node.Node) {
 					return ov.Data()
 				})
 			case object.ParameterObject:
-				k, v := scope.ID{Name: next.Name()}, &basic{link: o}
+				k, v := scope.ID{Name: next.Name()}, &basic{link: next}
 				h.set(k, v)
 				m.Update(odesign(next), func(old interface{}) interface{} {
 					return ov.Data()
@@ -267,13 +280,19 @@ func (m *manager) Initialize(n node.Node, o object.Object, _val node.Node) {
 			case object.ParameterObject:
 				h.get(scope.ID{Name: next.Name()}).(*ref).ref = design(ov)
 			}
-
+		case node.DerefNode:
+			rt2.Push(rt2.New(ov), f)
+			seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+				fmt.Println(rt2.DataOf(f)[ov])
+				return frame.End()
+			}
+			ret = frame.LATER
 		default:
 			panic(fmt.Sprintln("unknown value", reflect.TypeOf(val)))
 		}
 		val = val.Link()
 	}
-	h.ready = true
+	return seq, ret
 }
 
 func (m *manager) Dispose(n node.Node) {

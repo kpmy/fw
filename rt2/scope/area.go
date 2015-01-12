@@ -4,6 +4,7 @@ import (
 	"fw/cp/node"
 	"fw/cp/object"
 	"fw/rt2/context"
+	"fw/rt2/frame"
 	"strconv"
 )
 
@@ -30,14 +31,22 @@ func (i ID) String() string {
 	}
 }
 
+type PARAM struct {
+	Objects object.Object
+	Values  node.Node
+	Frame   frame.Frame
+	Tail    frame.Sequence
+}
+
 //менеджер зон видимости, зоны видимости динамические, создаются в момент входа в EnterNode
+// pk, 20150112, инициализация параметров теперь происходит как и обычный frame.Sequence, с использованием стека
 type Manager interface {
 	context.ContextAware
 	Update(id ID, val ValueFor)
 	Select(id ID) interface{}
 	Allocate(n node.Node, final bool)
 	Dispose(n node.Node)
-	Initialize(n node.Node, o object.Object, val node.Node)
+	Initialize(n node.Node, par PARAM) (frame.Sequence, frame.WAIT)
 }
 
 //средство обновления значения
