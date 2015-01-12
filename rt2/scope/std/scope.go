@@ -51,7 +51,7 @@ type value interface {
 }
 
 type reference interface {
-	id() scope.ID
+	id(...scope.ID) scope.ID
 }
 
 type array interface {
@@ -81,7 +81,14 @@ type ref struct {
 	ref  scope.ID
 }
 
-func (r *ref) id() scope.ID { return r.ref }
+func (r *ref) id(x ...scope.ID) scope.ID {
+	if len(x) == 1 {
+		r.ref = x[0]
+	} else if len(x) > 1 {
+		panic("there can be only one")
+	}
+	return r.ref
+}
 
 type arr struct {
 	link object.Object
@@ -144,10 +151,11 @@ func design(n ...node.Node) (id scope.ID) {
 	case node.VariableNode, node.ParameterNode:
 		id = scope.ID{Name: x.Object().Name()}
 	case node.FieldNode:
+		fmt.Println(x.Object().Name())
 		if len(n) == 1 {
-			id = scope.ID{Name: x.Left().Object().Name(), Path: [scope.DEPTH]string{x.Object().Name()}}
+			id = scope.ID{Name: x.Left().Object().Name(), Path: x.Object().Name()}
 		} else if n[1] != nil {
-			id = scope.ID{Name: n[1].Object().Name(), Path: [scope.DEPTH]string{x.Object().Name()}}
+			id = scope.ID{Name: n[1].Object().Name(), Path: x.Object().Name()}
 		} else {
 			panic("wrong params")
 		}
@@ -187,7 +195,7 @@ func obj(o object.Object) (key scope.ID, val interface{}) {
 		case object.RecordType:
 			val = &rec{link: o}
 		case object.PointerType:
-			val = &ref{link: o}
+			val = &ref{link: o, ref: scope.ID{Ref: new(int)}}
 		default:
 			fmt.Println("unexpected", reflect.TypeOf(t))
 		}
@@ -201,25 +209,23 @@ func obj(o object.Object) (key scope.ID, val interface{}) {
 	return key, val
 }
 
-func alloc(root node.Node, h KVarea, o object.Object) {
-	if k, v := obj(o); v != nil {
-		h.set(k, v)
-		switch rv := v.(type) {
-		case record:
-			rv.init(root)
-			switch t := o.Complex().(type) {
-			case object.RecordType:
-				for rec := t; rec != nil; {
-					for x := rec.Link(); x != nil; x = x.Link() {
-						//fmt.Println(o.Name(), ".", x.Name())
-						alloc(root, v.(KVarea), x)
-					}
-					rec = rec.BaseType()
+func alloc(root node.Node, h KVarea, k scope.ID, v interface{}) {
+	h.set(k, v)
+	switch rv := v.(type) {
+	case record:
+		rv.init(root)
+		o := rv.(*rec).link
+		switch t := o.Complex().(type) {
+		case object.RecordType:
+			for rec := t; rec != nil; {
+				for x := rec.Link(); x != nil; x = x.Link() {
+					//fmt.Println(o.Name(), ".", x.Name())
+					k, f := obj(x)
+					alloc(root, v.(KVarea), k, f)
 				}
+				rec = rec.BaseType()
 			}
 		}
-	} else {
-		//fmt.Println("nil allocated", reflect.TypeOf(o))
 	}
 }
 
@@ -232,10 +238,12 @@ func (m *manager) Allocate(n node.Node, final bool) {
 	runtime.SetFinalizer(h, area_fin)
 	mod := rt_mod.DomainModule(m.Domain())
 	for _, o := range mod.Objects[n] {
-		alloc(n, h, o)
+		k, v := obj(o)
+		//fmt.Println(k, v)
+		alloc(n, h, k, v)
 	}
 	m.areas.PushFront(h)
-	//fmt.Println("allocate")
+	fmt.Println("allocate")
 }
 
 func (m *manager) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, ret frame.WAIT) {
@@ -245,7 +253,7 @@ func (m *manager) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, 
 	assert.For(h.root == n, 21)
 	assert.For(!h.ready, 22)
 	val := par.Values
-	//fmt.Println("initialize")
+	fmt.Println("initialize")
 	f := par.Frame
 	end := func(frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		h.ready = true
@@ -289,8 +297,8 @@ func (m *manager) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, 
 		case node.DerefNode:
 			rt2.Push(rt2.New(ov), f)
 			seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
-				fmt.Println(rt2.DataOf(f)[ov])
-				return frame.End()
+				//fmt.Println(rt2.DataOf(f)[ov])
+				return end, frame.NOW
 			}
 			ret = frame.LATER
 		default:
@@ -312,20 +320,19 @@ func (m *manager) Dispose(n node.Node) {
 }
 
 func (m *manager) Select(i scope.ID) interface{} {
-	//fmt.Println("select", i)
-	depth := 0
 	type result struct {
 		x interface{}
 	}
 	var res *result
 	var sel func(interface{}) *result
-
+	fmt.Println(i)
 	sel = func(x interface{}) (ret *result) {
 		switch x := x.(type) {
 		case value:
 			ret = &result{x: x.get()}
 		case reference:
 			i = x.id()
+			fmt.Println("ref!", i)
 			ret = nil
 		case array:
 			if i.Index != nil {
@@ -334,15 +341,21 @@ func (m *manager) Select(i scope.ID) interface{} {
 				ret = &result{x: x.sel()}
 			}
 		case record:
-			if i.Path[depth] == "" {
+			if i.Path == "" {
 				ret = &result{x: x.(*rec).link}
 			} else {
-				z := x.getField(i.Path[depth])
-				depth++
+				z := x.getField(i.Path)
 				ret = sel(z)
 			}
 		case nil:
-			//do nothing
+			if i.Name == "@" {
+				fmt.Println("ptr")
+				if hm := m.Domain().Discover(context.HEAP).(scope.Manager); hm != nil {
+					ret = &result{x: hm.Select(i)}
+				} else {
+					panic(0)
+				}
+			}
 		default:
 			panic(0)
 		}
@@ -351,7 +364,6 @@ func (m *manager) Select(i scope.ID) interface{} {
 	for e := m.areas.Front(); (e != nil) && (res == nil); e = e.Next() {
 		h := e.Value.(*area)
 		if h.ready {
-			depth = 0
 			res = sel(h.get(i))
 		}
 	}
@@ -382,7 +394,6 @@ func arrConv(x interface{}) []interface{} {
 func (m *manager) Update(i scope.ID, val scope.ValueFor) {
 	assert.For(val != nil, 21)
 	var x interface{}
-	depth := 0
 	var upd func(x interface{}) (ret interface{})
 	upd = func(x interface{}) (ret interface{}) {
 		switch x := x.(type) {
@@ -394,8 +405,19 @@ func (m *manager) Update(i scope.ID, val scope.ValueFor) {
 			x.set(tmp)
 			ret = x
 		case reference:
-			i.Name = x.id().Name
-			ret = nil
+			if x.id().Ref != nil && *x.id().Ref == 0 { //это нулевой указатель
+				tmp := val(nil)
+				ret = x
+				switch id := tmp.(type) {
+				case scope.ID:
+					x.id(id)
+				default:
+					panic("only id for nil pointer")
+				}
+			} else { //это параметр процедуры
+				i.Name = x.id().Name
+				ret = nil
+			}
 		case array:
 			if i.Index != nil {
 				old := x.get(*i.Index)
@@ -412,12 +434,11 @@ func (m *manager) Update(i scope.ID, val scope.ValueFor) {
 			}
 			ret = x
 		case record:
-			if i.Path[depth] == "" {
+			if i.Path == "" {
 				//fmt.Println(i, depth)
 				panic(0) //случай выбора всей записи целиком
 			} else {
-				z := x.getField(i.Path[depth])
-				depth++
+				z := x.getField(i.Path)
 				ret = upd(z)
 			}
 		case nil:
@@ -430,7 +451,6 @@ func (m *manager) Update(i scope.ID, val scope.ValueFor) {
 	}
 	for e := m.areas.Front(); (e != nil) && (x == nil); e = e.Next() {
 		h := e.Value.(*area)
-		depth = 0
 		x = upd(h.get(i))
 	}
 	assert.For(x != nil, 40)

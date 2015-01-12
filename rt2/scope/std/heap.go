@@ -7,12 +7,13 @@ import (
 	"fw/rt2/context"
 	"fw/rt2/scope"
 	"reflect"
+	"ypk/assert"
 )
 
 type heap struct {
 	d    context.Domain
 	data *area
-	next int64
+	next int
 }
 
 func nh() scope.Manager {
@@ -24,7 +25,23 @@ func (h *heap) Allocate(n node.Node) scope.ValueFor {
 	case node.VariableNode:
 		switch t := v.Object().Complex().(type) {
 		case object.PointerType:
-
+			h.next++
+			switch bt := t.Base().(type) {
+			case object.RecordType:
+				fake := object.New(object.VARIABLE)
+				fake.SetComplex(bt)
+				fake.SetType(object.COMPLEX)
+				r := &rec{link: fake}
+				id := scope.ID{Name: "@"}
+				id.Ref = new(int)
+				*id.Ref = h.next
+				alloc(nil, h.data, id, r)
+				return func(interface{}) interface{} {
+					return id
+				}
+			default:
+				panic(fmt.Sprintln("cannot allocate", reflect.TypeOf(t)))
+			}
 		default:
 			panic(fmt.Sprintln("unsupported type", reflect.TypeOf(t)))
 		}
@@ -42,7 +59,33 @@ func (h *heap) Target(...scope.Allocator) scope.Allocator {
 
 func (h *heap) Update(i scope.ID, val scope.ValueFor) {}
 
-func (h *heap) Select(i scope.ID) interface{} { return nil }
+func (h *heap) Select(i scope.ID) interface{} {
+	fmt.Println("heap select", i)
+	type result struct {
+		x interface{}
+	}
+	var res *result
+	var sel func(interface{}) *result
+	sel = func(x interface{}) (ret *result) {
+		fmt.Println(x)
+		switch x := x.(type) {
+		case record:
+			if i.Path == "" {
+				ret = &result{x: x.(*rec).link}
+			} else {
+				z := x.getField(i.Path)
+				ret = sel(z)
+			}
+		default:
+			panic(0)
+		}
+		return ret
+	}
+	res = sel(h.data.get(i))
+	assert.For(res != nil, 40)
+	//fmt.Println(res.x)
+	return res.x
+}
 
 func (h *heap) Init(d context.Domain) { h.d = d }
 

@@ -8,22 +8,24 @@ import (
 	"strconv"
 )
 
-const DEPTH = 16
-
 type ID struct {
 	Name  string
-	Path  [DEPTH]string
+	Path  string
 	Index *int64
+	Ref   *int
 }
 
 func (i ID) String() string {
 	if i.Name != "" {
 		ret := i.Name
-		if i.Path[0] != "" {
-			ret = ret + "." + i.Path[0]
+		if i.Path != "" {
+			ret = ret + "." + i.Path
 		}
 		if i.Index != nil {
 			ret = ret + "[" + strconv.FormatInt(*i.Index, 10) + "]"
+		}
+		if i.Ref != nil {
+			ret = ret + strconv.Itoa(*i.Ref)
 		}
 		return ret
 	} else {

@@ -170,8 +170,9 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			}))
 		} else {
 			fmt.Println("NEW here")
+			sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 			heap := scope.This(f.Domain().Discover(context.HEAP))
-			heap.Target().(scope.HeapAllocator).Allocate(a.Left())
+			sc.Update(scope.Designator(a.Left()), heap.Target().(scope.HeapAllocator).Allocate(a.Left()))
 			return frame.End()
 		}
 	default:
