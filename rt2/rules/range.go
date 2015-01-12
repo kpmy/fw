@@ -21,10 +21,10 @@ func bit_range(_f interface{}, _t interface{}) interface{} {
 
 func rangeSeq(f frame.Frame) (frame.Sequence, frame.WAIT) {
 	n := rt2.NodeOf(f)
-	return expectExpr(f, n.Left(), func(f frame.Frame) (frame.Sequence, frame.WAIT) {
-		return expectExpr(f, n.Right(), func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+	return This(expectExpr(f, n.Left(), func(...IN) OUT {
+		return expectExpr(f, n.Right(), func(...IN) OUT {
 			rt2.DataOf(f.Parent())[n] = bit_range(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
-			return frame.End()
+			return End()
 		})
-	})
+	}))
 }

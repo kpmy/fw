@@ -163,11 +163,13 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		}
 	case statement.NEW:
 		if a.Right() != nil {
-			seq, ret = expectExpr(f, a.Right(), func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+			seq, ret = This(expectExpr(f, a.Right(), func(...IN) OUT {
 				fmt.Println(rt2.DataOf(f)[a.Right()])
-				return frame.End()
-			})
+				fmt.Println("NEW here")
+				return End()
+			}))
 		} else {
+			fmt.Println("NEW here")
 			return frame.End()
 		}
 	default:

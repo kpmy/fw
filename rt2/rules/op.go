@@ -406,7 +406,7 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			panic("wrong left")
 		}
 	case operation.ABS, operation.ODD, operation.CAP, operation.BITS:
-		return expectExpr(f, n.Left(), op)
+		return This(expectExpr(f, n.Left(), Expose(op)))
 	default:
 		panic(fmt.Sprintln("no such operation", n.(node.MonadicNode).Operation()))
 	}

@@ -1,0 +1,80 @@
+package rules
+
+import (
+	"fw/rt2/frame"
+)
+
+type WAIT int
+
+const (
+	WRONG WAIT = iota
+	STOP
+	LATER
+	NOW
+)
+
+type Do func(...IN) OUT
+
+type IN struct {
+	frame frame.Frame
+}
+
+type OUT struct {
+	do   Do
+	next WAIT
+}
+
+func (n WAIT) wait() frame.WAIT {
+	switch n {
+	case WRONG:
+		return frame.WRONG
+	case STOP:
+		return frame.STOP
+	case LATER:
+		return frame.LATER
+	case NOW:
+		return frame.NOW
+	default:
+		panic(n)
+	}
+}
+
+func waiting(n frame.WAIT) WAIT {
+	switch n {
+	case frame.WRONG:
+		return WRONG
+	case frame.STOP:
+		return STOP
+	case frame.LATER:
+		return LATER
+	case frame.NOW:
+		return NOW
+	default:
+		panic(n)
+	}
+}
+
+func End() OUT {
+	return OUT{next: STOP}
+}
+
+func Tail(x WAIT) Do {
+	return func(...IN) OUT { return OUT{next: x} }
+}
+
+func This(o OUT) (frame.Sequence, frame.WAIT) {
+	return Propose(o.do), o.next.wait()
+}
+
+func Propose(a Do) frame.Sequence {
+	return func(fr frame.Frame) (frame.Sequence, frame.WAIT) {
+		return This(a(IN{frame: fr}))
+	}
+}
+
+func Expose(f frame.Sequence) Do {
+	return func(in ...IN) (out OUT) {
+		s, w := f(in[0].frame)
+		return OUT{do: Expose(s), next: waiting(w)}
+	}
+}

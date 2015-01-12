@@ -11,29 +11,29 @@ import (
 )
 
 //функция вернет в данные родительского фрейма вычисленное значение expr
-func expectExpr(parent frame.Frame, expr node.Node, next frame.Sequence) (frame.Sequence, frame.WAIT) {
+func expectExpr(parent frame.Frame, expr node.Node, next Do) OUT {
 	assert.For(expr != nil, 20)
 	sm := rt2.ScopeOf(parent)
 	switch e := expr.(type) {
 	case node.ConstantNode:
 		rt2.DataOf(parent)[expr] = e.Data()
-		return next, frame.NOW
+		return OUT{do: next, next: NOW}
 	case node.VariableNode, node.ParameterNode:
 		rt2.DataOf(parent)[expr] = sm.Select(scope.Designator(expr))
-		return next, frame.NOW
+		return OUT{do: next, next: NOW}
 	case node.OperationNode, node.CallNode:
 		rt2.Push(rt2.New(expr), parent)
-		wait := func(frame.Frame) (frame.Sequence, frame.WAIT) {
+		wait := func(...IN) OUT {
 			if rt2.DataOf(parent)[expr] == nil {
 				panic("no result")
 			}
-			return next, frame.NOW
+			return OUT{do: next, next: NOW}
 		}
-		return wait, frame.LATER
+		return OUT{do: wait, next: LATER}
 	case node.IndexNode:
 		id := scope.Designator(expr)
 		rt2.Push(rt2.New(expr), parent)
-		wait := func(frame.Frame) (frame.Sequence, frame.WAIT) {
+		wait := func(...IN) OUT {
 			if rt2.DataOf(parent)[expr] == nil {
 				panic("no result")
 			} else {
@@ -41,12 +41,12 @@ func expectExpr(parent frame.Frame, expr node.Node, next frame.Sequence) (frame.
 				*id.Index = int64(rt2.DataOf(parent)[expr].(int32))
 				rt2.DataOf(parent)[expr] = sm.Select(id)
 			}
-			return next, frame.NOW
+			return OUT{do: next, next: NOW}
 		}
-		return wait, frame.LATER
+		return OUT{do: wait, next: LATER}
 	case node.ProcedureNode:
 		rt2.DataOf(parent)[expr] = e.Object()
-		return next, frame.NOW
+		return OUT{do: next, next: NOW}
 	default:
 		panic(fmt.Sprintln("not an expression", reflect.TypeOf(expr)))
 	}

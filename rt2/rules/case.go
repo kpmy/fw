@@ -9,17 +9,17 @@ import (
 	"ypk/assert"
 )
 
-func caseSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+func caseSeq(f frame.Frame) (frame.Sequence, frame.WAIT) {
 	n := rt2.NodeOf(f)
 	var e int
 
-	in := func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+	in := func(in ...IN) (out OUT) {
 		cond := n.Right().(node.ElseNode)
 		if e < cond.Min() || e > cond.Max() { //case?
-			seq = frame.Tail(frame.STOP)
-			ret = frame.NOW
+			out.do = Tail(STOP)
+			out.next = NOW
 		} else {
-			for next := cond.Left(); next != nil && seq == nil; next = next.Link() {
+			for next := cond.Left(); next != nil && out.do == nil; next = next.Link() {
 				var ok bool
 				for _c := next.Left(); _c != nil && !ok; _c = _c.Right() {
 					c := _c.(node.ConstantNode)
@@ -34,30 +34,32 @@ func caseSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				//fmt.Println(ok)
 				if ok {
 					rt2.Push(rt2.New(next.Right()), f)
-					seq = frame.Tail(frame.STOP)
-					ret = frame.LATER
+					out.do = Tail(STOP)
+					out.next = LATER
 				}
 			}
-			if seq == nil && cond.Right() != nil {
+			if out.do == nil && cond.Right() != nil {
 				rt2.Push(rt2.New(cond.Right()), f)
-				seq = frame.Tail(frame.STOP)
-				ret = frame.LATER
+				out.do = Tail(STOP)
+				out.next = LATER
 			}
 		}
-		assert.For(seq != nil, 60)
-		return seq, ret
+		assert.For(out.do != nil, 60)
+		return out
 	}
 
-	return expectExpr(f, n.Left(), func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+	return This(expectExpr(f, n.Left(), func(...IN) (out OUT) {
 		_x := rt2.DataOf(f)[n.Left()]
 		switch x := _x.(type) {
 		case nil:
 			panic("nil")
 		case int32:
 			e = int(x)
-			return in, frame.NOW
+			out.do = in
+			out.next = NOW
+			return out
 		default:
 			panic(fmt.Sprintln("unsupported case expr", reflect.TypeOf(_x)))
 		}
-	})
+	}))
 }

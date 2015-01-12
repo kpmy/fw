@@ -33,7 +33,7 @@ type Msg struct {
 
 func callHandler(f frame.Frame, obj object.Object, data interface{}) {
 	//n := rt2.Utils.NodeOf(f)
-	fmt.Println("call handler", obj)
+	//fmt.Println("call handler", obj)
 	if obj == nil {
 		return
 	}

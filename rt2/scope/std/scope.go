@@ -239,7 +239,7 @@ func (m *manager) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, 
 	assert.For(h.root == n, 21)
 	assert.For(!h.ready, 22)
 	val := par.Values
-	fmt.Println("initialize")
+	//fmt.Println("initialize")
 	f := par.Frame
 	end := func(frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		h.ready = true
@@ -253,8 +253,8 @@ func (m *manager) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, 
 	ret = frame.NOW
 	for next := par.Objects; next != nil; next = next.Link() {
 		assert.For(val != nil, 40)
-		fmt.Println(reflect.TypeOf(next), next.Name(), ":", next.Type())
-		fmt.Println(reflect.TypeOf(val))
+		//fmt.Println(reflect.TypeOf(next), next.Name(), ":", next.Type())
+		//fmt.Println(reflect.TypeOf(val))
 		switch ov := val.(type) {
 		case node.ConstantNode:
 			switch next.(type) {
