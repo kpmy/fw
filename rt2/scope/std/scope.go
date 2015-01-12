@@ -170,7 +170,13 @@ func design(n ...node.Node) (id scope.ID) {
 func odesign(o object.Object) (id scope.ID) {
 	switch x := o.(type) {
 	case object.VariableObject, object.ParameterObject:
-		id = scope.ID{Name: x.Name()}
+		switch x.Name() {
+		case "@":
+			id = scope.ID{Name: "@", Ref: new(int)}
+			*id.Ref = *x.Ref()[0].(*desc).Ref
+		default:
+			id = scope.ID{Name: x.Name()}
+		}
 	default:
 		panic(fmt.Sprintln("unsupported", reflect.TypeOf(o)))
 	}
@@ -267,8 +273,8 @@ func (m *manager) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, 
 	ret = frame.NOW
 	for next := par.Objects; next != nil; next = next.Link() {
 		assert.For(val != nil, 40)
-		//fmt.Println(reflect.TypeOf(next), next.Name(), ":", next.Type())
-		//fmt.Println(reflect.TypeOf(val))
+		fmt.Println(reflect.TypeOf(next), next.Name(), ":", next.Type())
+		fmt.Println(reflect.TypeOf(val))
 		switch ov := val.(type) {
 		case node.ConstantNode:
 			switch next.(type) {
@@ -293,11 +299,25 @@ func (m *manager) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, 
 				})
 			case object.ParameterObject:
 				h.get(scope.ID{Name: next.Name()}).(*ref).ref = design(ov)
+			default:
+				panic("unknown value")
 			}
 		case node.DerefNode:
 			rt2.Push(rt2.New(ov), f)
+			dn := next
 			seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
-				//fmt.Println(rt2.DataOf(f)[ov])
+				fmt.Println(rt2.DataOf(f)[ov])
+				switch dn.(type) {
+				case object.VariableObject:
+					m.Update(odesign(dn), func(old interface{}) interface{} {
+						return rt2.DataOf(f)[ov]
+					})
+				case object.ParameterObject:
+					h.get(scope.ID{Name: dn.Name()}).(*ref).ref = odesign(rt2.DataOf(f)[ov].(object.Object))
+					fmt.Println("got param", odesign(rt2.DataOf(f)[ov].(object.Object)))
+				default:
+					panic(fmt.Sprintln("unknown value", reflect.TypeOf(next)))
+				}
 				return end, frame.NOW
 			}
 			ret = frame.LATER
@@ -393,9 +413,11 @@ func arrConv(x interface{}) []interface{} {
 
 func (m *manager) Update(i scope.ID, val scope.ValueFor) {
 	assert.For(val != nil, 21)
+	fmt.Println("update", i)
 	var x interface{}
 	var upd func(x interface{}) (ret interface{})
 	upd = func(x interface{}) (ret interface{}) {
+		fmt.Println(reflect.TypeOf(x))
 		switch x := x.(type) {
 		case value:
 			old := x.get()
@@ -405,7 +427,9 @@ func (m *manager) Update(i scope.ID, val scope.ValueFor) {
 			x.set(tmp)
 			ret = x
 		case reference:
-			if x.id().Ref != nil && *x.id().Ref == 0 { //это нулевой указатель
+			fmt.Println(x.id())
+			switch {
+			case x.id().Ref != nil && *x.id().Ref == 0: //это нулевой указатель
 				tmp := val(nil)
 				ret = x
 				switch id := tmp.(type) {
@@ -414,7 +438,11 @@ func (m *manager) Update(i scope.ID, val scope.ValueFor) {
 				default:
 					panic("only id for nil pointer")
 				}
-			} else { //это параметр процедуры
+			case x.id().Ref != nil && *x.id().Ref != 0: //это указатель на объект в куче
+				i.Name = x.id().Name
+				i.Ref = x.id().Ref
+				ret = nil
+			default: //это параметр процедуры
 				i.Name = x.id().Name
 				ret = nil
 			}
@@ -442,8 +470,17 @@ func (m *manager) Update(i scope.ID, val scope.ValueFor) {
 				ret = upd(z)
 			}
 		case nil:
-			//do nothing
-			ret = x
+			if i.Name == "@" {
+				fmt.Println("ptr")
+				if hm := m.Domain().Discover(context.HEAP).(scope.Manager); hm != nil {
+					hm.Update(i, val)
+					ret = hm
+				} else {
+					panic(0)
+				}
+			} else {
+				ret = x
+			}
 		default:
 			panic(fmt.Sprintln("unhandled", reflect.TypeOf(x)))
 		}

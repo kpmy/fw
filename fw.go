@@ -19,6 +19,7 @@ var name string
 func init() {
 	flag.StringVar(&name, "i", "", "-i name.ext")
 }
+
 func close() {
 	fmt.Println("closed")
 }

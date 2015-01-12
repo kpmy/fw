@@ -16,6 +16,15 @@ type heap struct {
 	next int
 }
 
+type desc struct {
+	scope.ID
+	link object.Object
+}
+
+func (d *desc) Object() object.Object {
+	return d.link
+}
+
 func nh() scope.Manager {
 	return &heap{data: &area{ready: true, root: nil, x: make(map[scope.ID]interface{})}}
 }
@@ -31,13 +40,17 @@ func (h *heap) Allocate(n node.Node) scope.ValueFor {
 				fake := object.New(object.VARIABLE)
 				fake.SetComplex(bt)
 				fake.SetType(object.COMPLEX)
+				fake.SetName("@")
 				r := &rec{link: fake}
-				id := scope.ID{Name: "@"}
-				id.Ref = new(int)
-				*id.Ref = h.next
-				alloc(nil, h.data, id, r)
+				oid := scope.ID{Name: "@"}
+				oid.Ref = new(int)
+				*oid.Ref = h.next
+				od := &desc{link: fake}
+				od.ID = oid
+				fake.SetRef(od)
+				alloc(nil, h.data, oid, r)
 				return func(interface{}) interface{} {
-					return id
+					return oid
 				}
 			default:
 				panic(fmt.Sprintln("cannot allocate", reflect.TypeOf(t)))
@@ -57,7 +70,34 @@ func (h *heap) Target(...scope.Allocator) scope.Allocator {
 	return h
 }
 
-func (h *heap) Update(i scope.ID, val scope.ValueFor) {}
+func (h *heap) Update(i scope.ID, val scope.ValueFor) {
+	fmt.Println("update", i)
+	var upd func(x interface{}) (ret interface{})
+	upd = func(x interface{}) (ret interface{}) {
+		fmt.Println(reflect.TypeOf(x))
+		switch x := x.(type) {
+		case value:
+			old := x.get()
+			tmp := val(old)
+			assert.For(tmp != nil, 40) //если устанавливают значение NIL, значит делают что-то неверно
+			//fmt.Println(tmp)
+			x.set(tmp)
+			ret = x
+		case record:
+			if i.Path == "" {
+				//fmt.Println(i, depth)
+				panic(0) //случай выбора всей записи целиком
+			} else {
+				z := x.getField(i.Path)
+				ret = upd(z)
+			}
+		default:
+			panic(0)
+		}
+		return ret
+	}
+	upd(h.data.get(i))
+}
 
 func (h *heap) Select(i scope.ID) interface{} {
 	fmt.Println("heap select", i)
@@ -69,6 +109,7 @@ func (h *heap) Select(i scope.ID) interface{} {
 	sel = func(x interface{}) (ret *result) {
 		fmt.Println(x)
 		switch x := x.(type) {
+
 		case record:
 			if i.Path == "" {
 				ret = &result{x: x.(*rec).link}
