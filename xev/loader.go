@@ -47,13 +47,13 @@ type NodeData struct {
 }
 
 type Node struct {
-	Id   string    `xml:"id,attr"`
+	Id   int       `xml:"id,attr"`
 	Data *NodeData `xml:"data"`
 }
 
 type Edge struct {
-	Target  string `xml:"target,attr"`
-	Source  string `xml:"source,attr"`
+	Target  int    `xml:"target,attr"`
+	Source  int    `xml:"source,attr"`
 	CptLink string `xml:"urn:bbcb:component:dev:cpt link,attr"`
 }
 

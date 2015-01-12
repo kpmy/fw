@@ -16,30 +16,51 @@ import (
 	"ypk/assert"
 )
 
-func (r *Result) findNode(id string) *Node {
-	var ret *Node
-	for i := 0; i < len(r.GraphList) && (ret == nil); i++ {
-		for j := 0; j < len(r.GraphList[i].NodeList) && (ret == nil); j++ {
-			if id == r.GraphList[i].NodeList[j].Id {
-				ret = &r.GraphList[i].NodeList[j]
+var ncache map[int]*Node = make(map[int]*Node)
+
+func (r *Result) findNode(id int) (ret *Node) {
+	//fmt.Print("|")
+	ret = ncache[id]
+	if ret == nil {
+		for i := 0; i < len(r.GraphList) && (ret == nil); i++ {
+			for j := 0; j < len(r.GraphList[i].NodeList) && (ret == nil); j++ {
+				if id == r.GraphList[i].NodeList[j].Id {
+					ret = &r.GraphList[i].NodeList[j]
+				}
 			}
+		}
+		if ret != nil {
+			ncache[id] = ret
 		}
 	}
 	return ret
 }
 
-func (r *Result) findLink(n *Node, link string) *Node {
-	target := ""
-	for i := range r.GraphList {
-		for j := range r.GraphList[i].EdgeList {
-			if (r.GraphList[i].EdgeList[j].Source == n.Id) && (r.GraphList[i].EdgeList[j].CptLink == link) {
-				target = r.GraphList[i].EdgeList[j].Target
+type eid struct {
+	id   int
+	link string
+}
+
+var ecache map[eid]*Node = make(map[eid]*Node)
+
+func (r *Result) findLink(n *Node, ls string) (ret *Node) {
+	//fmt.Print("-")
+	ret = ecache[eid{id: n.Id, link: ls}]
+	if ret == nil {
+		target := -1
+		for i := range r.GraphList {
+			for j := range r.GraphList[i].EdgeList {
+				if (r.GraphList[i].EdgeList[j].Source == n.Id) && (r.GraphList[i].EdgeList[j].CptLink == ls) {
+					target = r.GraphList[i].EdgeList[j].Target
+				}
 			}
 		}
-	}
-	var ret *Node
-	if target != "" {
-		ret = r.findNode(target)
+		if target != -1 {
+			ret = r.findNode(target)
+		}
+		if ret != nil {
+			ecache[eid{id: n.Id, link: ls}] = ret
+		}
 	}
 	return ret
 }
@@ -150,11 +171,12 @@ func convertData(typ string, val string, conv convertable) {
 	}
 }
 
-var nodeMap map[string]node.Node
-var objectMap map[string]object.Object
-var typeMap map[string]object.ComplexType
+var nodeMap map[int]node.Node
+var objectMap map[int]object.Object
+var typeMap map[int]object.ComplexType
 
 func (r *Result) doType(n *Node) (ret object.ComplexType) {
+	//fmt.Println("type", n.Id)
 	ret = typeMap[n.Id]
 	if ret == nil {
 		switch n.Data.Typ.Form {
@@ -233,6 +255,7 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 }
 
 func (r *Result) doObject(n *Node) (ret object.Object) {
+	//fmt.Println("object", n.Id)
 	assert.For(n != nil, 20)
 	ret = objectMap[n.Id]
 	if ret == nil {
@@ -323,6 +346,7 @@ func (r *Result) buildScope(list []Node) (ro []object.Object, rt []object.Comple
 func (r *Result) buildNode(n *Node) (ret node.Node) {
 	assert.For(n != nil, 20)
 	ret = nodeMap[n.Id]
+	//fmt.Println("node", n.Id)
 	var proc node.ProcedureNode
 	if ret == nil {
 		switch n.Data.Nod.Class {
@@ -372,7 +396,7 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			ret.(node.OperationNode).SetOperation(operation.This(n.Data.Nod.Operation))
 			switch n.Data.Nod.Operation {
 			case "CONV":
-				ret.(node.OperationNode).SetOperation(operation.CONVERT)
+				ret.(node.OperationNode).SetOperation(operation.ALIEN_CONV)
 				initType(n.Data.Nod.Typ, ret.(node.MonadicNode))
 			}
 		case "conditional":
@@ -463,7 +487,8 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 				panic("error in node")
 			}
 		} else {
-			assert.For(proc == nil, 60) //у процедуры просто не может не быть объекта
+			//pk, 20150112, у процедуры из другого модуля - может и не быть объекта
+			//assert.For(proc == nil, 60) //у процедуры просто не может не быть объекта
 		}
 
 	}
@@ -471,11 +496,12 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 }
 
 func buildMod(r *Result) (nodeList []node.Node, scopeList map[node.Node][]object.Object, typeList map[node.Node][]object.ComplexType, root node.Node) {
-	scopes := make(map[string][]object.Object, 0)
-	types := make(map[string][]object.ComplexType, 0)
+	scopes := make(map[int][]object.Object, 0)
+	types := make(map[int][]object.ComplexType, 0)
 	for i := range r.GraphList {
 		if r.GraphList[i].CptScope != "" {
-			scopes[r.GraphList[i].CptScope], types[r.GraphList[i].CptScope] = r.buildScope(r.GraphList[i].NodeList)
+			sc, _ := strconv.Atoi(r.GraphList[i].CptScope)
+			scopes[sc], types[sc] = r.buildScope(r.GraphList[i].NodeList)
 		}
 	}
 	scopeList = make(map[node.Node][]object.Object, 0)
@@ -503,9 +529,9 @@ func buildMod(r *Result) (nodeList []node.Node, scopeList map[node.Node][]object
 }
 
 func DoAST(r *Result) (mod *module.Module) {
-	nodeMap = make(map[string]node.Node)
-	objectMap = make(map[string]object.Object)
-	typeMap = make(map[string]object.ComplexType)
+	nodeMap = make(map[int]node.Node)
+	objectMap = make(map[int]object.Object)
+	typeMap = make(map[int]object.ComplexType)
 	mod = new(module.Module)
 	mod.Nodes, mod.Objects, mod.Types, mod.Enter = buildMod(r)
 	fmt.Println(len(mod.Nodes), len(mod.Objects))
