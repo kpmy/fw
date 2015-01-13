@@ -16,7 +16,7 @@ import (
 	"ypk/assert"
 )
 
-var ncache map[int]*Node = make(map[int]*Node)
+var ncache map[int]*Node
 
 func (r *Result) findNode(id int) (ret *Node) {
 	//fmt.Print("|")
@@ -41,7 +41,7 @@ type eid struct {
 	link string
 }
 
-var ecache map[eid]*Node = make(map[eid]*Node)
+var ecache map[eid]*Node
 
 func (r *Result) findLink(n *Node, ls string) (ret *Node) {
 	//fmt.Print("-")
@@ -286,6 +286,8 @@ func (r *Result) doObject(n *Node) (ret object.Object) {
 			initType(n.Data.Obj.Typ, ret.(object.FieldObject))
 		case "type":
 			ret = object.New(object.TYPE)
+		case "module":
+			ret = object.New(object.MODULE)
 		default:
 			fmt.Println(n.Data.Obj.Mode)
 			panic("no such object mode")
@@ -496,28 +498,49 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 }
 
 func buildMod(r *Result) (nodeList []node.Node, scopeList map[node.Node][]object.Object, typeList map[node.Node][]object.ComplexType, root node.Node) {
-	scopes := make(map[int][]object.Object, 0)
-	types := make(map[int][]object.ComplexType, 0)
-	for i := range r.GraphList {
-		if r.GraphList[i].CptScope != "" {
-			sc, _ := strconv.Atoi(r.GraphList[i].CptScope)
-			scopes[sc], types[sc] = r.buildScope(r.GraphList[i].NodeList)
+	type scope struct {
+		mod    string
+		scopes map[int][]object.Object
+		types  map[int][]object.ComplexType
+	}
+	scopes := make(map[int]*scope, 0)
+	for _, g := range r.GraphList {
+		if g.CptScope != "" {
+			sc, _ := strconv.Atoi(g.CptScope)
+			var imp int
+			if sc >= 0 {
+				imp = 0
+			} else {
+				imp = sc
+			}
+			this := scopes[imp]
+			if this == nil {
+				this = &scope{}
+				this.scopes = make(map[int][]object.Object, 0)
+				this.types = make(map[int][]object.ComplexType, 0)
+				scopes[imp] = this
+			}
+			if this.mod == "" {
+				this.mod = g.CptProc
+			}
+			this.scopes[sc], this.types[sc] = r.buildScope(g.NodeList)
+			fmt.Println(sc, len(this.scopes[sc]), len(this.types[sc]))
 		}
 	}
 	scopeList = make(map[node.Node][]object.Object, 0)
 	typeList = make(map[node.Node][]object.ComplexType, 0)
-	for i := range r.GraphList {
-		if r.GraphList[i].CptProc != "" {
+	for _, g := range r.GraphList {
+		if g.CptScope == "" {
 			nodeList = make([]node.Node, 0)
-			for j := range r.GraphList[i].NodeList {
-				node := &r.GraphList[i].NodeList[j]
+			for _, nl := range g.NodeList {
+				node := &nl
 				ret := r.buildNode(node)
 				nodeList = append(nodeList, ret)
-				if scopes[node.Id] != nil {
-					scopeList[ret] = scopes[node.Id]
+				if scopes[0].scopes[node.Id] != nil {
+					scopeList[ret] = scopes[0].scopes[node.Id]
 				}
-				if types[node.Id] != nil {
-					typeList[ret] = types[node.Id]
+				if scopes[0].types[node.Id] != nil {
+					typeList[ret] = scopes[0].types[node.Id]
 				}
 				if (node.Data.Nod.Class == "enter") && (node.Data.Nod.Enter == "module") {
 					root = ret
@@ -532,10 +555,15 @@ func DoAST(r *Result) (mod *module.Module) {
 	nodeMap = make(map[int]node.Node)
 	objectMap = make(map[int]object.Object)
 	typeMap = make(map[int]object.ComplexType)
+	ncache = make(map[int]*Node)
+	ecache = make(map[eid]*Node)
 	mod = new(module.Module)
 	mod.Nodes, mod.Objects, mod.Types, mod.Enter = buildMod(r)
 	fmt.Println(len(mod.Nodes), len(mod.Objects))
 	nodeMap = nil
 	objectMap = nil
+	typeMap = nil
+	ecache = nil
+	ncache = nil
 	return mod
 }

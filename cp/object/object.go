@@ -16,6 +16,7 @@ const (
 	PARAMETER
 	FIELD
 	TYPE
+	MODULE
 )
 
 type Object interface {
@@ -66,6 +67,10 @@ type TypeObject interface {
 	self() TypeObject
 }
 
+type Module interface {
+	self() Module
+}
+
 func New(mode Mode) Object {
 	switch mode {
 	case HEAD:
@@ -86,6 +91,8 @@ func New(mode Mode) Object {
 		return new(fieldObject)
 	case TYPE:
 		return new(typeObject)
+	case MODULE:
+		return new(mod)
 	default:
 		panic("no such object mode")
 	}
@@ -181,3 +188,9 @@ type typeObject struct {
 }
 
 func (v *typeObject) self() TypeObject { return v }
+
+type mod struct {
+	objectFields
+}
+
+func (v *mod) self() Module { return v }
