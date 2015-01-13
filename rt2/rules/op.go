@@ -5,6 +5,7 @@ import (
 	"fw/cp/constant/operation"
 	"fw/cp/node"
 	"fw/cp/object"
+	"fw/rt2"
 	"fw/rt2/context"
 	"fw/rt2/frame"
 	"fw/rt2/nodeframe"
@@ -326,10 +327,7 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 
 	switch n.Operation() {
 	case operation.ALIEN_CONV:
-		switch n.Left().(type) {
-		case node.VariableNode, node.ParameterNode:
-			x := sc.Select(scope.Designator(n.Left()))
-			assert.For(x != nil, 40)
+		conv := func(x interface{}) {
 			switch n.Type() {
 			case object.INTEGER:
 				switch v := x.(type) {
@@ -337,6 +335,8 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 					fu.DataOf(f.Parent())[n] = int32(x.(int8))
 				case *big.Int:
 					fu.DataOf(f.Parent())[n] = int32(v.Int64())
+				case int32:
+					fu.DataOf(f.Parent())[n] = v
 				default:
 					panic(fmt.Sprintln("ooops", reflect.TypeOf(x)))
 				}
@@ -357,7 +357,18 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			default:
 				panic(fmt.Sprintln("wrong type", n.Type()))
 			}
+		}
+		switch n.Left().(type) {
+		case node.VariableNode, node.ParameterNode:
+			x := sc.Select(scope.Designator(n.Left()))
+			assert.For(x != nil, 40)
+			conv(x)
 			return frame.End()
+		case node.OperationNode:
+			return This(expectExpr(f, n.Left(), func(...IN) OUT {
+				conv(rt2.DataOf(f)[n.Left()])
+				return End()
+			}))
 		default:
 			panic(fmt.Sprintln("unsupported left", reflect.TypeOf(n.Left())))
 		}
