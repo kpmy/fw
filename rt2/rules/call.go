@@ -99,11 +99,17 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		ret = frame.LATER
 	}
 
-	switch n.Left().(type) {
+	switch p := n.Left().(type) {
 	case node.ProcedureNode:
 		m := rt_mod.DomainModule(f.Domain())
-		proc := m.NodeByObject(n.Left().Object())
-		call(proc)
+		if p.Super() {
+			fmt.Println("supercall, stop for now")
+			seq = Propose(Tail(STOP))
+			ret = frame.NOW
+		} else {
+			proc := m.NodeByObject(n.Left().Object())
+			call(proc)
+		}
 	case node.VariableNode:
 		m := rt_mod.DomainModule(f.Domain())
 		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)

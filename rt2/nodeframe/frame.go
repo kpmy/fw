@@ -71,6 +71,7 @@ func (f *nodeFrame) Do() frame.WAIT {
 func (f *nodeFrame) onPush() {
 	f.num = count
 	count++
+	assert.For(count < 10, 40)
 	utils.PrintFrame("_", "PUSH", reflect.TypeOf(f.ir))
 	f.seq = decision.PrologueFor(f.ir)
 }

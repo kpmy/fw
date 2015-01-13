@@ -29,31 +29,55 @@ func nh() scope.Manager {
 	return &heap{data: &area{ready: true, root: nil, x: make(map[scope.ID]interface{})}}
 }
 
-func (h *heap) Allocate(n node.Node) scope.ValueFor {
+func (h *heap) Allocate(n node.Node, par ...interface{}) (ret scope.ValueFor) {
+	var talloc func(t object.PointerType) (oid scope.ID)
+	talloc = func(t object.PointerType) (oid scope.ID) {
+		switch bt := t.Base().(type) {
+		case object.RecordType:
+			fake := object.New(object.VARIABLE)
+			fake.SetComplex(bt)
+			fake.SetType(object.COMPLEX)
+			fake.SetName("@")
+			r := &rec{link: fake}
+			oid = scope.ID{Name: "@"}
+			oid.Ref = new(int)
+			*oid.Ref = h.next
+			od := &desc{link: fake}
+			od.ID = oid
+			fake.SetRef(od)
+			alloc(nil, h.data, oid, r)
+		case object.DynArrayType:
+			assert.For(len(par) > 0, 20)
+			p := int64(par[0].(int32))
+			fake := object.New(object.VARIABLE)
+			fake.SetComplex(bt)
+			fake.SetType(object.COMPLEX)
+			fake.SetName("@")
+			r := &arr{link: fake, par: p}
+			oid = scope.ID{Name: "@"}
+			oid.Ref = new(int)
+			*oid.Ref = h.next
+			od := &desc{link: fake}
+			od.ID = oid
+			fake.SetRef(od)
+			alloc(nil, h.data, oid, r)
+		case object.ArrayType:
+			panic(0)
+		case object.PointerType:
+			oid = talloc(bt)
+		default:
+			panic(fmt.Sprintln("cannot allocate", reflect.TypeOf(bt)))
+		}
+		return oid
+	}
 	switch v := n.(type) {
 	case node.VariableNode:
 		switch t := v.Object().Complex().(type) {
 		case object.PointerType:
 			h.next++
-			switch bt := t.Base().(type) {
-			case object.RecordType:
-				fake := object.New(object.VARIABLE)
-				fake.SetComplex(bt)
-				fake.SetType(object.COMPLEX)
-				fake.SetName("@")
-				r := &rec{link: fake}
-				oid := scope.ID{Name: "@"}
-				oid.Ref = new(int)
-				*oid.Ref = h.next
-				od := &desc{link: fake}
-				od.ID = oid
-				fake.SetRef(od)
-				alloc(nil, h.data, oid, r)
-				return func(interface{}) interface{} {
-					return oid
-				}
-			default:
-				panic(fmt.Sprintln("cannot allocate", reflect.TypeOf(t)))
+			oid := talloc(t)
+			return func(interface{}) interface{} {
+				return oid
 			}
 		default:
 			panic(fmt.Sprintln("unsupported type", reflect.TypeOf(t)))
@@ -91,6 +115,21 @@ func (h *heap) Update(i scope.ID, val scope.ValueFor) {
 				z := x.getField(i.Path)
 				ret = upd(z)
 			}
+		case array:
+			if i.Index != nil {
+				old := x.get(*i.Index)
+				tmp := val(old)
+				assert.For(tmp != nil, 40) //если устанавливают значение NIL, значит делают что-то неверно
+				//fmt.Println(tmp)
+				x.set(*i.Index, tmp)
+			} else {
+				old := x.sel()
+				tmp := val(old)
+				assert.For(tmp != nil, 40) //если устанавливают значение NIL, значит делают что-то неверно
+				//fmt.Println(tmp)
+				x.upd(arrConv(tmp))
+			}
+			ret = x
 		default:
 			panic(0)
 		}

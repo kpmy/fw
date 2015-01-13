@@ -130,6 +130,15 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 					return right(f)
 				}
 				ret = frame.LATER
+			case node.DerefNode:
+				rt2.DataOf(f)[l.Left()] = scope.ID{}
+				rt2.Push(rt2.New(l.Left()), f)
+				seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+					leftId = rt2.DataOf(f)[l.Left()].(scope.ID)
+					leftId.Path = a.Left().Object().Name()
+					return right(f)
+				}
+				ret = frame.LATER
 			default:
 				leftId = scope.Designator(a.Left())
 				seq, ret = right(f)
@@ -140,6 +149,14 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				leftId.Index = new(int64)
 				*leftId.Index = int64(rt2.DataOf(f)[a.Left()].(int32))
+				return right(f)
+			}
+			ret = frame.LATER
+		case node.DerefNode:
+			rt2.DataOf(f)[a.Left()] = scope.ID{}
+			rt2.Push(rt2.New(a.Left()), f)
+			seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+				leftId = rt2.DataOf(f)[a.Left()].(scope.ID)
 				return right(f)
 			}
 			ret = frame.LATER
@@ -162,16 +179,16 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			panic(fmt.Sprintln("wrong left", reflect.TypeOf(a.Left())))
 		}
 	case statement.NEW:
+		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+		heap := scope.This(f.Domain().Discover(context.HEAP))
 		if a.Right() != nil {
 			seq, ret = This(expectExpr(f, a.Right(), func(...IN) OUT {
-				fmt.Println(rt2.DataOf(f)[a.Right()])
-				panic(fmt.Sprintln("NEW here"))
+				fmt.Println("NEW", rt2.DataOf(f)[a.Right()], "here")
+				sc.Update(scope.Designator(a.Left()), heap.Target().(scope.HeapAllocator).Allocate(a.Left(), rt2.DataOf(f)[a.Right()]))
 				return End()
 			}))
 		} else {
 			fmt.Println("NEW here")
-			sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-			heap := scope.This(f.Domain().Discover(context.HEAP))
 			sc.Update(scope.Designator(a.Left()), heap.Target().(scope.HeapAllocator).Allocate(a.Left()))
 			return frame.End()
 		}

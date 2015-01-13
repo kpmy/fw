@@ -435,8 +435,10 @@ func (m *manager) Update(i scope.ID, val scope.ValueFor) {
 				switch id := tmp.(type) {
 				case scope.ID:
 					x.id(id)
+				case object.VariableObject:
+					x.id(odesign(id))
 				default:
-					panic("only id for nil pointer")
+					panic(fmt.Sprintln("only id for nil pointer", reflect.TypeOf(id)))
 				}
 			case x.id().Ref != nil && *x.id().Ref != 0: //это указатель на объект в куче
 				i.Name = x.id().Name

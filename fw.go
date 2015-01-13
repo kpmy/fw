@@ -27,7 +27,7 @@ func close() {
 func main() {
 	flag.Parse()
 	if name == "" {
-		name = "XevDemo19"
+		name = "XevDemo20"
 	}
 	global := &stdDomain{god: true}
 	modList := module.New()

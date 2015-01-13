@@ -18,15 +18,16 @@ type ID struct {
 func (i ID) String() string {
 	if i.Name != "" {
 		ret := i.Name
+		if i.Ref != nil {
+			ret = ret + strconv.Itoa(*i.Ref)
+		}
 		if i.Path != "" {
 			ret = ret + "." + i.Path
 		}
 		if i.Index != nil {
 			ret = ret + "[" + strconv.FormatInt(*i.Index, 10) + "]"
 		}
-		if i.Ref != nil {
-			ret = ret + strconv.Itoa(*i.Ref)
-		}
+
 		return ret
 	} else {
 		return "<empty id>"
@@ -60,7 +61,7 @@ type ScopeAllocator interface {
 
 type HeapAllocator interface {
 	Allocator
-	Allocate(n node.Node) ValueFor //указатель лежит в скоупе процедуры/модуля, а рекорд - в куче, поэтому нужно после создания экземпляра обновить указатель
+	Allocate(n node.Node, par ...interface{}) ValueFor //указатель лежит в скоупе процедуры/модуля, а рекорд - в куче, поэтому нужно после создания экземпляра обновить указатель
 	Dispose(n node.Node)
 }
 
