@@ -11,7 +11,29 @@ const (
 	STOP
 	LATER
 	NOW
+	//спец коды для начальной и конечной стадии
+	BEGIN
+	END
 )
+
+func (w WAIT) String() string {
+	switch w {
+	case NOW:
+		return "NOW"
+	case LATER:
+		return "LATER"
+	case STOP:
+		return "STOP"
+	case WRONG:
+		return "WRONG"
+	case BEGIN:
+		return "BEGIN"
+	case END:
+		return "END"
+	default:
+		panic("wrong wait value")
+	}
+}
 
 // LIFO-стек, позволяет затолкнуть фрейм связанный с другим фреймом
 type Stack interface {

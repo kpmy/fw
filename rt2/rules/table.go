@@ -3,15 +3,20 @@ package rules
 
 import (
 	"fmt"
+	"fw/cp/module"
 	"fw/cp/node"
 	"fw/rt2"
 	"fw/rt2/context"
 	"fw/rt2/decision"
 	"fw/rt2/frame"
+	"fw/rt2/frame/std"
+	rt_module "fw/rt2/module"
 	"fw/rt2/nodeframe"
 	"fw/rt2/scope"
 	"fw/utils"
 	"reflect"
+	"time"
+	"ypk/assert"
 )
 
 func prologue(n node.Node) frame.Sequence {
@@ -109,6 +114,7 @@ func epilogue(n node.Node) frame.Sequence {
 		}
 	case node.EnterNode:
 		return func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+			fmt.Println(rt_module.DomainModule(f.Domain()).Name)
 			sm := scope.This(f.Domain().Discover(context.SCOPE))
 			sm.Target().(scope.ScopeAllocator).Dispose(n)
 			return frame.End()
@@ -122,7 +128,105 @@ func epilogue(n node.Node) frame.Sequence {
 	}
 }
 
+type flow struct {
+	root   frame.Stack
+	parent frame.Frame
+	domain context.Domain
+	fl     []frame.Frame
+	cl     []frame.Frame
+	this   int
+}
+
+func (f *flow) Do() (ret frame.WAIT) {
+	const Z WAIT = -1
+	x := Z
+	if f.this >= 0 {
+		x = waiting(f.fl[f.this].Do())
+	}
+	switch x {
+	case NOW, WRONG, LATER, BEGIN:
+		ret = WAIT.wait(x)
+	case END:
+		old := f.Root().(*std.RootFrame).Drop()
+		assert.For(old != nil, 40)
+		f.cl = append(f.cl, old)
+		ret = WAIT.wait(LATER)
+	case STOP, Z:
+		f.this--
+		if f.this >= 0 {
+			ret = WAIT.wait(LATER)
+		} else {
+			if len(f.cl) > 0 {
+				for _, old := range f.cl {
+					n := rt2.NodeOf(old)
+					rt2.Push(rt2.New(n), old.Parent())
+				}
+				f.cl = nil
+				ret = WAIT.wait(LATER)
+			} else {
+				ret = WAIT.wait(STOP)
+			}
+		}
+	}
+	fmt.Println(">", ret)
+	return ret
+}
+
+func (f *flow) OnPush(root frame.Stack, parent frame.Frame) {
+	f.root = root
+	f.parent = parent
+	fmt.Println("flow control pushed")
+	f.this = len(f.fl) - 1
+}
+
+func (f *flow) OnPop() {
+	fmt.Println("flow control poped")
+}
+
+func (f *flow) Parent() frame.Frame    { return f.parent }
+func (f *flow) Root() frame.Stack      { return f.root }
+func (f *flow) Domain() context.Domain { return f.domain }
+func (f *flow) Init(d context.Domain) {
+	assert.For(f.domain == nil, 20)
+	assert.For(d != nil, 21)
+	f.domain = d
+}
+
+func (f *flow) Handle(msg interface{}) {
+	assert.For(msg != nil, 20)
+}
+
+func run(global context.Domain, init []*module.Module) {
+	{
+		var (
+			root *std.RootFrame = std.NewRoot()
+			nf   frame.Frame
+			ff   []frame.Frame
+		)
+		global.Attach(context.STACK, root)
+		for i := len(init) - 1; i >= 0; i-- {
+			ret := init[i]
+			fmt.Println("queue", ret.Name)
+			nf = rt2.New(ret.Enter)
+			root.PushFor(nf, nil)
+			ff = append(ff, nf)
+			global.Attach(ret.Name, nf.Domain())
+		}
+		root.PushFor(&flow{fl: ff}, nil)
+		i := 0
+		t0 := time.Now()
+		for x := frame.NOW; x == frame.NOW; x = root.Do() {
+			//fmt.Println(x)
+			i++
+		}
+		t1 := time.Now()
+		fmt.Println("total steps", i)
+		fmt.Println("spent", t1.Sub(t0))
+	}
+}
+
 func init() {
 	decision.PrologueFor = prologue
 	decision.EpilogueFor = epilogue
+	decision.Run = run
 }

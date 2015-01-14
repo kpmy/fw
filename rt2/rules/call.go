@@ -39,7 +39,9 @@ func callHandler(f frame.Frame, obj object.Object, data interface{}) {
 	}
 	m := rt_mod.DomainModule(f.Domain())
 	cn := node.New(constant.CALL)
-	cn.SetLeft(m.NodeByObject(obj))
+	ol := m.NodeByObject(obj)
+	assert.For(len(ol) <= 1, 40)
+	cn.SetLeft(ol[0])
 	cc := node.New(constant.CONSTANT).(node.ConstantNode)
 	cc.SetData(data)
 	cn.SetRight(cc)
@@ -107,8 +109,15 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			seq = Propose(Tail(STOP))
 			ret = frame.NOW
 		} else {
-			proc := m.NodeByObject(n.Left().Object())
-			call(proc)
+			if m.ImportOf(n.Left().Object()) == "" {
+				proc := m.NodeByObject(n.Left().Object())
+				fmt.Println(len(proc), len(n.Left().Object().Ref()))
+				call(proc[0])
+			} else {
+				fmt.Println("foreign call, stop for now")
+				seq = Propose(Tail(STOP))
+				ret = frame.NOW
+			}
 		}
 	case node.VariableNode:
 		m := rt_mod.DomainModule(f.Domain())
@@ -117,7 +126,7 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 
 		if obj, ok := obj.(object.Object); ok {
 			proc := m.NodeByObject(obj)
-			call(proc)
+			call(proc[0])
 		} else {
 			name := n.Left().Object().Name()
 			switch {

@@ -3,10 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	mod "fw/cp/module"
 	"fw/rt2/context"
-	"fw/rt2/frame"
-	"fw/rt2/module"
-	"fw/rt2/nodeframe"
+	"fw/rt2/decision"
+	rtmod "fw/rt2/module"
 	_ "fw/rt2/rules"
 	"fw/rt2/scope"
 	_ "fw/rt2/scope/std"
@@ -30,32 +30,17 @@ func main() {
 		name = "XevDemo22"
 	}
 	global := &stdDomain{god: true}
-	modList := module.New()
-	global.ConnectTo(context.MOD, modList)
-	global.ConnectTo(context.HEAP, scope.NewHeap())
+	modList := rtmod.New()
+	global.Attach(context.MOD, modList)
+	global.Attach(context.HEAP, scope.NewHeap())
 	t0 := time.Now()
-	ret, err := modList.Load(name)
+	var init []*mod.Module
+	_, err := modList.Load(name, func(m *mod.Module) {
+		init = append(init, m)
+	})
 	t1 := time.Now()
 	fmt.Println("load", t1.Sub(t0))
-	assert.For(ret != nil, 40)
-	assert.For(err == nil, 41)
+	assert.For(err == nil, 40)
 	defer close()
-	{
-		domain := new(stdDomain)
-		global.ConnectTo(name, domain)
-		root := frame.NewRoot()
-		domain.ConnectTo(context.STACK, root)
-		domain.ConnectTo(context.SCOPE, scope.NewStack())
-		var fu nodeframe.FrameUtils
-		root.PushFor(fu.New(ret.Enter), nil)
-		i := 0
-		t0 := time.Now()
-		for x := frame.NOW; x == frame.NOW; x = root.Do() {
-			//fmt.Println(x)
-			i++
-		}
-		t1 := time.Now()
-		fmt.Println("total steps", i)
-		fmt.Println("spent", t1.Sub(t0))
-	}
+	decision.Run(global, init)
 }

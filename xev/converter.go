@@ -175,6 +175,16 @@ var nodeMap map[int]node.Node
 var objectMap map[int]object.Object
 var typeMap map[int]object.ComplexType
 
+func reset() {
+	nodeMap = make(map[int]node.Node)
+	objectMap = make(map[int]object.Object)
+	typeMap = make(map[int]object.ComplexType)
+	ncache = make(map[int]*Node)
+	ecache = make(map[eid]*Node)
+}
+
+func init() { reset() }
+
 func (r *Result) doType(n *Node) (ret object.ComplexType) {
 	//fmt.Println("type", n.Id)
 	ret = typeMap[n.Id]
@@ -497,7 +507,8 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 	return ret
 }
 
-func buildMod(r *Result) (nodeList []node.Node, scopeList map[node.Node][]object.Object, typeList map[node.Node][]object.ComplexType, root node.Node) {
+func buildMod(r *Result) *module.Module {
+	//временные структуры создаем по очереди, чтобы корректно заполнять все ссылки на объекты/узлы
 	type scope struct {
 		mod    string
 		scopes map[int][]object.Object
@@ -527,11 +538,16 @@ func buildMod(r *Result) (nodeList []node.Node, scopeList map[node.Node][]object
 			fmt.Println(sc, len(this.scopes[sc]), len(this.types[sc]))
 		}
 	}
-	scopeList = make(map[node.Node][]object.Object, 0)
-	typeList = make(map[node.Node][]object.ComplexType, 0)
+	//временные структуры перегоняем в рабочие
+	var (
+		nodeList  []node.Node                        = make([]node.Node, 0)
+		scopeList map[node.Node][]object.Object      = make(map[node.Node][]object.Object, 0)
+		typeList  map[node.Node][]object.ComplexType = make(map[node.Node][]object.ComplexType, 0)
+		impList   map[string]module.Import           = make(map[string]module.Import, 0)
+		root      node.Node
+	)
 	for _, g := range r.GraphList {
 		if g.CptScope == "" {
-			nodeList = make([]node.Node, 0)
 			for _, nl := range g.NodeList {
 				node := &nl
 				ret := r.buildNode(node)
@@ -548,22 +564,18 @@ func buildMod(r *Result) (nodeList []node.Node, scopeList map[node.Node][]object
 			}
 		}
 	}
-	return nodeList, scopeList, typeList, root
+	for k, v := range scopes {
+		if k < 0 {
+			impList[v.mod] = module.Import{Objects: v.scopes[k], Name: v.mod}
+			fmt.Println("типы не учтены", len(v.types[k]))
+		}
+	}
+	return &module.Module{Nodes: nodeList, Objects: scopeList, Types: typeList, Enter: root, Imports: impList}
 }
 
 func DoAST(r *Result) (mod *module.Module) {
-	nodeMap = make(map[int]node.Node)
-	objectMap = make(map[int]object.Object)
-	typeMap = make(map[int]object.ComplexType)
-	ncache = make(map[int]*Node)
-	ecache = make(map[eid]*Node)
-	mod = new(module.Module)
-	mod.Nodes, mod.Objects, mod.Types, mod.Enter = buildMod(r)
+	mod = buildMod(r)
 	fmt.Println(len(mod.Nodes), len(mod.Objects))
-	nodeMap = nil
-	objectMap = nil
-	typeMap = nil
-	ecache = nil
-	ncache = nil
+	reset()
 	return mod
 }

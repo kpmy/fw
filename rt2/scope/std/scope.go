@@ -335,7 +335,7 @@ func (m *manager) Dispose(n node.Node) {
 		h := e.Value.(*area)
 		assert.For(h.root == n, 21)
 		m.areas.Remove(e)
-		//fmt.Println("dispose")
+		fmt.Println("dispose")
 	}
 }
 

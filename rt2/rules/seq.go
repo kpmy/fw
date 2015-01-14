@@ -11,6 +11,8 @@ const (
 	STOP
 	LATER
 	NOW
+	BEGIN
+	END
 )
 
 type Do func(...IN) OUT
@@ -34,6 +36,10 @@ func (n WAIT) wait() frame.WAIT {
 		return frame.LATER
 	case NOW:
 		return frame.NOW
+	case BEGIN:
+		return frame.BEGIN
+	case END:
+		return frame.END
 	default:
 		panic(n)
 	}
@@ -49,6 +55,10 @@ func waiting(n frame.WAIT) WAIT {
 		return LATER
 	case frame.NOW:
 		return NOW
+	case frame.BEGIN:
+		return BEGIN
+	case frame.END:
+		return END
 	default:
 		panic(n)
 	}

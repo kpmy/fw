@@ -6,13 +6,15 @@ import (
 )
 
 type stdDomain struct {
-	list   map[string]context.ContextAware
-	parent context.Domain
+	list map[string]context.ContextAware
+	//parent context.Domain
 	global context.Domain
 	god    bool
 }
 
-func (d *stdDomain) ConnectTo(name string, x context.ContextAware) {
+func (d *stdDomain) New() context.Domain { return &stdDomain{global: d.global} }
+
+func (d *stdDomain) Attach(name string, x context.ContextAware) {
 	assert.For(x != nil, 20)
 	assert.For(name != context.UNIVERSE, 21)
 	if d.list == nil {
@@ -36,11 +38,13 @@ func (d *stdDomain) Discover(name string) (ret context.ContextAware) {
 			ret = d.global.Discover(name)
 		}
 	}
+	assert.For(ret != nil, 60) //все плохо
 	return ret
 }
 
 func (d *stdDomain) Domain() context.Domain {
-	return d.parent
+	return d.global
+	//return d.parent
 }
 
 func (d *stdDomain) Handle(msg interface{}) {}
@@ -48,7 +52,7 @@ func (d *stdDomain) Handle(msg interface{}) {}
 func (d *stdDomain) Init(dd context.Domain) {
 	glob := dd.(*stdDomain)
 	assert.For(glob.god == true, 20) //допустим только один уровень вложенности доменов пока
-	d.parent = dd
+	//	d.parent = dd
 	d.global = dd
 }
 

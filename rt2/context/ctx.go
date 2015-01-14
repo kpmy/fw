@@ -8,8 +8,12 @@ const (
 	HEAP     = "fw/rt2/scope,heap"
 )
 
+type Factory interface {
+	New() Domain
+}
+
 type Domain interface {
-	ConnectTo(name string, c ContextAware)
+	Attach(name string, c ContextAware)
 	Discover(name string) ContextAware
 	Id(c ContextAware) string
 	ContextAware

@@ -7,11 +7,18 @@ import (
 	"ypk/assert"
 )
 
+type Import struct {
+	Name    string
+	Objects []object.Object
+}
+
 type Module struct {
+	Name    string
 	Enter   node.Node
 	Objects map[node.Node][]object.Object
 	Nodes   []node.Node
 	Types   map[node.Node][]object.ComplexType
+	Imports map[string]Import
 }
 
 type named interface {
@@ -30,12 +37,29 @@ func (m *Module) TypeByName(scope node.Node, name string) (ret object.ComplexTyp
 	return ret
 }
 
-func (m *Module) NodeByObject(obj object.Object) (ret node.Node) {
+func (m *Module) ImportOf(obj object.Object) string {
+	contains := func(v []object.Object) bool {
+		for _, o := range v {
+			if o == obj {
+				return true
+			}
+		}
+		return false
+	}
+	for _, v := range m.Imports {
+		if contains(v.Objects) {
+			return v.Name
+		}
+	}
+	return ""
+}
+
+func (m *Module) NodeByObject(obj object.Object) (ret []node.Node) {
 	assert.For(obj != nil, 20)
 	for i := 0; (i < len(m.Nodes)) && (ret == nil); i++ {
 		node := m.Nodes[i]
 		if node.Object() == obj {
-			ret = node
+			ret = append(ret, node)
 		}
 	}
 	return ret

@@ -1,6 +1,7 @@
 package module
 
 import (
+	"fmt"
 	mod "fw/cp/module"
 	"fw/rt2/context"
 	"fw/xev"
@@ -8,11 +9,13 @@ import (
 	"ypk/assert"
 )
 
+type Loader func(*mod.Module)
+
 type List interface {
 	context.ContextAware
 	AsList() []*mod.Module
-	Load(name string) (*mod.Module, error)
-	Loaded(name string) *mod.Module
+	Load(string, ...Loader) (*mod.Module, error)
+	Loaded(string) *mod.Module
 }
 
 func New() List {
@@ -48,15 +51,30 @@ func (l *list) Init(d context.Domain) {
 }
 
 func (l *list) Handle(msg interface{}) {}
-func (l *list) Load(name string) (*mod.Module, error) {
+
+func (l *list) Load(name string, ldr ...Loader) (ret *mod.Module, err error) {
 	assert.For(name != "", 20)
-	ret := l.Loaded(name)
+	fmt.Println("loading", name, "loaded", l.Loaded(name) != nil)
+	ret = l.Loaded(name)
+	var loader Loader = func(m *mod.Module) {}
+	if len(ldr) > 0 {
+		loader = ldr[0]
+	}
 	if ret == nil {
 		path, _ := os.Getwd()
 		ret = xev.Load(path, name+".oz")
-		l.inner[name] = ret
+		ret.Name = name
+		for _, imp := range ret.Imports {
+			fmt.Println("imports", imp.Name, "loaded", l.Loaded(imp.Name) != nil)
+			_, err = l.Load(imp.Name, loader)
+		}
+		if err == nil {
+			l.inner[name] = ret
+			loader(ret)
+			fmt.Println("loaded", name)
+		}
 	}
-	return ret, nil
+	return ret, err
 }
 
 func (l *list) Loaded(name string) *mod.Module {
@@ -67,6 +85,7 @@ func (l *list) Loaded(name string) *mod.Module {
 func DomainModule(d context.Domain) *mod.Module {
 	uni := d.Discover(context.UNIVERSE).(context.Domain)
 	name := uni.Id(d)
+	assert.For(name != "", 40)
 	ml := uni.Discover(context.MOD).(List)
 	return ml.Loaded(name)
 }
