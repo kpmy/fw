@@ -20,7 +20,10 @@ func enterSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			return frame.End()
 		} else if f.Parent() != nil {
 			//Вход в процедуру не несет значимых действий и просто заменяет себя в цепочке родителей на своего родителя
-			fu.Push(fu.New(body), f.Parent())
+			//При вызове фрейма с другим доменом это мешает, надо убрать
+			//Через DataOf(f.Parent()) может передаваться результат выполнения
+			//fu.Push(fu.New(body), f.Parent())
+			fu.Push(fu.New(body), f)
 			return frame.Tail(frame.STOP), frame.LATER
 		} else {
 			//Особый случай, вход в модуль, секция BEGIN

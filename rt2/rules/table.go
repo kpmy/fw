@@ -117,6 +117,13 @@ func epilogue(n node.Node) frame.Sequence {
 			fmt.Println(rt_module.DomainModule(f.Domain()).Name)
 			sm := scope.This(f.Domain().Discover(context.SCOPE))
 			sm.Target().(scope.ScopeAllocator).Dispose(n)
+			//возвращаем результаты вызова функции
+			if f.Parent() != nil {
+				par := rt2.DataOf(f.Parent())
+				for k, v := range rt2.DataOf(f) {
+					par[k] = v
+				}
+			}
 			return frame.End()
 		}
 	case node.OperationNode, node.ReturnNode, node.IfNode, node.LoopNode,

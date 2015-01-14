@@ -20,7 +20,7 @@ func (fu FrameUtils) New(n node.Node) (f frame.Frame) {
 	f = new(nodeFrame)
 	f.(*nodeFrame).ir = n
 	f.(*nodeFrame).data = make(map[interface{}]interface{})
-	//utils.Println("_", "NEW", reflect.TypeOf(n))
+	utils.PrintFrame("_", "NEW", reflect.TypeOf(n))
 	return f
 }
 
@@ -28,7 +28,6 @@ func (fu FrameUtils) Push(f, p frame.Frame) {
 	assert.For(f != nil, 20)
 	pp, _ := p.(*nodeFrame)
 	pp.push(f)
-
 }
 
 func (fu FrameUtils) NodeOf(f frame.Frame) node.Node {
@@ -39,6 +38,11 @@ func (fu FrameUtils) NodeOf(f frame.Frame) node.Node {
 
 func (fu FrameUtils) DataOf(f frame.Frame) map[interface{}]interface{} {
 	return f.(*nodeFrame).data
+}
+
+func (fu FrameUtils) ReplaceDomain(f frame.Frame, d context.Domain) {
+	ff := f.(*nodeFrame)
+	ff.domain = d
 }
 
 type nodeFrame struct {
@@ -71,7 +75,7 @@ func (f *nodeFrame) Do() frame.WAIT {
 func (f *nodeFrame) onPush() {
 	f.num = count
 	count++
-	assert.For(count < 10, 40)
+	assert.For(count < 15, 40)
 	utils.PrintFrame("_", "PUSH", reflect.TypeOf(f.ir))
 	f.seq = decision.PrologueFor(f.ir)
 }

@@ -84,9 +84,12 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	var fu nodeframe.FrameUtils
 	n := fu.NodeOf(f)
 
-	call := func(proc node.Node) {
+	call := func(proc node.Node, d context.Domain) {
 		nf := fu.New(proc)
 		fu.Push(nf, f)
+		if d != nil {
+			fu.ReplaceDomain(nf, d)
+		}
 		//передаем ссылку на цепочку значений параметров в данные фрейма входа в процедуру
 		if (n.Right() != nil) && (proc.Object() != nil) {
 			fu.DataOf(nf)[proc.Object()] = n.Right()
@@ -104,19 +107,22 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	switch p := n.Left().(type) {
 	case node.ProcedureNode:
 		m := rt_mod.DomainModule(f.Domain())
+		ml := f.Domain().Discover(context.UNIVERSE).(context.Domain).Discover(context.MOD).(rt_mod.List)
 		if p.Super() {
 			fmt.Println("supercall, stop for now")
 			seq = Propose(Tail(STOP))
 			ret = frame.NOW
 		} else {
-			if m.ImportOf(n.Left().Object()) == "" {
+			if imp := m.ImportOf(n.Left().Object()); imp == "" {
 				proc := m.NodeByObject(n.Left().Object())
 				fmt.Println(len(proc), len(n.Left().Object().Ref()))
-				call(proc[0])
+				call(proc[0], nil)
 			} else {
-				fmt.Println("foreign call, stop for now")
-				seq = Propose(Tail(STOP))
-				ret = frame.NOW
+				m := ml.Loaded(imp)
+				proc := m.ObjectByName(m.Enter, n.Left().Object().Name())
+				nl := m.NodeByObject(proc)
+				fmt.Println("foreign call", len(nl))
+				call(nl[0], f.Domain().Discover(context.UNIVERSE).(context.Domain).Discover(imp).(context.Domain))
 			}
 		}
 	case node.VariableNode:
@@ -126,7 +132,7 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 
 		if obj, ok := obj.(object.Object); ok {
 			proc := m.NodeByObject(obj)
-			call(proc[0])
+			call(proc[0], nil)
 		} else {
 			name := n.Left().Object().Name()
 			switch {
