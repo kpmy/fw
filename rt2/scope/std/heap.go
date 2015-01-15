@@ -29,6 +29,11 @@ func nh() scope.Manager {
 	return &heap{data: &area{ready: true, root: nil, x: make(map[scope.ID]interface{})}}
 }
 
+func (h *heap) String() (ret string) {
+	ret = fmt.Sprintln("HEAP")
+	ret = fmt.Sprintln(ret, h.data)
+	return fmt.Sprint(ret, "END")
+}
 func (h *heap) Allocate(n node.Node, par ...interface{}) (ret scope.ValueFor) {
 	var talloc func(t object.PointerType) (oid scope.ID)
 	talloc = func(t object.PointerType) (oid scope.ID) {
@@ -48,7 +53,15 @@ func (h *heap) Allocate(n node.Node, par ...interface{}) (ret scope.ValueFor) {
 			alloc(nil, h.data, oid, r)
 		case object.DynArrayType:
 			assert.For(len(par) > 0, 20)
-			p := int64(par[0].(int32))
+			var p int64
+			switch x := par[0].(type) {
+			case int64:
+				p = x
+			case int32:
+				p = int64(x)
+			default:
+				panic("mistyped parameter")
+			}
 			fake := object.New(object.VARIABLE)
 			fake.SetComplex(bt)
 			fake.SetType(object.COMPLEX)
@@ -148,13 +161,18 @@ func (h *heap) Select(i scope.ID) interface{} {
 	sel = func(x interface{}) (ret *result) {
 		fmt.Println(x)
 		switch x := x.(type) {
-
 		case record:
 			if i.Path == "" {
 				ret = &result{x: x.(*rec).link}
 			} else {
 				z := x.getField(i.Path)
 				ret = sel(z)
+			}
+		case array:
+			if i.Index != nil {
+				ret = &result{x: x.get(*i.Index)}
+			} else {
+				ret = &result{x: x.sel()}
 			}
 		default:
 			panic(0)

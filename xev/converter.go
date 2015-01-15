@@ -201,7 +201,8 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 				}
 				ret = t
 			case "CHAR", "SHORTCHAR", "INTEGER", "LONGINT", "BYTE",
-				"SHORTINT", "BOOLEAN", "REAL", "SHORTREAL", "SET":
+				"SHORTINT", "BOOLEAN", "REAL", "SHORTREAL", "SET", "UNDEF",
+				"NOTYP", "SHORTSTRING", "STRING":
 			case "POINTER":
 				t := object.NewPointerType(n.Data.Typ.Name)
 				base := r.findLink(n, "base")

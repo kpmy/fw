@@ -48,6 +48,7 @@ type Manager interface {
 	Update(id ID, val ValueFor)
 	Select(id ID) interface{}
 	Target(...Allocator) Allocator
+	String() string
 }
 
 type Allocator interface{}

@@ -23,6 +23,7 @@ type manager struct {
 type KVarea interface {
 	set(scope.ID, interface{})
 	get(scope.ID) interface{}
+	String() string
 }
 
 type area struct {
@@ -37,12 +38,21 @@ func area_fin(a interface{}) {
 
 func (a *area) set(k scope.ID, v interface{}) {
 	key := scope.ID{Name: k.Name}
+	fmt.Println(k, key)
 	a.x[key] = v
 }
 
 func (a *area) get(k scope.ID) interface{} {
 	key := scope.ID{Name: k.Name}
 	return a.x[key]
+}
+
+func (a *area) String() (ret string) {
+	ret = fmt.Sprintln("AREA")
+	for k, v := range a.x {
+		ret = fmt.Sprintln(ret, "key:", k, "type:", reflect.TypeOf(v), "value:", v)
+	}
+	return fmt.Sprint(ret, "END")
 }
 
 type value interface {
@@ -133,9 +143,28 @@ func (a *rec) set(k scope.ID, v interface{}) { a.x[k] = v }
 
 func (a *rec) get(k scope.ID) interface{} { return a.x[k] }
 
+func (a *rec) String() (ret string) {
+	ret = fmt.Sprintln("RECORD")
+	for k, v := range a.x {
+		ret = fmt.Sprintln(ret, "key:", k, "value:", v)
+	}
+	return fmt.Sprint(ret, "END")
+}
+
 func nm() scope.Manager {
 	m := &manager{areas: list.New()}
 	return m
+}
+
+func (m *manager) String() (ret string) {
+	ret = fmt.Sprintln("SCOPE")
+	i := 0
+	for s := m.areas.Back(); s != nil; s = s.Prev() {
+		a := s.Value.(*area)
+		ret = fmt.Sprintln(ret, i, a)
+		i++
+	}
+	return fmt.Sprint(ret, "END")
 }
 
 func init() {
@@ -162,7 +191,7 @@ func design(n ...node.Node) (id scope.ID) {
 	case node.IndexNode:
 		id = scope.ID{Name: x.Left().Object().Name()}
 	default:
-		panic(fmt.Sprintln("unsupported", reflect.TypeOf(n)))
+		panic(fmt.Sprintln("unsupported", reflect.TypeOf(x)))
 	}
 	return id
 }
@@ -245,8 +274,10 @@ func (m *manager) Allocate(n node.Node, final bool) {
 	mod := rt_mod.DomainModule(m.Domain())
 	for _, o := range mod.Objects[n] {
 		k, v := obj(o)
-		//fmt.Println(k, v)
-		alloc(n, h, k, v)
+		if v != nil {
+			//fmt.Println(k, v)
+			alloc(n, h, k, v)
+		}
 	}
 	m.areas.PushFront(h)
 	fmt.Println("allocate")
@@ -345,7 +376,7 @@ func (m *manager) Select(i scope.ID) interface{} {
 	}
 	var res *result
 	var sel func(interface{}) *result
-	fmt.Println(i)
+	fmt.Println("select", i)
 	sel = func(x interface{}) (ret *result) {
 		switch x := x.(type) {
 		case value:

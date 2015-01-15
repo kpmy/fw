@@ -1,49 +1,51 @@
 @echo off 
-fw -i=XevDemo0
+fw -i=XevDemo0 > .out
 IF ERRORLEVEL 1 GOTO err
-fw -i=XevDemo1
+fw -i=XevDemo1 > .out
 IF ERRORLEVEL 1 GOTO err
-fw -i=XevDemo2
+fw -i=XevDemo2 > .out
 IF ERRORLEVEL 1 GOTO err
-fw -i=XevDemo3
+fw -i=XevDemo3 > .out
 IF ERRORLEVEL 1 GOTO err
-fw -i=XevDemo4
+fw -i=XevDemo4 > .out
 IF ERRORLEVEL 1 GOTO err
-fw -i=XevDemo5
+fw -i=XevDemo5 > .out
 IF ERRORLEVEL 1 GOTO err
-fw -i=XevDemo6
+fw -i=XevDemo6 > .out
 IF ERRORLEVEL 1 GOTO err
-fw -i=XevDemo7
+fw -i=XevDemo7 > .out
 IF ERRORLEVEL 1 GOTO err
-fw -i=XevDemo8
+fw -i=XevDemo8 > .out
 IF ERRORLEVEL 1 GOTO err
-fw -i=XevDemo9
+fw -i=XevDemo9 > .out
 IF ERRORLEVEL 1 GOTO err
-fw -i=XevDemo10
+fw -i=XevDemo10 > .out
 IF ERRORLEVEL 1 GOTO err
-fw -i=XevDemo11
+fw -i=XevDemo11 > .out
 IF ERRORLEVEL 1 GOTO err
-fw -i=XevDemo12
+fw -i=XevDemo12 > .out
 IF ERRORLEVEL 1 GOTO err
-fw -i=XevDemo13
+fw -i=XevDemo13 > .out
 IF ERRORLEVEL 1 GOTO err
-fw -i=XevDemo14
+fw -i=XevDemo14 > .out
 IF ERRORLEVEL 1 GOTO err
-fw -i=XevDemo15
+fw -i=XevDemo15 > .out
 IF ERRORLEVEL 1 GOTO err
-fw -i=XevDemo16
+fw -i=XevDemo16 > .out
 IF ERRORLEVEL 1 GOTO err
-fw -i=XevDemo17
+fw -i=XevDemo17 > .out
 IF ERRORLEVEL 1 GOTO err
-fw -i=XevDemo18
+fw -i=XevDemo18 > .out
 IF ERRORLEVEL 1 GOTO err
-fw -i=XevDemo19
+fw -i=XevDemo19 > .out
 IF ERRORLEVEL 1 GOTO err
-fw -i=XevDemo20
+fw -i=XevDemo20 > .out
 IF ERRORLEVEL 1 GOTO err
-fw -i=XevDemo21
+fw -i=XevDemo21 > .out
 IF ERRORLEVEL 1 GOTO err
-fw -i=XevDemo22
+fw -i=XevDemo22 > .out
+IF ERRORLEVEL 1 GOTO err
+fw -i=XevTest0 > .out
 IF ERRORLEVEL 1 GOTO err
 
 GOTO ok
@@ -52,3 +54,4 @@ echo FAILED
 pause
 
 :ok
+del .out

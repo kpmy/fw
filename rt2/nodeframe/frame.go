@@ -55,10 +55,19 @@ type nodeFrame struct {
 	num    int64
 }
 
+func done(f frame.Frame) {
+	fmt.Println("____")
+	fmt.Println(f.Domain().Discover(context.SCOPE))
+	fmt.Println("--")
+	fmt.Println(f.Domain().Discover(context.HEAP))
+	fmt.Println("^^^^")
+}
+
 func (f *nodeFrame) Do() frame.WAIT {
 	assert.For(f.seq != nil, 20)
 	next, ret := f.seq(f)
-	utils.PrintFrame(f.num, ret, reflect.TypeOf(f.ir))
+	utils.PrintFrame(f.num, ret, reflect.TypeOf(f.ir), f.ir)
+	fmt.Println("data:", f.data)
 	if next != nil {
 		assert.For(ret != frame.STOP, 40)
 		f.seq = next
@@ -69,6 +78,7 @@ func (f *nodeFrame) Do() frame.WAIT {
 		}
 
 	}
+	defer done(f)
 	return ret
 }
 

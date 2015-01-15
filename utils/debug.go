@@ -8,7 +8,7 @@ var debugTrap = true
 
 func PrintFrame(x ...interface{}) {
 	if debugFrame {
-		fmt.Println(x[0], x[1], x[2])
+		fmt.Println(x...)
 	}
 }
 

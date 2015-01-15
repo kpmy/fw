@@ -223,7 +223,7 @@ func run(global context.Domain, init []*module.Module) {
 		i := 0
 		t0 := time.Now()
 		for x := frame.NOW; x == frame.NOW; x = root.Do() {
-			//fmt.Println(x)
+			fmt.Println("STEP", i)
 			i++
 		}
 		t1 := time.Now()
