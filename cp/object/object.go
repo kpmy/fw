@@ -1,6 +1,7 @@
 package object
 
 import (
+	"fw/cp"
 	"ypk/assert"
 )
 
@@ -30,6 +31,7 @@ type Object interface {
 	Name() string
 	SetRef(n Ref)
 	Ref() []Ref
+	cp.Id
 }
 
 type Ref interface {
@@ -71,31 +73,33 @@ type Module interface {
 	self() Module
 }
 
-func New(mode Mode) Object {
+func New(mode Mode, id int) (ret Object) {
 	switch mode {
 	case HEAD:
-		return new(headObject)
+		ret = new(headObject)
 	case VARIABLE:
-		return new(variableObject)
+		ret = new(variableObject)
 	case LOCAL_PROC:
-		return new(localProcedureObject)
+		ret = new(localProcedureObject)
 	case CONSTANT:
-		return new(constantObject)
+		ret = new(constantObject)
 	case PARAMETER:
-		return new(parameterObject)
+		ret = new(parameterObject)
 	case EXTERNAL_PROC:
-		return new(externalProcedureObject)
+		ret = new(externalProcedureObject)
 	case TYPE_PROC:
-		return new(typeProcedureObject)
+		ret = new(typeProcedureObject)
 	case FIELD:
-		return new(fieldObject)
+		ret = new(fieldObject)
 	case TYPE:
-		return new(typeObject)
+		ret = new(typeObject)
 	case MODULE:
-		return new(mod)
+		ret = new(mod)
 	default:
 		panic("no such object mode")
 	}
+	ret.Adr(id)
+	return ret
 }
 
 type objectFields struct {
@@ -104,6 +108,7 @@ type objectFields struct {
 	link Object
 	comp ComplexType
 	ref  []Ref
+	adr  int
 }
 
 func (of *objectFields) SetType(typ Type)         { of.typ = typ }
@@ -114,6 +119,14 @@ func (of *objectFields) Link() Object             { return of.link }
 func (of *objectFields) SetLink(o Object)         { of.link = o }
 func (of *objectFields) SetComplex(t ComplexType) { of.comp = t }
 func (of *objectFields) Complex() ComplexType     { return of.comp }
+
+func (of *objectFields) Adr(a ...int) int {
+	assert.For(len(a) <= 1, 20)
+	if len(a) == 1 {
+		of.adr = a[0]
+	}
+	return of.adr
+}
 
 func (of *objectFields) SetRef(n Ref) {
 	assert.For(n != nil, 20)

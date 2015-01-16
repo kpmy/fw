@@ -2,6 +2,7 @@ package std
 
 import (
 	"fmt"
+	"fw/cp"
 	"fw/cp/node"
 	"fw/cp/object"
 	"fw/rt2/context"
@@ -39,7 +40,7 @@ func (h *heap) Allocate(n node.Node, par ...interface{}) (ret scope.ValueFor) {
 	talloc = func(t object.PointerType) (oid scope.ID) {
 		switch bt := t.Base().(type) {
 		case object.RecordType:
-			fake := object.New(object.VARIABLE)
+			fake := object.New(object.VARIABLE, cp.SomeAdr())
 			fake.SetComplex(bt)
 			fake.SetType(object.COMPLEX)
 			fake.SetName("@")
@@ -62,7 +63,7 @@ func (h *heap) Allocate(n node.Node, par ...interface{}) (ret scope.ValueFor) {
 			default:
 				panic("mistyped parameter")
 			}
-			fake := object.New(object.VARIABLE)
+			fake := object.New(object.VARIABLE, cp.SomeAdr())
 			fake.SetComplex(bt)
 			fake.SetType(object.COMPLEX)
 			fake.SetName("@")

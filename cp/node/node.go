@@ -1,6 +1,7 @@
 package node
 
 import (
+	"fw/cp"
 	"fw/cp/constant/enter"
 	"fw/cp/constant/operation"
 	"fw/cp/constant/statement"
@@ -17,6 +18,8 @@ type Node interface {
 	Right() Node
 	Link() Node
 	Object() object.Object
+
+	cp.Id
 }
 
 type EnterNode interface {

@@ -3,6 +3,7 @@ package rules
 import (
 	"encoding/json"
 	"fmt"
+	"fw/cp"
 	"fw/cp/constant"
 	"fw/cp/node"
 	"fw/cp/object"
@@ -38,11 +39,11 @@ func callHandler(f frame.Frame, obj object.Object, data interface{}) {
 		return
 	}
 	m := rt_mod.DomainModule(f.Domain())
-	cn := node.New(constant.CALL)
+	cn := node.New(constant.CALL, cp.SomeAdr())
 	ol := m.NodeByObject(obj)
 	assert.For(len(ol) <= 1, 40)
 	cn.SetLeft(ol[0])
-	cc := node.New(constant.CONSTANT).(node.ConstantNode)
+	cc := node.New(constant.CONSTANT, cp.SomeAdr()).(node.ConstantNode)
 	cc.SetData(data)
 	cn.SetRight(cc)
 	rt2.Push(rt2.New(cn), f)

@@ -193,7 +193,7 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 		case "BASIC":
 			switch n.Data.Typ.Typ {
 			case "PROCEDURE":
-				t := object.NewBasicType(object.PROCEDURE)
+				t := object.NewBasicType(object.PROCEDURE, n.Id)
 				link := r.findLink(n, "link")
 				if link != nil {
 					t.SetLink(r.doObject(link))
@@ -217,33 +217,27 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 		case "DYNAMIC":
 			switch n.Data.Typ.Base {
 			case "CHAR":
-				n := object.NewDynArrayType(object.CHAR)
-				ret = n
+				ret = object.NewDynArrayType(object.CHAR, n.Id)
 			case "BYTE":
-				n := object.NewDynArrayType(object.BYTE)
-				ret = n
+				ret = object.NewDynArrayType(object.BYTE, n.Id)
 			case "SHORTCHAR":
-				n := object.NewDynArrayType(object.SHORTCHAR)
-				ret = n
+				ret = object.NewDynArrayType(object.SHORTCHAR, n.Id)
 			default:
 				panic(fmt.Sprintln("unknown dyn type", n.Data.Typ.Typ))
 			}
 		case "ARRAY":
 			switch n.Data.Typ.Base {
 			case "CHAR":
-				n := object.NewArrayType(object.CHAR, int64(n.Data.Typ.Par))
-				ret = n
+				ret = object.NewArrayType(object.CHAR, int64(n.Data.Typ.Par), n.Id)
 			default:
 				panic(fmt.Sprintln("unknown array type", n.Data.Typ.Typ))
 			}
 		case "RECORD":
 			switch n.Data.Typ.Base {
 			case "NOTYP":
-				n := object.NewRecordType(n.Data.Typ.Name)
-				ret = n
+				ret = object.NewRecordType(n.Data.Typ.Name, n.Id)
 			default:
-				n := object.NewRecordType(n.Data.Typ.Name, n.Data.Typ.Base)
-				ret = n
+				ret = object.NewRecordType(n.Data.Typ.Name, n.Id, n.Data.Typ.Base)
 			}
 			link := r.findLink(n, "link")
 			if link != nil {
@@ -272,33 +266,33 @@ func (r *Result) doObject(n *Node) (ret object.Object) {
 	if ret == nil {
 		switch n.Data.Obj.Mode {
 		case "head":
-			ret = object.New(object.HEAD)
+			ret = object.New(object.HEAD, n.Id)
 		case "variable":
-			ret = object.New(object.VARIABLE)
+			ret = object.New(object.VARIABLE, n.Id)
 			initType(n.Data.Obj.Typ, ret.(object.VariableObject))
 		case "local procedure":
-			ret = object.New(object.LOCAL_PROC)
+			ret = object.New(object.LOCAL_PROC, n.Id)
 			ret.SetType(object.PROCEDURE)
 		case "external procedure":
-			ret = object.New(object.EXTERNAL_PROC)
+			ret = object.New(object.EXTERNAL_PROC, n.Id)
 			ret.SetType(object.PROCEDURE)
 		case "type procedure":
-			ret = object.New(object.TYPE_PROC)
+			ret = object.New(object.TYPE_PROC, n.Id)
 			ret.SetType(object.PROCEDURE)
 		case "constant":
-			ret = object.New(object.CONSTANT)
+			ret = object.New(object.CONSTANT, n.Id)
 			convertData(n.Data.Obj.Typ, n.Data.Obj.Value, ret.(object.ConstantObject))
 			//fmt.Println(n.Data.Obj.Name, " ", ret.(object.ConstantObject).Data())
 		case "parameter":
-			ret = object.New(object.PARAMETER)
+			ret = object.New(object.PARAMETER, n.Id)
 			initType(n.Data.Obj.Typ, ret.(object.ParameterObject))
 		case "field":
-			ret = object.New(object.FIELD)
+			ret = object.New(object.FIELD, n.Id)
 			initType(n.Data.Obj.Typ, ret.(object.FieldObject))
 		case "type":
-			ret = object.New(object.TYPE)
+			ret = object.New(object.TYPE, n.Id)
 		case "module":
-			ret = object.New(object.MODULE)
+			ret = object.New(object.MODULE, n.Id)
 		default:
 			fmt.Println(n.Data.Obj.Mode)
 			panic("no such object mode")
@@ -364,7 +358,7 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 	if ret == nil {
 		switch n.Data.Nod.Class {
 		case "enter":
-			ret = node.New(constant.ENTER)
+			ret = node.New(constant.ENTER, n.Id)
 			switch n.Data.Nod.Enter {
 			case "module":
 				ret.(node.EnterNode).SetEnter(enter.MODULE)
@@ -374,12 +368,12 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 				panic("no such enter type")
 			}
 		case "variable":
-			ret = node.New(constant.VARIABLE)
+			ret = node.New(constant.VARIABLE, n.Id)
 		case "dyadic":
-			ret = node.New(constant.DYADIC)
+			ret = node.New(constant.DYADIC, n.Id)
 			ret.(node.OperationNode).SetOperation(operation.This(n.Data.Nod.Operation))
 		case "constant":
-			ret = node.New(constant.CONSTANT)
+			ret = node.New(constant.CONSTANT, n.Id)
 			convertData(n.Data.Nod.Typ, n.Data.Nod.Value, ret.(node.ConstantNode))
 			//fmt.Println(ret.(node.ConstantNode).Data())
 			x := ret.(node.ConstantNode)
@@ -392,20 +386,20 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 				x.SetMax(val)
 			}
 		case "assign":
-			ret = node.New(constant.ASSIGN)
+			ret = node.New(constant.ASSIGN, n.Id)
 			ret.(node.AssignNode).SetStatement(statement.This(n.Data.Nod.Statement))
 		case "call":
-			ret = node.New(constant.CALL)
+			ret = node.New(constant.CALL, n.Id)
 		case "procedure":
-			ret = node.New(constant.PROCEDURE)
+			ret = node.New(constant.PROCEDURE, n.Id)
 			proc = ret.(node.ProcedureNode)
 			proc.Super(n.Data.Nod.Proc)
 		case "parameter":
-			ret = node.New(constant.PARAMETER)
+			ret = node.New(constant.PARAMETER, n.Id)
 		case "return":
-			ret = node.New(constant.RETURN)
+			ret = node.New(constant.RETURN, n.Id)
 		case "monadic":
-			ret = node.New(constant.MONADIC)
+			ret = node.New(constant.MONADIC, n.Id)
 			ret.(node.OperationNode).SetOperation(operation.This(n.Data.Nod.Operation))
 			switch n.Data.Nod.Operation {
 			case "CONV":
@@ -413,32 +407,32 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 				initType(n.Data.Nod.Typ, ret.(node.MonadicNode))
 			}
 		case "conditional":
-			ret = node.New(constant.CONDITIONAL)
+			ret = node.New(constant.CONDITIONAL, n.Id)
 		case "if":
-			ret = node.New(constant.IF)
+			ret = node.New(constant.IF, n.Id)
 		case "while":
-			ret = node.New(constant.WHILE)
+			ret = node.New(constant.WHILE, n.Id)
 		case "repeat":
-			ret = node.New(constant.REPEAT)
+			ret = node.New(constant.REPEAT, n.Id)
 		case "loop":
-			ret = node.New(constant.LOOP)
+			ret = node.New(constant.LOOP, n.Id)
 		case "exit":
-			ret = node.New(constant.EXIT)
+			ret = node.New(constant.EXIT, n.Id)
 		case "dereferencing":
-			ret = node.New(constant.DEREF)
+			ret = node.New(constant.DEREF, n.Id)
 			ret.(node.DerefNode).Ptr(n.Data.Nod.From)
 		case "field":
-			ret = node.New(constant.FIELD)
+			ret = node.New(constant.FIELD, n.Id)
 		case "init":
-			ret = node.New(node.INIT)
+			ret = node.New(node.INIT, n.Id)
 		case "index":
-			ret = node.New(constant.INDEX)
+			ret = node.New(constant.INDEX, n.Id)
 		case "trap":
-			ret = node.New(constant.TRAP)
+			ret = node.New(constant.TRAP, n.Id)
 		case "with":
-			ret = node.New(constant.WITH)
+			ret = node.New(constant.WITH, n.Id)
 		case "guard":
-			ret = node.New(constant.GUARD)
+			ret = node.New(constant.GUARD, n.Id)
 			typ := r.findLink(n, "type")
 			if typ != nil {
 				ret.(node.GuardNode).SetType(r.doType(typ))
@@ -447,9 +441,9 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 				}
 			}
 		case "case":
-			ret = node.New(constant.CASE)
+			ret = node.New(constant.CASE, n.Id)
 		case "else":
-			ret = node.New(constant.ELSE)
+			ret = node.New(constant.ELSE, n.Id)
 			x := ret.(node.ElseNode)
 			if n.Data.Nod.Min != nil {
 				val, _ := strconv.Atoi(n.Data.Nod.Min.X)
@@ -460,11 +454,11 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 				x.Max(val)
 			}
 		case "do":
-			ret = node.New(constant.DO)
+			ret = node.New(constant.DO, n.Id)
 		case "range":
-			ret = node.New(constant.RANGE)
+			ret = node.New(constant.RANGE, n.Id)
 		case "compound":
-			ret = node.New(node.COMPOUND)
+			ret = node.New(node.COMPOUND, n.Id)
 		default:
 			fmt.Println(n.Data.Nod.Class)
 			panic("no such node type")

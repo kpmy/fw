@@ -2,6 +2,7 @@ package rules
 
 import (
 	"fmt"
+	"fw/cp"
 	"fw/cp/constant"
 	"fw/cp/node"
 	"fw/cp/object"
@@ -28,8 +29,8 @@ func guardSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		rt2.DataOf(f.Parent())[n] = n.Left()
 		return frame.End()
 	} else {
-		trap := node.New(constant.TRAP).(node.TrapNode)
-		code := node.New(constant.CONSTANT).(node.ConstantNode)
+		trap := node.New(constant.TRAP, cp.SomeAdr()).(node.TrapNode)
+		code := node.New(constant.CONSTANT, cp.SomeAdr()).(node.ConstantNode)
 		code.SetData(0)
 		trap.SetLeft(code)
 		rt2.Push(rt2.New(trap), f)

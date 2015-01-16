@@ -2,7 +2,9 @@ package object
 
 import (
 	"fmt"
+	"fw/cp"
 	"reflect"
+	"ypk/assert"
 )
 
 type Type int
@@ -62,14 +64,24 @@ func (t Type) String() string {
 type ComplexType interface {
 	Link() Object
 	SetLink(o Object)
+	cp.Id
 }
 
 type comp struct {
 	link Object
+	adr  int
 }
 
 func (c *comp) Link() Object     { return c.link }
 func (c *comp) SetLink(o Object) { c.link = o }
+
+func (c *comp) Adr(a ...int) int {
+	assert.For(len(a) <= 1, 20)
+	if len(a) == 1 {
+		c.adr = a[0]
+	}
+	return c.adr
+}
 
 type BasicType interface {
 	ComplexType
@@ -101,8 +113,9 @@ type RecordType interface {
 	Name() string
 }
 
-func NewBasicType(t Type) BasicType {
+func NewBasicType(t Type, id int) BasicType {
 	x := &basic{typ: t}
+	x.Adr(id)
 	return x
 }
 
@@ -113,8 +126,10 @@ type basic struct {
 
 func (b *basic) Type() Type { return b.typ }
 
-func NewDynArrayType(b Type) DynArrayType {
-	return &dyn{base: b}
+func NewDynArrayType(b Type, id int) (ret DynArrayType) {
+	ret = &dyn{base: b}
+	ret.Adr(id)
+	return ret
 }
 
 type dyn struct {
@@ -124,8 +139,10 @@ type dyn struct {
 
 func (d *dyn) Base() Type { return d.base }
 
-func NewArrayType(b Type, len int64) ArrayType {
-	return &arr{base: b, length: len}
+func NewArrayType(b Type, len int64, id int) (ret ArrayType) {
+	ret = &arr{base: b, length: len}
+	ret.Adr(id)
+	return ret
 }
 
 type arr struct {
@@ -145,12 +162,16 @@ type rec struct {
 
 func (r *rec) Name() string { return r.name }
 func (r *rec) Base() string { return r.base }
-func NewRecordType(n string, par ...string) RecordType {
+
+func NewRecordType(n string, id int, par ...string) (ret RecordType) {
 	if len(par) == 0 {
-		return &rec{}
+		ret = &rec{}
+		ret.Adr(id)
 	} else {
-		return &rec{name: n, base: par[0]}
+		ret = &rec{name: n, base: par[0]}
+		ret.Adr(id)
 	}
+	return ret
 }
 
 func (r *rec) BaseType() RecordType { return r.basetyp }

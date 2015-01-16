@@ -6,6 +6,7 @@ import (
 	"fw/cp/constant/operation"
 	"fw/cp/constant/statement"
 	"fw/cp/object"
+	"ypk/assert"
 )
 
 const INIT constant.Class = -1
@@ -21,72 +22,83 @@ type CompNode interface {
 	self() CompNode
 }
 
-func New(class constant.Class) Node {
+func New(class constant.Class, id int) (ret Node) {
 	switch class {
 	case constant.ENTER:
-		return new(enterNode)
+		ret = new(enterNode)
 	case constant.ASSIGN:
-		return new(assignNode)
+		ret = new(assignNode)
 	case constant.VARIABLE:
-		return new(variableNode)
+		ret = new(variableNode)
 	case constant.DYADIC:
-		return new(dyadicNode)
+		ret = new(dyadicNode)
 	case constant.CONSTANT:
-		return new(constantNode)
+		ret = new(constantNode)
 	case constant.CALL:
-		return new(callNode)
+		ret = new(callNode)
 	case constant.PROCEDURE:
-		return new(procedureNode)
+		ret = new(procedureNode)
 	case constant.PARAMETER:
-		return new(parameterNode)
+		ret = new(parameterNode)
 	case constant.RETURN:
-		return new(returnNode)
+		ret = new(returnNode)
 	case constant.MONADIC:
-		return new(monadicNode)
+		ret = new(monadicNode)
 	case constant.CONDITIONAL:
-		return new(conditionalNode)
+		ret = new(conditionalNode)
 	case constant.IF:
-		return new(ifNode)
+		ret = new(ifNode)
 	case constant.REPEAT:
-		return new(repeatNode)
+		ret = new(repeatNode)
 	case constant.WHILE:
-		return new(whileNode)
+		ret = new(whileNode)
 	case constant.EXIT:
-		return new(exitNode)
+		ret = new(exitNode)
 	case constant.LOOP:
-		return new(loopNode)
+		ret = new(loopNode)
 	case constant.DEREF:
-		return new(derefNode)
+		ret = new(derefNode)
 	case constant.FIELD:
-		return new(fieldNode)
+		ret = new(fieldNode)
 	case INIT:
-		return new(initNode)
+		ret = new(initNode)
 	case constant.INDEX:
-		return new(indexNode)
+		ret = new(indexNode)
 	case constant.TRAP:
-		return new(trapNode)
+		ret = new(trapNode)
 	case constant.WITH:
-		return new(withNode)
+		ret = new(withNode)
 	case constant.GUARD:
-		return new(guardNode)
+		ret = new(guardNode)
 	case constant.CASE:
-		return new(caseNode)
+		ret = new(caseNode)
 	case constant.ELSE:
-		return new(elseNode)
+		ret = new(elseNode)
 	case constant.DO:
-		return new(doNode)
+		ret = new(doNode)
 	case constant.RANGE:
-		return new(rangeNode)
+		ret = new(rangeNode)
 	case COMPOUND:
-		return new(compNode)
+		ret = new(compNode)
 	default:
 		panic("no such class")
 	}
+	ret.Adr(id)
+	return ret
 }
 
 type nodeFields struct {
 	left, right, link Node
 	obj               object.Object
+	adr               int
+}
+
+func (nf *nodeFields) Adr(a ...int) int {
+	assert.For(len(a) <= 1, 20)
+	if len(a) == 1 {
+		nf.adr = a[0]
+	}
+	return nf.adr
 }
 
 func (nf *nodeFields) SetLeft(n Node) { nf.left = n }

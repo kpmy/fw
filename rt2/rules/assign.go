@@ -2,6 +2,7 @@ package rules
 
 import (
 	"fmt"
+	"fw/cp"
 	"fw/cp/constant"
 	"fw/cp/constant/operation"
 	"fw/cp/constant/statement"
@@ -16,7 +17,7 @@ import (
 
 func incSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	n := rt2.NodeOf(f)
-	op := node.New(constant.DYADIC).(node.OperationNode)
+	op := node.New(constant.DYADIC, cp.SomeAdr()).(node.OperationNode)
 	op.SetOperation(operation.PLUS)
 	op.SetLeft(n.Left())
 	op.SetRight(n.Right())
@@ -34,7 +35,7 @@ func incSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 
 func decSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	n := rt2.NodeOf(f)
-	op := node.New(constant.DYADIC).(node.OperationNode)
+	op := node.New(constant.DYADIC, cp.SomeAdr()).(node.OperationNode)
 	op.SetOperation(operation.MINUS)
 	op.SetLeft(n.Left())
 	op.SetRight(n.Right())
