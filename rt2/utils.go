@@ -11,7 +11,8 @@ import (
 
 var utils nodeframe.NodeFrameUtils
 
-func DataOf(f frame.Frame) map[interface{}]interface{} { return utils.DataOf(f) }
+func DataOf(f frame.Frame) map[interface{}]interface{} { panic(100) }
+func RegOf(f frame.Frame) map[interface{}]interface{}  { return utils.DataOf(f) }
 func ValueOf(f frame.Frame) map[cp.ID]scope.Value      { return utils.ValueOf(f) }
 func NodeOf(f frame.Frame) node.Node                   { return utils.NodeOf(f) }
 func Push(f, p frame.Frame)                            { utils.Push(f, p) }

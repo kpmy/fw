@@ -133,7 +133,7 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 				v := NewConst(nv)
 				l.v[l.k[o.Adr()]].Set(v)
 			case node.VariableNode:
-				v := a.area.Select(nv.Adr())
+				v := a.area.Select(nv.Object().Adr())
 				l.v[l.k[o.Adr()]].Set(v)
 			default:
 				halt.As(40, reflect.TypeOf(nv))

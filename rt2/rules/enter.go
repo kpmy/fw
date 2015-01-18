@@ -46,13 +46,18 @@ func enterSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	sm := f.Domain().Discover(context.SCOPE).(scope.Manager)
 	//fmt.Println(n.Object())
 	if n.Object() != nil {
-		par, ok := rt2.DataOf(f)[n.Object()].(node.Node)
+		par, ok := rt2.RegOf(f)[n.Object()].(node.Node)
 		//fmt.Println(rt2.DataOf(f)[n.Object()])
 		//fmt.Println(ok)
 		if ok {
 			sm.Target().(scope.ScopeAllocator).Allocate(n, false)
 			seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
-				return sm.Target().(scope.ScopeAllocator).Initialize(n, scope.PARAM{Objects: n.Object().Link(), Values: par, Frame: f, Tail: tail})
+				return sm.Target().(scope.ScopeAllocator).Initialize(n,
+					scope.PARAM{
+						Objects: n.Object().Link(),
+						Values:  par,
+						Frame:   f,
+						Tail:    tail})
 			}
 		} else {
 			sm.Target().(scope.ScopeAllocator).Allocate(n, true)

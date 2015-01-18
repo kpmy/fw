@@ -13,7 +13,7 @@ func exitSeq(x frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		n := rt2.NodeOf(f)
 		_, ok = n.(node.LoopNode)
 		if ok {
-			rt2.DataOf(f)[flag] = true
+			rt2.RegOf(f)[flag] = true
 		}
 		ok = !ok
 		return ok
@@ -23,7 +23,7 @@ func exitSeq(x frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 
 func loopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	n := rt2.NodeOf(f)
-	exit, ok := rt2.DataOf(f)[flag].(bool)
+	exit, ok := rt2.RegOf(f)[flag].(bool)
 	if ok && exit {
 		return frame.End()
 	}

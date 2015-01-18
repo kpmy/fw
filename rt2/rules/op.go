@@ -135,14 +135,6 @@ func sub(_a interface{}, _b interface{}) interface{} {
 	return a - b
 }
 
-func eq(_a interface{}, _b interface{}) bool {
-	assert.For(_a != nil, 20)
-	assert.For(_b != nil, 21)
-	var a int32 = int32Of(_a)
-	var b int32 = int32Of(_b)
-	return a == b
-}
-
 func and(_a interface{}, _b interface{}) bool {
 	assert.For(_a != nil, 20)
 	assert.For(_b != nil, 21)
@@ -317,8 +309,9 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 
 	switch n.Operation() {
 	case operation.ALIEN_CONV:
-		conv := func(x interface{}) {
-			switch n.Type() {
+		conv := func(x scope.Value) {
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Conv(x, n.Type())
+			/*switch n.Type() {
 			case object.INTEGER:
 				switch v := x.(type) {
 				case int8:
@@ -327,6 +320,7 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 					rt2.DataOf(f.Parent())[n] = int32(v.Int64())
 				case int32:
 					rt2.DataOf(f.Parent())[n] = v
+				case
 				default:
 					panic(fmt.Sprintln("ooops", reflect.TypeOf(x)))
 				}
@@ -346,7 +340,7 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				}
 			default:
 				panic(fmt.Sprintln("wrong type", n.Type()))
-			}
+			} */
 		}
 		switch n.Left().(type) {
 		case node.VariableNode, node.ParameterNode:
@@ -356,7 +350,7 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			return frame.End()
 		case node.OperationNode:
 			return This(expectExpr(f, n.Left(), func(...IN) OUT {
-				conv(rt2.DataOf(f)[n.Left()])
+				conv(rt2.ValueOf(f)[n.Left().Adr()])
 				return End()
 			}))
 		default:
@@ -423,16 +417,16 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Sum(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.MINUS:
-			rt2.DataOf(f.Parent())[n] = sub(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Sub(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.EQUAL:
-			rt2.DataOf(f.Parent())[n] = eq(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Eq(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.LESSER:
-			rt2.DataOf(f.Parent())[n] = lss(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Lss(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.LESS_EQUAL:
-			rt2.DataOf(f.Parent())[n] = leq(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Leq(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.LEN:
 			rt2.DataOf(f.Parent())[n] = length(n.Left().Object(), rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])

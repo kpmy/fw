@@ -124,6 +124,18 @@ func NewData(o object.Object) (ret scope.Variable) {
 	return ret
 }
 
+func fromg(x interface{}) scope.Value {
+	switch x := x.(type) {
+	case int32:
+		return INTEGER(x)
+	case bool:
+		return BOOLEAN(x)
+	default:
+		halt.As(100, reflect.TypeOf(x))
+	}
+	panic(100)
+}
+
 func NewConst(n node.Node) scope.Value {
 	switch x := n.(type) {
 	case node.ConstantNode:
@@ -161,6 +173,8 @@ func vfrom(v scope.Value) scope.Value {
 		switch n.link.Type() {
 		case object.INTEGER:
 			return n.val.(INTEGER)
+		case object.BYTE:
+			return n.val.(BYTE)
 		default:
 			halt.As(100, n.link.Type())
 		}
@@ -172,26 +186,167 @@ func vfrom(v scope.Value) scope.Value {
 	return nil
 }
 
+func gfrom(v scope.Value) interface{} {
+	switch n := v.(type) {
+	case *data:
+		return gfrom(n.val.(scope.Value))
+	case INTEGER:
+		return int32(n)
+	case BOOLEAN:
+		return bool(n)
+	default:
+		halt.As(100, reflect.TypeOf(n))
+	}
+	return nil
+}
+
 type ops struct{}
 
 func (o *ops) Sum(a, b scope.Value) scope.Value {
-	switch x := a.(type) {
+	switch a.(type) {
 	case *data:
 		return o.Sum(vfrom(a), b)
-	case INTEGER:
-		switch y := b.(type) {
+	default:
+		switch b.(type) {
 		case *data:
-			return o.Sum(x, vfrom(b))
-		case INTEGER:
-			return INTEGER(int32(x) + int32(y))
+			return o.Sum(a, vfrom(b))
+		default:
+			switch x := a.(type) {
+			case INTEGER:
+				switch y := b.(type) {
+				case INTEGER:
+					return INTEGER(int32(x) + int32(y))
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			default:
+				panic(fmt.Sprintln(reflect.TypeOf(x)))
+			}
+		}
+	}
+	panic(0)
+}
+
+func (o *ops) Sub(a, b scope.Value) scope.Value {
+	switch a.(type) {
+	case *data:
+		return o.Sub(vfrom(a), b)
+	default:
+		switch b.(type) {
+		case *data:
+			return o.Sub(a, vfrom(b))
+		default:
+			switch x := a.(type) {
+			case INTEGER:
+				switch y := b.(type) {
+				case INTEGER:
+					return INTEGER(int32(x) - int32(y))
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			default:
+				panic(fmt.Sprintln(reflect.TypeOf(x)))
+			}
+		}
+	}
+	panic(0)
+
+}
+func (o *ops) Conv(a scope.Value, typ object.Type) scope.Value {
+	switch typ {
+	case object.INTEGER:
+		switch x := a.(type) {
+		case *data:
+			return o.Conv(vfrom(x), typ)
+		case BYTE:
+			return INTEGER(x)
+		default:
+			halt.As(100, reflect.TypeOf(x))
 		}
 	default:
-		panic(fmt.Sprintln(reflect.TypeOf(x)))
+		halt.As(100, typ)
+	}
+	panic(100)
+}
+
+func (o *ops) Eq(a, b scope.Value) scope.Value {
+	switch a.(type) {
+	case *data:
+		return o.Eq(vfrom(a), b)
+	default:
+		switch b.(type) {
+		case *data:
+			return o.Eq(a, vfrom(b))
+		default:
+			switch x := a.(type) {
+			case INTEGER:
+				switch y := b.(type) {
+				case INTEGER:
+					return BOOLEAN(x == y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			default:
+				panic(fmt.Sprintln(reflect.TypeOf(x)))
+			}
+		}
+	}
+	panic(0)
+}
+
+func (o *ops) Lss(a, b scope.Value) scope.Value {
+	switch a.(type) {
+	case *data:
+		return o.Lss(vfrom(a), b)
+	default:
+		switch b.(type) {
+		case *data:
+			return o.Lss(a, vfrom(b))
+		default:
+			switch x := a.(type) {
+			case INTEGER:
+				switch y := b.(type) {
+				case INTEGER:
+					return BOOLEAN(x < y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			default:
+				panic(fmt.Sprintln(reflect.TypeOf(x)))
+			}
+		}
+	}
+	panic(0)
+}
+
+func (o *ops) Leq(a, b scope.Value) scope.Value {
+	switch a.(type) {
+	case *data:
+		return o.Leq(vfrom(a), b)
+	default:
+		switch b.(type) {
+		case *data:
+			return o.Leq(a, vfrom(b))
+		default:
+			switch x := a.(type) {
+			case INTEGER:
+				switch y := b.(type) {
+				case INTEGER:
+					return BOOLEAN(x <= y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			default:
+				panic(fmt.Sprintln(reflect.TypeOf(x)))
+			}
+		}
 	}
 	panic(0)
 }
 
 func init() {
 	scope.ValueFrom = vfrom
+	scope.GoTypeFrom = gfrom
+	scope.TypeFromGo = fromg
 	scope.Ops = &ops{}
 }

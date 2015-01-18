@@ -91,12 +91,12 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		}
 		//передаем ссылку на цепочку значений параметров в данные фрейма входа в процедуру
 		if (n.Right() != nil) && (proc.Object() != nil) {
-			rt2.DataOf(nf)[proc.Object()] = n.Right()
+			rt2.RegOf(nf)[proc.Object()] = n.Right()
 		} else {
 			//fmt.Println("no data for call")
 		}
 		seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-			rt2.DataOf(f.Parent())[n] = rt2.DataOf(f)[n.Left().Object()]
+			//			rt2.DataOf(f.Parent())[n] = rt2.DataOf(f)[n.Left().Object()]
 			rt2.ValueOf(f.Parent())[n.Adr()] = rt2.ValueOf(f)[n.Left().Object().Adr()]
 			return frame.End()
 		}

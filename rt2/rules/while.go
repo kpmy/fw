@@ -5,6 +5,7 @@ import (
 	"fw/cp/node"
 	"fw/rt2"
 	"fw/rt2/frame"
+	"fw/rt2/scope"
 	"reflect"
 )
 
@@ -13,8 +14,8 @@ func whileSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 
 	var cond func(f frame.Frame) (frame.Sequence, frame.WAIT)
 	next := func(f frame.Frame) (frame.Sequence, frame.WAIT) {
-		done := rt2.DataOf(f)[n.Left()].(bool)
-		rt2.DataOf(f)[n.Left()] = nil
+		done := scope.GoTypeFrom(rt2.ValueOf(f)[n.Left().Adr()]).(bool)
+		rt2.RegOf(f)[n.Left()] = nil
 		if done && n.Right() != nil {
 			rt2.Push(rt2.New(n.Right()), f)
 			return cond, frame.LATER
@@ -32,7 +33,8 @@ func whileSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case node.OperationNode:
 			rt2.Push(rt2.New(n.Left()), f)
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				rt2.DataOf(f.Parent())[n] = rt2.DataOf(f)[n.Left()]
+				rt2.RegOf(f.Parent())[n] = rt2.RegOf(f)[n.Left()]
+				rt2.ValueOf(f.Parent())[n.Adr()] = rt2.ValueOf(f)[n.Left().Adr()]
 				return next, frame.LATER
 			}
 			ret = frame.LATER

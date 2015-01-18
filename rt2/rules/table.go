@@ -117,9 +117,13 @@ func epilogue(n node.Node) frame.Sequence {
 			sm.Target().(scope.ScopeAllocator).Dispose(n)
 			//возвращаем результаты вызова функции
 			if f.Parent() != nil {
-				par := rt2.DataOf(f.Parent())
-				for k, v := range rt2.DataOf(f) {
+				par := rt2.RegOf(f.Parent())
+				for k, v := range rt2.RegOf(f) {
 					par[k] = v
+				}
+				val := rt2.ValueOf(f.Parent())
+				for k, v := range rt2.ValueOf(f) {
+					val[k] = v
 				}
 			}
 			return frame.End()
@@ -222,6 +226,7 @@ func run(global context.Domain, init []*module.Module) {
 		t0 := time.Now()
 		for x := frame.NOW; x == frame.NOW; x = root.Do() {
 			fmt.Println("STEP", i)
+			assert.For(i < 1000, 40)
 			i++
 		}
 		t1 := time.Now()

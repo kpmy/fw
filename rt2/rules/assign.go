@@ -23,7 +23,7 @@ func incSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	rt2.Push(rt2.New(op), f)
 	seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-		sc.Update(n.Left().Adr(), nil) //scope.Simple(rt2.DataOf(f)[op]))
+		sc.Update(n.Left().Object().Adr(), scope.Simple(rt2.ValueOf(f)[op.Adr()]))
 		return frame.End()
 	}
 	ret = frame.LATER
@@ -39,7 +39,7 @@ func decSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	rt2.Push(rt2.New(op), f)
 	seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-		sc.Update(n.Left().Adr(), nil) //scope.Simple(rt2.DataOf(f)[op]))
+		sc.Update(n.Left().Object().Adr(), scope.Simple(rt2.ValueOf(f)[op.Adr()]))
 		return frame.End()
 	}
 	ret = frame.LATER
