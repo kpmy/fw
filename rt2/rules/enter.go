@@ -3,17 +3,16 @@ package rules
 import (
 	"fmt"
 	"fw/cp/node"
+	"fw/rt2"
 	"fw/rt2/context"
 	"fw/rt2/frame"
 	"fw/rt2/module"
-	"fw/rt2/nodeframe"
 	"fw/rt2/scope"
 )
 
 func enterSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-	var fu nodeframe.FrameUtils
-	n := fu.NodeOf(f)
-	body := fu.NodeOf(f).Right()
+	n := rt2.NodeOf(f)
+	body := rt2.NodeOf(f).Right()
 	tail := func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		if body == nil {
 			//случай пустого тела процедуры/секции BEGIN
@@ -22,19 +21,19 @@ func enterSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			//Вход в процедуру не несет значимых действий и просто заменяет себя в цепочке родителей на своего родителя
 			//При вызове фрейма с другим доменом это мешает, надо убрать
 			//Через DataOf(f.Parent()) может передаваться результат выполнения
-			//fu.Push(fu.New(body), f.Parent())
-			fu.Push(fu.New(body), f)
+			//rt2.Push(rt2.New(body), f.Parent())
+			rt2.Push(rt2.New(body), f)
 			return frame.Tail(frame.STOP), frame.LATER
 		} else {
 			//Особый случай, вход в модуль, секция BEGIN
-			fu.Push(fu.New(body), f)
+			rt2.Push(rt2.New(body), f)
 			fmt.Println("begin", module.DomainModule(f.Domain()).Name)
 			//Выход из модуля, секция CLOSE
 			next := n.Link()
 			if next != nil {
 				seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
 					fmt.Println("end", module.DomainModule(f.Domain()).Name)
-					f.Root().PushFor(fu.New(next), f)
+					f.Root().PushFor(rt2.New(next), f)
 					return frame.Tail(frame.STOP), frame.END
 				}
 			} else {
@@ -44,11 +43,11 @@ func enterSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 
 		}
 	}
-	sm := scope.This(f.Domain().Discover(context.SCOPE))
+	sm := f.Domain().Discover(context.SCOPE).(scope.Manager)
 	//fmt.Println(n.Object())
 	if n.Object() != nil {
-		par, ok := fu.DataOf(f)[n.Object()].(node.Node)
-		//fmt.Println(fu.DataOf(f)[n.Object()])
+		par, ok := rt2.DataOf(f)[n.Object()].(node.Node)
+		//fmt.Println(rt2.DataOf(f)[n.Object()])
 		//fmt.Println(ok)
 		if ok {
 			sm.Target().(scope.ScopeAllocator).Allocate(n, false)

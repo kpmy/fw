@@ -1,6 +1,7 @@
 package node
 
 import (
+	"fw/cp"
 	"fw/cp/constant"
 	"fw/cp/constant/enter"
 	"fw/cp/constant/operation"
@@ -90,13 +91,13 @@ func New(class constant.Class, id int) (ret Node) {
 type nodeFields struct {
 	left, right, link Node
 	obj               object.Object
-	adr               int
+	adr               cp.ID
 }
 
-func (nf *nodeFields) Adr(a ...int) int {
+func (nf *nodeFields) Adr(a ...int) cp.ID {
 	assert.For(len(a) <= 1, 20)
 	if len(a) == 1 {
-		nf.adr = a[0]
+		nf.adr = cp.ID(a[0])
 	}
 	return nf.adr
 }

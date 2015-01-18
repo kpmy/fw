@@ -11,7 +11,6 @@ import (
 	"fw/rt2/context"
 	"fw/rt2/frame"
 	rt_mod "fw/rt2/module"
-	"fw/rt2/nodeframe"
 	"fw/rt2/scope"
 	"ypk/assert"
 )
@@ -39,11 +38,11 @@ func callHandler(f frame.Frame, obj object.Object, data interface{}) {
 		return
 	}
 	m := rt_mod.DomainModule(f.Domain())
-	cn := node.New(constant.CALL, cp.SomeAdr())
+	cn := node.New(constant.CALL, int(cp.SomeAdr()))
 	ol := m.NodeByObject(obj)
 	assert.For(len(ol) <= 1, 40)
 	cn.SetLeft(ol[0])
-	cc := node.New(constant.CONSTANT, cp.SomeAdr()).(node.ConstantNode)
+	cc := node.New(constant.CONSTANT, int(cp.SomeAdr())).(node.ConstantNode)
 	cc.SetData(data)
 	cn.SetRight(cc)
 	rt2.Push(rt2.New(cn), f)
@@ -51,7 +50,7 @@ func callHandler(f frame.Frame, obj object.Object, data interface{}) {
 
 func process(f frame.Frame, par node.Node) {
 	assert.For(par != nil, 20)
-	sm := scope.This(f.Domain().Discover(context.SCOPE))
+	sm := f.Domain().Discover(context.SCOPE).(scope.Manager)
 	switch par.(type) {
 	case node.ConstantNode:
 		msg := &Msg{}
@@ -82,24 +81,23 @@ func syscall(f frame.Frame) {
 }
 
 func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-	var fu nodeframe.FrameUtils
-	n := fu.NodeOf(f)
+	n := rt2.NodeOf(f)
 
 	call := func(proc node.Node, d context.Domain) {
-		nf := fu.New(proc)
-		fu.Push(nf, f)
+		nf := rt2.New(proc)
+		rt2.Push(nf, f)
 		if d != nil {
-			fu.ReplaceDomain(nf, d)
+			rt2.ReplaceDomain(nf, d)
 		}
 		//передаем ссылку на цепочку значений параметров в данные фрейма входа в процедуру
 		if (n.Right() != nil) && (proc.Object() != nil) {
-			fu.DataOf(nf)[proc.Object()] = n.Right()
+			rt2.DataOf(nf)[proc.Object()] = n.Right()
 		} else {
 			//fmt.Println("no data for call")
 		}
 		seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-			var fu nodeframe.FrameUtils
-			fu.DataOf(f.Parent())[n] = fu.DataOf(f)[n.Left().Object()]
+			rt2.DataOf(f.Parent())[n] = rt2.DataOf(f)[n.Left().Object()]
+			rt2.ValueOf(f.Parent())[n.Adr()] = rt2.ValueOf(f)[n.Left().Object().Adr()]
 			return frame.End()
 		}
 		ret = frame.LATER
@@ -129,7 +127,7 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	case node.VariableNode:
 		m := rt_mod.DomainModule(f.Domain())
 		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-		obj := sc.Select(scope.Designator(n.Left()))
+		obj := sc.Select(n.Left().Adr())
 
 		if obj, ok := obj.(object.Object); ok {
 			proc := m.NodeByObject(obj)

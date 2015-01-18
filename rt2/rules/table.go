@@ -11,7 +11,6 @@ import (
 	"fw/rt2/frame"
 	"fw/rt2/frame/std"
 	rt_module "fw/rt2/module"
-	"fw/rt2/nodeframe"
 	"fw/rt2/scope"
 	"fw/utils"
 	"reflect"
@@ -99,7 +98,6 @@ func prologue(n node.Node) frame.Sequence {
 }
 
 func epilogue(n node.Node) frame.Sequence {
-	var fu nodeframe.FrameUtils
 	switch n.(type) {
 	case node.AssignNode, node.InitNode, node.CallNode, node.ConditionalNode, node.WhileNode,
 		node.RepeatNode, node.ExitNode, node.WithNode, node.CaseNode, node.CompNode:
@@ -108,14 +106,14 @@ func epilogue(n node.Node) frame.Sequence {
 			//fmt.Println("from", reflect.TypeOf(n))
 			//fmt.Println("next", reflect.TypeOf(next))
 			if next != nil {
-				f.Root().PushFor(fu.New(next), f.Parent())
+				f.Root().PushFor(rt2.New(next), f.Parent())
 			}
 			return frame.End()
 		}
 	case node.EnterNode:
 		return func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			fmt.Println(rt_module.DomainModule(f.Domain()).Name)
-			sm := scope.This(f.Domain().Discover(context.SCOPE))
+			sm := f.Domain().Discover(context.SCOPE).(scope.Manager)
 			sm.Target().(scope.ScopeAllocator).Dispose(n)
 			//возвращаем результаты вызова функции
 			if f.Parent() != nil {

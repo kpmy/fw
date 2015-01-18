@@ -1,38 +1,12 @@
 package scope
 
 import (
+	"fw/cp"
 	"fw/cp/node"
 	"fw/cp/object"
 	"fw/rt2/context"
 	"fw/rt2/frame"
-	"strconv"
 )
-
-type ID struct {
-	Name  string
-	Path  string
-	Index *int64
-	Ref   *int
-}
-
-func (i ID) String() string {
-	if i.Name != "" {
-		ret := i.Name
-		if i.Ref != nil {
-			ret = ret + strconv.Itoa(*i.Ref)
-		}
-		if i.Path != "" {
-			ret = ret + "." + i.Path
-		}
-		if i.Index != nil {
-			ret = ret + "[" + strconv.FormatInt(*i.Index, 10) + "]"
-		}
-
-		return ret
-	} else {
-		return "<empty id>"
-	}
-}
 
 type PARAM struct {
 	Objects object.Object
@@ -45,9 +19,10 @@ type PARAM struct {
 // pk, 20150112, инициализация параметров теперь происходит как и обычный frame.Sequence, с использованием стека
 type Manager interface {
 	context.ContextAware
-	Update(id ID, val ValueFor)
-	Select(id ID) interface{}
+	Update(id cp.ID, val ValueFor)
+	Select(id cp.ID) Value
 	Target(...Allocator) Allocator
+	Provide(interface{}) ValueFor
 	String() string
 }
 
@@ -66,15 +41,6 @@ type HeapAllocator interface {
 	Dispose(n node.Node)
 }
 
-//средство обновления значения
-type ValueFor func(in interface{}) (out interface{})
-
-var Designator func(n ...node.Node) ID
 var FindObjByName func(m Manager, name string) object.Object
 
-func This(i interface{}) Manager {
-	return i.(Manager)
-}
-
-var NewStack func() Manager
-var NewHeap func() Manager
+var New func() Manager

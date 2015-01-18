@@ -1,12 +1,14 @@
 package cp
 
+type ID int
+
 type Id interface {
-	Adr(...int) int
+	Adr(...int) ID
 }
 
 var adr int = 0
 
-func SomeAdr() int {
+func SomeAdr() ID {
 	adr--
-	return adr
+	return ID(adr)
 }

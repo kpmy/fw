@@ -2,10 +2,12 @@ package nodeframe
 
 import (
 	"fmt"
+	"fw/cp"
 	"fw/cp/node"
 	"fw/rt2/context"
 	"fw/rt2/decision"
 	"fw/rt2/frame"
+	"fw/rt2/scope"
 	"fw/utils"
 	"reflect"
 	"ypk/assert"
@@ -13,46 +15,58 @@ import (
 
 var count int64
 
-type FrameUtils struct{}
+type NodeFrameUtils struct{}
 
-func (fu FrameUtils) New(n node.Node) (f frame.Frame) {
+func (fu NodeFrameUtils) New(n node.Node) (f frame.Frame) {
 	assert.For(n != nil, 20)
 	f = new(nodeFrame)
 	f.(*nodeFrame).ir = n
 	f.(*nodeFrame).data = make(map[interface{}]interface{})
+	f.(*nodeFrame).value = make(map[cp.ID]scope.Value)
 	utils.PrintFrame("_", "NEW", reflect.TypeOf(n))
 	return f
 }
 
-func (fu FrameUtils) Push(f, p frame.Frame) {
+func (fu NodeFrameUtils) Push(f, p frame.Frame) {
 	assert.For(f != nil, 20)
 	pp, _ := p.(*nodeFrame)
 	pp.push(f)
 }
 
-func (fu FrameUtils) NodeOf(f frame.Frame) node.Node {
+func (fu NodeFrameUtils) NodeOf(f frame.Frame) node.Node {
 	ff, _ := f.(*nodeFrame)
 	assert.For(ff.ir != nil, 40)
 	return ff.ir
 }
 
-func (fu FrameUtils) DataOf(f frame.Frame) map[interface{}]interface{} {
+func (fu NodeFrameUtils) DataOf(f frame.Frame) map[interface{}]interface{} {
 	return f.(*nodeFrame).data
 }
 
-func (fu FrameUtils) ReplaceDomain(f frame.Frame, d context.Domain) {
+func (fu NodeFrameUtils) ValueOf(f frame.Frame) map[cp.ID]scope.Value {
+	return f.(*nodeFrame).value
+}
+
+func (fu NodeFrameUtils) ReplaceDomain(f frame.Frame, d context.Domain) {
 	ff := f.(*nodeFrame)
 	ff.domain = d
 }
 
+func (fu NodeFrameUtils) Assert(f frame.Frame, ok frame.Assert) {
+	ff := f.(*nodeFrame)
+	ff.assertion = ok
+}
+
 type nodeFrame struct {
-	root   frame.Stack
-	parent frame.Frame
-	ir     node.Node
-	seq    frame.Sequence
-	domain context.Domain
-	data   map[interface{}]interface{}
-	num    int64
+	root      frame.Stack
+	parent    frame.Frame
+	ir        node.Node
+	seq       frame.Sequence
+	assertion frame.Assert
+	domain    context.Domain
+	data      map[interface{}]interface{}
+	value     map[cp.ID]scope.Value
+	num       int64
 }
 
 func done(f frame.Frame) {
@@ -67,7 +81,7 @@ func (f *nodeFrame) Do() frame.WAIT {
 	assert.For(f.seq != nil, 20)
 	next, ret := f.seq(f)
 	utils.PrintFrame(f.num, ret, reflect.TypeOf(f.ir), f.ir)
-	fmt.Println("data:", f.data)
+	fmt.Println("data:", f.data, f.value)
 	if next != nil {
 		assert.For(ret != frame.STOP, 40)
 		f.seq = next
@@ -96,6 +110,15 @@ func (f *nodeFrame) OnPop() {
 	f.seq = decision.EpilogueFor(f.ir)
 	if f.seq != nil {
 		_, _ = f.seq(f)
+	}
+	if f.parent != nil {
+		ff, ok := f.parent.(*nodeFrame)
+		if ok && ff.assertion != nil {
+			ok, code := ff.assertion(ff)
+			if !ok {
+				panic(fmt.Sprintln("assert", code, "for", reflect.TypeOf(ff.ir)))
+			}
+		}
 	}
 }
 

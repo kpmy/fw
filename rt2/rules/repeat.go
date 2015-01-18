@@ -3,22 +3,21 @@ package rules
 import (
 	"fmt"
 	"fw/cp/node"
+	"fw/rt2"
 	"fw/rt2/frame"
-	"fw/rt2/nodeframe"
 	"reflect"
 )
 
 func repeatSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-	var fu nodeframe.FrameUtils
-	n := fu.NodeOf(f)
+	n := rt2.NodeOf(f)
 
-	fu.DataOf(f)[n.Right()] = false
+	rt2.DataOf(f)[n.Right()] = false
 	var cond func(f frame.Frame) (frame.Sequence, frame.WAIT)
 	next := func(f frame.Frame) (frame.Sequence, frame.WAIT) {
-		done := fu.DataOf(f)[n.Right()].(bool)
-		fu.DataOf(f)[n.Right()] = nil
+		done := rt2.DataOf(f)[n.Right()].(bool)
+		rt2.DataOf(f)[n.Right()] = nil
 		if !done && n.Left() != nil {
-			fu.Push(fu.New(n.Left()), f)
+			rt2.Push(rt2.New(n.Left()), f)
 			return cond, frame.LATER
 		} else if done {
 			return frame.End()
@@ -32,9 +31,9 @@ func repeatSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	cond = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
 		switch n.Right().(type) {
 		case node.OperationNode:
-			fu.Push(fu.New(n.Right()), f)
+			rt2.Push(rt2.New(n.Right()), f)
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				fu.DataOf(f.Parent())[n] = fu.DataOf(f)[n.Right()]
+				rt2.DataOf(f.Parent())[n] = rt2.DataOf(f)[n.Right()]
 				return next, frame.LATER
 			}
 			ret = frame.LATER

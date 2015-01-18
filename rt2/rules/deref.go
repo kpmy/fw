@@ -2,6 +2,7 @@ package rules
 
 import (
 	"fmt"
+	"fw/cp"
 	"fw/cp/node"
 	"fw/rt2"
 	"fw/rt2/context"
@@ -15,16 +16,16 @@ func derefSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 	x := rt2.DataOf(f.Parent())[n]
 	fmt.Println("deref from ptr", n.(node.DerefNode).Ptr())
-	_, ok := x.(scope.ID)
+	_, ok := x.(cp.ID)
 	if ok {
-		rt2.DataOf(f.Parent())[n] = scope.Designator(n.Left())
+		//		rt2.DataOf(f.Parent())[n] = scope.Designator(n.Left())
 	} else {
 		for z := n.Left(); !ok && z != nil; {
 			switch z.(type) {
 			case node.DerefNode:
 				z = z.Left()
 			default:
-				data := sc.Select(scope.Designator(z))
+				data := sc.Select(z.Adr())
 				assert.For(data != nil, 40)
 				rt2.DataOf(f.Parent())[n] = data
 				ok = true

@@ -108,7 +108,7 @@ type objectFields struct {
 	link Object
 	comp ComplexType
 	ref  []Ref
-	adr  int
+	adr  cp.ID
 }
 
 func (of *objectFields) SetType(typ Type)         { of.typ = typ }
@@ -120,10 +120,10 @@ func (of *objectFields) SetLink(o Object)         { of.link = o }
 func (of *objectFields) SetComplex(t ComplexType) { of.comp = t }
 func (of *objectFields) Complex() ComplexType     { return of.comp }
 
-func (of *objectFields) Adr(a ...int) int {
+func (of *objectFields) Adr(a ...int) cp.ID {
 	assert.For(len(a) <= 1, 20)
 	if len(a) == 1 {
-		of.adr = a[0]
+		of.adr = cp.ID(a[0])
 	}
 	return of.adr
 }

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"fw/cp/node"
 	"fw/rt2"
-	"fw/rt2/context"
+	//	"fw/rt2/context"
 	"fw/rt2/frame"
-	"fw/rt2/scope"
+	//	"fw/rt2/scope"
 	"reflect"
 )
 
@@ -22,8 +22,8 @@ func indexSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		ret = frame.NOW
 	case node.VariableNode:
 		seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-			sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-			rt2.DataOf(f.Parent())[i] = sc.Select(scope.Designator(i.Right()))
+			//			sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+			//			rt2.DataOf(f.Parent())[i] = sc.Select(scope.Designator(i.Right()))
 			return frame.End()
 		}
 		ret = frame.NOW

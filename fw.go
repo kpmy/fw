@@ -9,7 +9,8 @@ import (
 	rtmod "fw/rt2/module"
 	_ "fw/rt2/rules"
 	"fw/rt2/scope"
-	_ "fw/rt2/scope/std"
+	// "fw/rt2/scope/std"
+	_ "fw/rt2/scope/modern"
 	"time"
 	"ypk/assert"
 )
@@ -27,12 +28,12 @@ func close() {
 func main() {
 	flag.Parse()
 	if name == "" {
-		name = "XevTest0"
+		name = "XevDemo1"
 	}
 	global := &stdDomain{god: true}
 	modList := rtmod.New()
 	global.Attach(context.MOD, modList)
-	global.Attach(context.HEAP, scope.NewHeap())
+	global.Attach(context.HEAP, scope.New())
 	t0 := time.Now()
 	var init []*mod.Module
 	_, err := modList.Load(name, func(m *mod.Module) {

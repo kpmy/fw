@@ -35,6 +35,7 @@ func (h *heap) String() (ret string) {
 	ret = fmt.Sprintln(ret, h.data)
 	return fmt.Sprint(ret, "END")
 }
+
 func (h *heap) Allocate(n node.Node, par ...interface{}) (ret scope.ValueFor) {
 	var talloc func(t object.PointerType) (oid scope.ID)
 	talloc = func(t object.PointerType) (oid scope.ID) {

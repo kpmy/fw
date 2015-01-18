@@ -8,7 +8,6 @@ import (
 	"fw/rt2"
 	"fw/rt2/context"
 	"fw/rt2/frame"
-	"fw/rt2/nodeframe"
 	"fw/rt2/scope"
 	"math"
 	"math/big"
@@ -126,14 +125,6 @@ func in(_a interface{}, _b interface{}) bool {
 	var b int32 = int32Of(_b)
 	fmt.Println("операция IN все врет")
 	return a == b
-}
-
-func sum(_a interface{}, _b interface{}) interface{} {
-	assert.For(_a != nil, 20)
-	assert.For(_b != nil, 21)
-	var a int32 = int32Of(_a)
-	var b int32 = int32Of(_b)
-	return a + b
 }
 
 func sub(_a interface{}, _b interface{}) interface{} {
@@ -293,31 +284,30 @@ func bits(_a interface{}) interface{} {
 }
 
 func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-	var fu nodeframe.FrameUtils
 	sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-	n := fu.NodeOf(f).(node.MonadicNode)
+	n := rt2.NodeOf(f).(node.MonadicNode)
 
 	op := func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-		n := fu.NodeOf(f)
+		n := rt2.NodeOf(f)
 		switch n.(node.OperationNode).Operation() {
 		case operation.NOT:
-			fu.DataOf(f.Parent())[n] = not(fu.DataOf(f)[n.Left()])
+			rt2.DataOf(f.Parent())[n] = not(rt2.DataOf(f)[n.Left()])
 			return frame.End()
 		case operation.IS:
-			x := sc.Select(scope.Designator(n.Left())).(object.Object)
-			fu.DataOf(f.Parent())[n] = is(x, n.Object())
+			/*	x := sc.Select(scope.Designator(n.Left())).(object.Object)
+				rt2.DataOf(f.Parent())[n] = is(x, n.Object())*/
 			return frame.End()
 		case operation.ABS:
-			fu.DataOf(f.Parent())[n] = abs(fu.DataOf(f)[n.Left()])
+			rt2.DataOf(f.Parent())[n] = abs(rt2.DataOf(f)[n.Left()])
 			return frame.End()
 		case operation.ODD:
-			fu.DataOf(f.Parent())[n] = odd(fu.DataOf(f)[n.Left()])
+			rt2.DataOf(f.Parent())[n] = odd(rt2.DataOf(f)[n.Left()])
 			return frame.End()
 		case operation.CAP:
-			fu.DataOf(f.Parent())[n] = cap_char(fu.DataOf(f)[n.Left()])
+			rt2.DataOf(f.Parent())[n] = cap_char(rt2.DataOf(f)[n.Left()])
 			return frame.End()
 		case operation.BITS:
-			fu.DataOf(f.Parent())[n] = bits(fu.DataOf(f)[n.Left()])
+			rt2.DataOf(f.Parent())[n] = bits(rt2.DataOf(f)[n.Left()])
 			return frame.End()
 		default:
 			panic("no such op")
@@ -332,25 +322,25 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			case object.INTEGER:
 				switch v := x.(type) {
 				case int8:
-					fu.DataOf(f.Parent())[n] = int32(x.(int8))
+					rt2.DataOf(f.Parent())[n] = int32(x.(int8))
 				case *big.Int:
-					fu.DataOf(f.Parent())[n] = int32(v.Int64())
+					rt2.DataOf(f.Parent())[n] = int32(v.Int64())
 				case int32:
-					fu.DataOf(f.Parent())[n] = v
+					rt2.DataOf(f.Parent())[n] = v
 				default:
 					panic(fmt.Sprintln("ooops", reflect.TypeOf(x)))
 				}
 			case object.SET:
 				switch v := x.(type) {
 				case int32:
-					fu.DataOf(f.Parent())[n] = big.NewInt(int64(v))
+					rt2.DataOf(f.Parent())[n] = big.NewInt(int64(v))
 				default:
 					panic(fmt.Sprintln("ooops", reflect.TypeOf(x)))
 				}
 			case object.REAL:
 				switch v := x.(type) {
 				case int32:
-					fu.DataOf(f.Parent())[n] = float64(v)
+					rt2.DataOf(f.Parent())[n] = float64(v)
 				default:
 					panic(fmt.Sprintln("ooops", reflect.TypeOf(x)))
 				}
@@ -360,9 +350,9 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		}
 		switch n.Left().(type) {
 		case node.VariableNode, node.ParameterNode:
-			x := sc.Select(scope.Designator(n.Left()))
+			x := sc.Select(n.Left().Object().Adr())
 			assert.For(x != nil, 40)
-			conv(x)
+			conv(scope.ValueFrom(x))
 			return frame.End()
 		case node.OperationNode:
 			return This(expectExpr(f, n.Left(), func(...IN) OUT {
@@ -375,18 +365,18 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	case operation.NOT:
 		switch n.Left().(type) {
 		case node.ConstantNode:
-			fu.DataOf(f)[n.Left()] = n.Left().(node.ConstantNode).Data()
+			rt2.DataOf(f)[n.Left()] = n.Left().(node.ConstantNode).Data()
 			return op, frame.NOW
 		case node.VariableNode, node.ParameterNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				fu.DataOf(f)[n.Left()] = sc.Select(scope.Designator(n.Left()))
+				//				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+				//				rt2.DataOf(f)[n.Left()] = sc.Select(scope.Designator(n.Left()))
 				return op, frame.NOW
 			}
 			ret = frame.NOW
 			return seq, ret
 		case node.OperationNode, node.DerefNode:
-			fu.Push(fu.New(n.Left()), f)
+			rt2.Push(rt2.New(n.Left()), f)
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				return op, frame.NOW
 			}
@@ -394,8 +384,8 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			return seq, ret
 		case node.FieldNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				fu.DataOf(f)[n.Left()] = sc.Select(scope.Designator(n.Left()))
+				//				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+				//				rt2.DataOf(f)[n.Left()] = sc.Select(scope.Designator(n.Left()))
 				return op, frame.NOW
 			}
 			ret = frame.NOW
@@ -424,67 +414,67 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 }
 
 func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-	var fu nodeframe.FrameUtils
+	sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 
 	op := func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-		n := fu.NodeOf(f).(node.OperationNode)
+		n := rt2.NodeOf(f).(node.OperationNode)
 		switch n.Operation() {
 		case operation.PLUS:
-			fu.DataOf(f.Parent())[n] = sum(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Sum(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.MINUS:
-			fu.DataOf(f.Parent())[n] = sub(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			rt2.DataOf(f.Parent())[n] = sub(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
 			return frame.End()
 		case operation.EQUAL:
-			fu.DataOf(f.Parent())[n] = eq(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			rt2.DataOf(f.Parent())[n] = eq(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
 			return frame.End()
 		case operation.LESSER:
-			fu.DataOf(f.Parent())[n] = lss(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			rt2.DataOf(f.Parent())[n] = lss(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
 			return frame.End()
 		case operation.LESS_EQUAL:
-			fu.DataOf(f.Parent())[n] = leq(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			rt2.DataOf(f.Parent())[n] = leq(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
 			return frame.End()
 		case operation.LEN:
-			fu.DataOf(f.Parent())[n] = length(n.Left().Object(), fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			rt2.DataOf(f.Parent())[n] = length(n.Left().Object(), rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
 			return frame.End()
 		case operation.NOT_EQUAL:
-			fu.DataOf(f.Parent())[n] = neq(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			rt2.DataOf(f.Parent())[n] = neq(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
 			return frame.End()
 		case operation.GREATER:
-			fu.DataOf(f.Parent())[n] = gtr(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			rt2.DataOf(f.Parent())[n] = gtr(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
 			return frame.End()
 		case operation.MAX:
-			fu.DataOf(f.Parent())[n] = max(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			rt2.DataOf(f.Parent())[n] = max(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
 			return frame.End()
 		case operation.MIN:
-			fu.DataOf(f.Parent())[n] = min(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			rt2.DataOf(f.Parent())[n] = min(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
 			return frame.End()
 		case operation.DIV:
-			fu.DataOf(f.Parent())[n] = div(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			rt2.DataOf(f.Parent())[n] = div(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
 			return frame.End()
 		case operation.MOD:
-			fu.DataOf(f.Parent())[n] = mod(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			rt2.DataOf(f.Parent())[n] = mod(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
 			return frame.End()
 		case operation.TIMES:
-			fu.DataOf(f.Parent())[n] = times(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			rt2.DataOf(f.Parent())[n] = times(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
 			return frame.End()
 		case operation.SLASH:
-			fu.DataOf(f.Parent())[n] = slash(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			rt2.DataOf(f.Parent())[n] = slash(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
 			return frame.End()
 		case operation.IN:
-			fu.DataOf(f.Parent())[n] = in(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			rt2.DataOf(f.Parent())[n] = in(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
 			return frame.End()
 		case operation.ASH:
-			fu.DataOf(f.Parent())[n] = ash(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			rt2.DataOf(f.Parent())[n] = ash(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
 			return frame.End()
 		case operation.AND:
-			fu.DataOf(f.Parent())[n] = and(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			rt2.DataOf(f.Parent())[n] = and(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
 			return frame.End()
 		case operation.OR:
-			fu.DataOf(f.Parent())[n] = or(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			rt2.DataOf(f.Parent())[n] = or(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
 			return frame.End()
 		case operation.GREAT_EQUAL:
-			fu.DataOf(f.Parent())[n] = geq(fu.DataOf(f)[n.Left()], fu.DataOf(f)[n.Right()])
+			rt2.DataOf(f.Parent())[n] = geq(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
 			return frame.End()
 		default:
 			panic(fmt.Sprintln("unknown operation", n.(node.OperationNode).Operation()))
@@ -492,23 +482,20 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	}
 
 	right := func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-		n := fu.NodeOf(f)
+		n := rt2.NodeOf(f)
 		switch n.Right().(type) {
 		case node.ConstantNode:
-			fu.DataOf(f)[n.Right()] = n.Right().(node.ConstantNode).Data()
+			rt2.ValueOf(f)[n.Right().Adr()] = sc.Provide(n.Right())(nil)
 			return op, frame.NOW
 		case node.VariableNode, node.ParameterNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				fu.DataOf(f)[n.Right()] = sc.Select(scope.Designator(n.Right()))
-				//fmt.Println(n.Right().Object(), reflect.TypeOf(n.Right().Object()))
-				assert.For(fu.DataOf(f)[n.Right()] != nil, 60)
+				rt2.ValueOf(f)[n.Right().Adr()] = sc.Select(n.Right().Object().Adr())
 				return op, frame.NOW
 			}
 			ret = frame.NOW
 			return seq, ret
 		case node.OperationNode, node.DerefNode:
-			fu.Push(fu.New(n.Right()), f)
+			rt2.Push(rt2.New(n.Right()), f)
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				return op, frame.NOW
 			}
@@ -516,8 +503,8 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			return seq, ret
 		case node.FieldNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				fu.DataOf(f)[n.Right()] = sc.Select(scope.Designator(n.Right()))
+				//				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+				//				rt2.DataOf(f)[n.Right()] = sc.Select(scope.Designator(n.Right()))
 				return op, frame.NOW
 			}
 			ret = frame.NOW
@@ -529,21 +516,20 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	}
 
 	left := func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-		n := fu.NodeOf(f)
+		n := rt2.NodeOf(f)
 		switch n.Left().(type) {
 		case node.ConstantNode:
-			fu.DataOf(f)[n.Left()] = n.Left().(node.ConstantNode).Data()
+			rt2.ValueOf(f)[n.Left().Adr()] = sc.Provide(n.Left())(nil)
 			return right, frame.NOW
 		case node.VariableNode, node.ParameterNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				fu.DataOf(f)[n.Left()] = sc.Select(scope.Designator(n.Left()))
+				rt2.ValueOf(f)[n.Left().Adr()] = sc.Select(n.Left().Object().Adr())
 				return right, frame.NOW
 			}
 			ret = frame.NOW
 			return seq, ret
 		case node.OperationNode, node.DerefNode, node.RangeNode:
-			fu.Push(fu.New(n.Left()), f)
+			rt2.Push(rt2.New(n.Left()), f)
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				return right, frame.NOW
 			}
@@ -551,8 +537,8 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			return seq, ret
 		case node.FieldNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				fu.DataOf(f)[n.Left()] = sc.Select(scope.Designator(n.Left()))
+				//				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+				//				rt2.DataOf(f)[n.Left()] = sc.Select(scope.Designator(n.Left()))
 				return right, frame.NOW
 			}
 			ret = frame.NOW

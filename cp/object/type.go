@@ -69,16 +69,16 @@ type ComplexType interface {
 
 type comp struct {
 	link Object
-	adr  int
+	adr  cp.ID
 }
 
 func (c *comp) Link() Object     { return c.link }
 func (c *comp) SetLink(o Object) { c.link = o }
 
-func (c *comp) Adr(a ...int) int {
+func (c *comp) Adr(a ...int) cp.ID {
 	assert.For(len(a) <= 1, 20)
 	if len(a) == 1 {
-		c.adr = a[0]
+		c.adr = cp.ID(a[0])
 	}
 	return c.adr
 }
