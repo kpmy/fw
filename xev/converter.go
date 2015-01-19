@@ -198,6 +198,7 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 				if link != nil {
 					t.SetLink(r.doObject(link))
 					assert.For(t.Link() != nil, 40)
+					t.Link().SetRef(t)
 				}
 				ret = t
 			case "CHAR", "SHORTCHAR", "INTEGER", "LONGINT", "BYTE",
@@ -243,6 +244,7 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 			if link != nil {
 				ret.SetLink(r.doObject(link))
 				assert.For(ret.Link() != nil, 40)
+				ret.Link().SetRef(ret)
 			}
 			base := r.findLink(n, "base")
 			if base != nil {
@@ -305,6 +307,7 @@ func (r *Result) doObject(n *Node) (ret object.Object) {
 		link := r.findLink(n, "link")
 		if link != nil {
 			ret.SetLink(r.doObject(link))
+			ret.Link().SetRef(ret)
 			if ret.Link() == nil {
 				panic("error in object")
 			}

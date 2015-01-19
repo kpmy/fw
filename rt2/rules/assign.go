@@ -93,10 +93,8 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			}
 			ret = frame.LATER
 		case node.ProcedureNode:
-			//			sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-			/*sc.Update(leftId, func(interface{}) interface{} {
-				return a.Right().Object()
-			})*/
+			sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+			sc.Update(leftId, sc.Provide(a.Right().Object()))
 			return frame.End()
 		default:
 			fmt.Println(reflect.TypeOf(a.Right()))

@@ -3,6 +3,7 @@ package modern
 import (
 	"fmt"
 	"fw/cp"
+	"fw/cp/constant/enter"
 	cpm "fw/cp/module"
 	"fw/cp/node"
 	"fw/cp/object"
@@ -45,32 +46,63 @@ func newRef(x object.Object) *ref {
 	return &ref{link: x}
 }
 
-func (a *area) allocate(mod *cpm.Module, ol []object.Object, r bool) {
+func (a *area) allocate(mod *cpm.Module, n node.EnterNode, r bool) {
+	ol := mod.Objects[n]
 	l := &level{next: 1, ready: r,
 		k: make(map[cp.ID]int),
 		v: make(map[int]scope.Variable),
 		r: make(map[int]scope.Ref)}
 	a.data = append(a.data, l)
+	skip := make(map[cp.ID]object.Object) //для процедурных типов в общей куче могут валяться переменные, скипаем их
+	tl := mod.Types[n]
+	for _, t := range tl {
+		switch x := t.(type) {
+		case object.BasicType:
+			for link := x.Link(); link != nil; link = link.Link() {
+				skip[link.Adr()] = link
+			}
+		}
+	}
 	for _, o := range ol {
-		fmt.Println(reflect.TypeOf(o))
 		imp := mod.ImportOf(o)
-		if imp == "" {
+		fmt.Println(reflect.TypeOf(o), o.Adr())
+		if imp == "" && skip[o.Adr()] == nil {
+			fmt.Println(l.next)
 			switch x := o.(type) {
 			case object.VariableObject:
-				switch o.Complex().(type) {
+				switch t := o.Complex().(type) {
 				case nil:
+					l.v[l.next] = NewData(x)
+					l.k[x.Adr()] = l.next
+					l.next++
+				case object.BasicType:
+					l.v[l.next] = NewData(x)
+					l.k[x.Adr()] = l.next
+					l.next++
+				case object.ArrayType:
+					l.v[l.next] = NewData(x)
+					l.k[x.Adr()] = l.next
+					l.next++
+				case object.DynArrayType:
 					l.v[l.next] = NewData(x)
 					l.k[x.Adr()] = l.next
 					l.next++
 				case object.PointerType:
 					fmt.Println("pointer")
+				default:
+					halt.As(20, reflect.TypeOf(t))
 				}
-			case object.ConstantObject, object.ProcedureObject:
+
+			case object.ConstantObject:
+				//do nothing
+			case object.ProcedureObject:
 				//do nothing
 			case object.ParameterObject:
-				l.r[l.next] = newRef(x)
-				l.k[x.Adr()] = l.next
-				l.next++
+				if n.Enter() == enter.PROCEDURE {
+					l.r[l.next] = newRef(x)
+					l.k[x.Adr()] = l.next
+					l.next++
+				}
 			default:
 				halt.As(20, reflect.TypeOf(x))
 			}
@@ -90,6 +122,10 @@ func (a *area) Provide(x interface{}) scope.ValueFor {
 		switch z := x.(type) {
 		case node.ConstantNode:
 			return NewConst(z)
+		case object.ProcedureObject:
+			return NewProc(z)
+		default:
+			halt.As(100, reflect.TypeOf(z))
 		}
 		panic(0)
 	}
@@ -98,7 +134,7 @@ func (a *area) Provide(x interface{}) scope.ValueFor {
 func (a *salloc) Allocate(n node.Node, final bool) {
 	fmt.Println("ALLOCATE")
 	mod := rtm.DomainModule(a.area.d)
-	a.area.allocate(mod, mod.Objects[n], final)
+	a.area.allocate(mod, n.(node.EnterNode), final)
 }
 
 func (a *salloc) Dispose(n node.Node) {
@@ -143,6 +179,18 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 			case node.VariableNode:
 				old := l.r[l.k[o.Adr()]].(*ref)
 				l.r[l.k[o.Adr()]] = &ref{link: old.link, id: nv.Object().Adr()}
+			case node.ConstantNode: //array :) заменяем ссылку на переменную
+				old := l.r[l.k[o.Adr()]].(*ref)
+				l.r[l.k[o.Adr()]] = nil
+				data := NewConst(nv)
+				switch data.(type) {
+				case STRING, SHORTSTRING:
+					val := &dynarr{link: old.link}
+					val.Set(data)
+					l.v[l.k[o.Adr()]] = val
+				default:
+					halt.As(100, reflect.TypeOf(data))
+				}
 			default:
 				halt.As(40, reflect.TypeOf(nv))
 			}
@@ -235,10 +283,33 @@ func (a *area) Domain() context.Domain { return a.d }
 
 func (a *area) Handle(msg interface{}) {}
 
+func fn(mgr scope.Manager, name string) (ret object.Object) {
+	fmt.Println("FIND", name)
+	a, ok := mgr.(*area)
+	assert.For(ok, 20)
+	assert.For(name != "", 21)
+	for i := len(a.data) - 1; i >= 0 && ret == nil; i-- {
+		l := a.data[i]
+		for _, v := range l.v {
+			switch vv := v.(type) {
+			case *data:
+				fmt.Println(vv.link.Name())
+				if vv.link.Name() == name {
+					ret = vv.link
+				}
+			default:
+				fmt.Println(reflect.TypeOf(vv))
+			}
+		}
+	}
+	return ret
+}
+
 func nn() scope.Manager {
 	return &area{}
 }
 
 func init() {
 	scope.New = nn
+	scope.FindObjByName = fn
 }

@@ -14,6 +14,7 @@ type Operations interface {
 	Leq(Value, Value) Value
 
 	Conv(Value, object.Type) Value
+	Len(object.Object, Value, Value) Value
 }
 
 type Value interface {

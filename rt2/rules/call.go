@@ -44,6 +44,7 @@ func callHandler(f frame.Frame, obj object.Object, data interface{}) {
 	cn.SetLeft(ol[0])
 	cc := node.New(constant.CONSTANT, int(cp.SomeAdr())).(node.ConstantNode)
 	cc.SetData(data)
+	cc.SetType(object.SHORTSTRING)
 	cn.SetRight(cc)
 	rt2.Push(rt2.New(cn), f)
 }
@@ -127,7 +128,7 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	case node.VariableNode:
 		m := rt_mod.DomainModule(f.Domain())
 		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-		obj := sc.Select(n.Left().Adr())
+		obj := scope.GoTypeFrom(sc.Select(n.Left().Object().Adr()))
 
 		if obj, ok := obj.(object.Object); ok {
 			proc := m.NodeByObject(obj)

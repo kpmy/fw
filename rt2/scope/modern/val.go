@@ -17,8 +17,99 @@ type data struct {
 	val  interface{}
 }
 
+type arr struct {
+	link   object.Object
+	val    []interface{}
+	length int64
+}
+
+type dynarr struct {
+	link object.Object
+	val  []interface{}
+}
+
+type proc struct {
+	link object.Object
+}
+
+func (p *proc) String() string {
+	return fmt.Sprint(p.link.Adr(), p.link.Name())
+}
+
 func (x *data) Id() cp.ID {
-	return 0
+	return x.link.Adr()
+}
+
+func (x *arr) Id() cp.ID {
+	return x.link.Adr()
+}
+
+func (x *dynarr) Id() cp.ID {
+	return x.link.Adr()
+}
+
+func (a *arr) Set(v scope.Value) {
+	switch x := v.(type) {
+	case STRING:
+		v := make([]interface{}, int(a.length))
+		for i := 0; i < int(a.length) && i < len(x); i++ {
+			v[i] = CHAR(x[i])
+		}
+		a.val = v
+	default:
+		halt.As(100, reflect.TypeOf(x))
+	}
+}
+
+func (a *dynarr) Set(v scope.Value) {
+	switch x := v.(type) {
+	case *arr:
+		a.val = x.val
+	case STRING:
+		v := make([]interface{}, len(x))
+		for i := 0; i < len(x); i++ {
+			v[i] = CHAR(x[i])
+		}
+		a.val = v
+	case SHORTSTRING:
+		v := make([]interface{}, len(x))
+		for i := 0; i < len(x); i++ {
+			v[i] = SHORTCHAR(x[i])
+		}
+		a.val = v
+	default:
+		halt.As(100, reflect.TypeOf(x))
+	}
+}
+
+func (a *arr) String() (ret string) {
+	ret = fmt.Sprint("array", "[", a.length, "]")
+	for i := 0; i < len(a.val) && a.val[i] != nil; i++ {
+		switch x := a.val[i].(type) {
+		case CHAR:
+			ret = fmt.Sprint(ret, string([]rune{rune(x)}))
+		case SHORTCHAR:
+			ret = fmt.Sprint(ret, string([]rune{rune(x)}))
+		default:
+			halt.As(100, reflect.TypeOf(x))
+		}
+	}
+	return ret
+}
+
+func (a *dynarr) String() (ret string) {
+	ret = fmt.Sprint("dyn array")
+	for i := 0; i < len(a.val) && a.val[i] != nil; i++ {
+		switch x := a.val[i].(type) {
+		case CHAR:
+			ret = fmt.Sprint(ret, string([]rune{rune(x)}))
+		case SHORTCHAR:
+			ret = fmt.Sprint(ret, string([]rune{rune(x)}))
+		default:
+			halt.As(100, reflect.TypeOf(x))
+		}
+	}
+	return ret
 }
 
 func (d *data) Set(v scope.Value) {
@@ -27,6 +118,12 @@ func (d *data) Set(v scope.Value) {
 	case *data:
 		assert.For(d.link.Type() == x.link.Type(), 20)
 		d.val = x.val
+	case *proc:
+		assert.For(d.link.Type() == object.COMPLEX, 20)
+		t, ok := d.link.Complex().(object.BasicType)
+		assert.For(ok, 21, reflect.TypeOf(d.link.Complex()))
+		assert.For(t.Type() == object.PROCEDURE, 22)
+		d.val = x
 	case INTEGER:
 		switch d.link.Type() {
 		case object.INTEGER:
@@ -84,17 +181,21 @@ type CHAR rune
 type REAL float64
 type SHORTREAL float32
 type SHORTCHAR rune
+type STRING string
+type SHORTSTRING string
 
-func (x SHORTCHAR) String() string { return fmt.Sprint(rune(x)) }
-func (x SHORTREAL) String() string { return fmt.Sprint(float32(x)) }
-func (x REAL) String() string      { return fmt.Sprint(float64(x)) }
-func (x CHAR) String() string      { return fmt.Sprint(rune(x)) }
-func (x SET) String() string       { return fmt.Sprint(x.bits) }
-func (x LONGINT) String() string   { return fmt.Sprint(int64(x)) }
-func (x SHORTINT) String() string  { return fmt.Sprint(int16(x)) }
-func (x BYTE) String() string      { return fmt.Sprint(int8(x)) }
-func (x INTEGER) String() string   { return fmt.Sprint(int32(x)) }
-func (x BOOLEAN) String() string   { return fmt.Sprint(bool(x)) }
+func (x SHORTSTRING) String() string { return string(x) }
+func (x STRING) String() string      { return string(x) }
+func (x SHORTCHAR) String() string   { return fmt.Sprint(rune(x)) }
+func (x SHORTREAL) String() string   { return fmt.Sprint(float32(x)) }
+func (x REAL) String() string        { return fmt.Sprint(float64(x)) }
+func (x CHAR) String() string        { return fmt.Sprint(rune(x)) }
+func (x SET) String() string         { return fmt.Sprint(x.bits) }
+func (x LONGINT) String() string     { return fmt.Sprint(int64(x)) }
+func (x SHORTINT) String() string    { return fmt.Sprint(int16(x)) }
+func (x BYTE) String() string        { return fmt.Sprint(int8(x)) }
+func (x INTEGER) String() string     { return fmt.Sprint(int32(x)) }
+func (x BOOLEAN) String() string     { return fmt.Sprint(bool(x)) }
 
 func NewData(o object.Object) (ret scope.Variable) {
 	switch o.Type() {
@@ -118,6 +219,23 @@ func NewData(o object.Object) (ret scope.Variable) {
 		ret = &data{link: o, val: SHORTREAL(0)}
 	case object.SHORTCHAR:
 		ret = &data{link: o, val: SHORTCHAR(0)}
+	case object.COMPLEX:
+		switch t := o.Complex().(type) {
+		case object.BasicType:
+			switch t.Type() {
+			case object.PROCEDURE:
+				ret = &data{link: o, val: nil}
+			default:
+				halt.As(100, t.Type())
+			}
+		case object.ArrayType:
+			ret = &arr{link: o, length: t.Len()}
+		case object.DynArrayType:
+			ret = &dynarr{link: o}
+		default:
+			halt.As(100, reflect.TypeOf(t))
+
+		}
 	default:
 		panic(fmt.Sprintln("unsupported type", o.Type()))
 	}
@@ -134,6 +252,12 @@ func fromg(x interface{}) scope.Value {
 		halt.As(100, reflect.TypeOf(x))
 	}
 	panic(100)
+}
+
+func NewProc(o object.Object) scope.Value {
+	p, ok := o.(object.ProcedureObject)
+	assert.For(ok, 20, reflect.TypeOf(o))
+	return &proc{link: p}
 }
 
 func NewConst(n node.Node) scope.Value {
@@ -160,6 +284,10 @@ func NewConst(n node.Node) scope.Value {
 			return SET{bits: x.Data().(*big.Int)}
 		case object.CHAR:
 			return CHAR(x.Data().(rune))
+		case object.STRING:
+			return STRING(x.Data().(string))
+		case object.SHORTSTRING:
+			return SHORTSTRING(x.Data().(string))
 		default:
 			panic(fmt.Sprintln(x.Type()))
 		}
@@ -189,7 +317,13 @@ func vfrom(v scope.Value) scope.Value {
 func gfrom(v scope.Value) interface{} {
 	switch n := v.(type) {
 	case *data:
-		return gfrom(n.val.(scope.Value))
+		if n.val == nil {
+			return nil
+		} else {
+			return gfrom(n.val.(scope.Value))
+		}
+	case *proc:
+		return n.link
 	case INTEGER:
 		return int32(n)
 	case BOOLEAN:
@@ -252,6 +386,45 @@ func (o *ops) Sub(a, b scope.Value) scope.Value {
 	panic(0)
 
 }
+
+func (o *ops) Len(a object.Object, _a, _b scope.Value) (ret scope.Value) {
+	//assert.For(a != nil, 20)
+	assert.For(_b != nil, 21)
+	var b int32 = gfrom(_b).(int32)
+	assert.For(b == 0, 22)
+	if a != nil {
+		assert.For(a.Type() == object.COMPLEX, 23)
+		switch typ := a.Complex().(type) {
+		case object.ArrayType:
+			ret = INTEGER(int32(typ.Len()))
+		case object.DynArrayType:
+			switch t := _a.(type) {
+			//case string:
+			//	ret = int64(utf8.RuneCountInString(_a.(string)))
+			default:
+				ret = INTEGER(0)
+				fmt.Sprintln("unsupported", reflect.TypeOf(t))
+			}
+		default:
+			panic(fmt.Sprintln("unsupported", reflect.TypeOf(a.Complex())))
+		}
+	} else {
+		switch a := _a.(type) {
+		//		case string:
+		//			ret = int64(utf8.RuneCountInString(_a.(string)))
+		//		case []interface{}:
+		//			ret = int64(len(_a.([]interface{})))
+		case *arr:
+			ret = INTEGER(int32(a.length))
+		case *dynarr:
+			ret = INTEGER(int32(len(a.val)))
+		default:
+			panic(fmt.Sprintln("unsupported", reflect.TypeOf(a)))
+		}
+	}
+	return ret
+}
+
 func (o *ops) Conv(a scope.Value, typ object.Type) scope.Value {
 	switch typ {
 	case object.INTEGER:

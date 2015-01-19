@@ -13,7 +13,6 @@ import (
 	"math/big"
 	"reflect"
 	"strings"
-	"unicode/utf8"
 	"ypk/assert"
 )
 
@@ -217,40 +216,6 @@ func is(p object.Object, typ object.ComplexType) bool {
 	return a && b && compare(x, y)
 }
 
-func length(a object.Object, _a, _b interface{}) (ret int64) {
-	//assert.For(a != nil, 20)
-	assert.For(_b != nil, 21)
-	var b int32 = int32Of(_b)
-	assert.For(b == 0, 22)
-	if a != nil {
-		assert.For(a.Type() == object.COMPLEX, 23)
-		switch typ := a.Complex().(type) {
-		case object.ArrayType:
-			ret = typ.Len()
-		case object.DynArrayType:
-			switch _a.(type) {
-			case string:
-				ret = int64(utf8.RuneCountInString(_a.(string)))
-			default:
-				ret = 0
-				fmt.Sprintln("unsupported", reflect.TypeOf(_a))
-			}
-		default:
-			panic(fmt.Sprintln("unsupported", reflect.TypeOf(a.Complex())))
-		}
-	} else {
-		switch _a.(type) {
-		case string:
-			ret = int64(utf8.RuneCountInString(_a.(string)))
-		case []interface{}:
-			ret = int64(len(_a.([]interface{})))
-		default:
-			panic(fmt.Sprintln("unsupported", reflect.TypeOf(_a)))
-		}
-	}
-	return ret
-}
-
 func abs(_a interface{}) interface{} {
 	assert.For(_a != nil, 20)
 	var a int32 = int32Of(_a)
@@ -429,7 +394,7 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Leq(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.LEN:
-			rt2.DataOf(f.Parent())[n] = length(n.Left().Object(), rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Len(n.Left().Object(), rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.NOT_EQUAL:
 			rt2.DataOf(f.Parent())[n] = neq(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])

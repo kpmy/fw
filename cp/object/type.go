@@ -10,7 +10,8 @@ import (
 type Type int
 
 const (
-	INTEGER Type = iota
+	NOTYPE Type = iota
+	INTEGER
 	SHORTINT
 	LONGINT
 	BYTE
@@ -22,7 +23,6 @@ const (
 	SET
 	PROCEDURE
 	//фиктивные типы
-	NOTYPE
 	COMPLEX
 	STRING
 	SHORTSTRING
@@ -56,6 +56,10 @@ func (t Type) String() string {
 		return "COMPLEX"
 	case PROCEDURE:
 		return "PROCEDURE"
+	case STRING:
+		return "STRING"
+	case SHORTSTRING:
+		return "SHORTSTRING"
 	default:
 		return fmt.Sprint("looks like new type here", int(t))
 	}

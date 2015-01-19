@@ -35,7 +35,7 @@ type Object interface {
 }
 
 type Ref interface {
-	Object() Object
+	Adr(...int) cp.ID
 }
 
 type VariableObject interface {
@@ -132,7 +132,7 @@ func (of *objectFields) SetRef(n Ref) {
 	assert.For(n != nil, 20)
 	exists := func() bool {
 		for _, v := range of.ref {
-			if v == n {
+			if v.Adr() == n.Adr() {
 				return true
 			}
 		}
