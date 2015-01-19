@@ -53,11 +53,15 @@ func (a *area) allocate(mod *cpm.Module, n node.EnterNode, r bool) {
 		v: make(map[int]scope.Variable),
 		r: make(map[int]scope.Ref)}
 	a.data = append(a.data, l)
-	skip := make(map[cp.ID]object.Object) //для процедурных типов в общей куче могут валяться переменные, скипаем их
+	skip := make(map[cp.ID]interface{}) //для процедурных типов в общей куче могут валяться переменные, скипаем их
 	tl := mod.Types[n]
 	for _, t := range tl {
 		switch x := t.(type) {
 		case object.BasicType:
+			for link := x.Link(); link != nil; link = link.Link() {
+				skip[link.Adr()] = link
+			}
+		case object.RecordType:
 			for link := x.Link(); link != nil; link = link.Link() {
 				skip[link.Adr()] = link
 			}
@@ -71,28 +75,19 @@ func (a *area) allocate(mod *cpm.Module, n node.EnterNode, r bool) {
 			switch x := o.(type) {
 			case object.VariableObject:
 				switch t := o.Complex().(type) {
-				case nil:
+				case nil, object.BasicType, object.ArrayType, object.DynArrayType:
 					l.v[l.next] = NewData(x)
 					l.k[x.Adr()] = l.next
 					l.next++
-				case object.BasicType:
-					l.v[l.next] = NewData(x)
-					l.k[x.Adr()] = l.next
-					l.next++
-				case object.ArrayType:
-					l.v[l.next] = NewData(x)
-					l.k[x.Adr()] = l.next
-					l.next++
-				case object.DynArrayType:
-					l.v[l.next] = NewData(x)
-					l.k[x.Adr()] = l.next
-					l.next++
+				case object.RecordType:
+					fmt.Println(x.Name(), x.Adr())
 				case object.PointerType:
 					fmt.Println("pointer")
 				default:
 					halt.As(20, reflect.TypeOf(t))
 				}
-
+			case object.TypeObject:
+				//do nothing
 			case object.ConstantObject:
 				//do nothing
 			case object.ProcedureObject:
@@ -203,6 +198,7 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 }
 
 func (a *area) Update(id cp.ID, fval scope.ValueFor) {
+	assert.For(id != 0, 20)
 	fmt.Println("UPDATE", id)
 	var upd func(x int, id cp.ID)
 	var k int
