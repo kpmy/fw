@@ -32,6 +32,28 @@ type proc struct {
 	link object.Object
 }
 
+type rec struct {
+	link object.Object
+}
+
+func (r *rec) String() string {
+	return r.link.Name()
+}
+
+func (r *rec) Id() cp.ID {
+	return r.link.Adr()
+}
+
+func (r *rec) Set(v scope.Value) {
+
+}
+
+func newRec(o object.Object) *rec {
+	_, ok := o.Complex().(object.RecordType)
+	assert.For(ok, 20)
+	return &rec{link: o}
+}
+
 func (p *proc) String() string {
 	return fmt.Sprint(p.link.Adr(), p.link.Name())
 }

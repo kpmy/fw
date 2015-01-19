@@ -80,7 +80,9 @@ func (a *area) allocate(mod *cpm.Module, n node.EnterNode, r bool) {
 					l.k[x.Adr()] = l.next
 					l.next++
 				case object.RecordType:
-					fmt.Println(x.Name(), x.Adr())
+					l.v[l.next] = newRec(x)
+					l.k[x.Adr()] = l.next
+					l.next++
 				case object.PointerType:
 					fmt.Println("pointer")
 				default:
