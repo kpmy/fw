@@ -38,6 +38,11 @@ type rec struct {
 	l *level
 }
 
+type idx struct {
+	arr *arr
+	idx int
+}
+
 func (r *rec) String() string {
 	return r.link.Name()
 }
@@ -128,6 +133,42 @@ func (a *arr) String() (ret string) {
 		}
 	}
 	return ret
+}
+
+func (a *arr) Get(id scope.Value) scope.Value {
+	switch i := id.(type) {
+	case *data:
+		return a.Get(i.val.(scope.Value))
+	case INTEGER:
+		assert.For(int64(i) < a.length, 20)
+		if len(a.val) == 0 {
+			a.val = make([]interface{}, int(a.length))
+		}
+		return &idx{arr: a, idx: int(i)}
+	default:
+		halt.As(100, reflect.TypeOf(i))
+	}
+	panic(0)
+}
+
+func (i *idx) Id() cp.ID {
+	return i.arr.Id()
+}
+
+func (i *idx) String() string {
+	return fmt.Sprint("@", i.Id(), "[", i.idx, "]")
+}
+
+func (i *idx) Set(v scope.Value) {
+	fmt.Println(i, len(i.arr.val))
+	switch x := v.(type) {
+	case *idx:
+		i.arr.val[i.idx] = x.arr.val[x.idx]
+	case CHAR:
+		i.arr.val[i.idx] = x
+	default:
+		halt.As(100, reflect.TypeOf(x))
+	}
 }
 
 func (a *dynarr) String() (ret string) {

@@ -40,6 +40,11 @@ type Record interface {
 	Get(cp.ID) Value
 }
 
+type Array interface {
+	Variable
+	Get(Value) Value
+}
+
 //средство обновления значенияx
 type ValueFor func(in Value) (out Value)
 type ValueOf func(in Value)

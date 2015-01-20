@@ -54,7 +54,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 
 	right := func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		vleft := left.(scope.Variable)
-		switch a.Right().(type) {
+		switch l := a.Right().(type) {
 		case node.ConstantNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
@@ -81,15 +81,17 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			}
 			ret = frame.LATER
 		case node.IndexNode:
-			rightId = a.Right().Adr()
-			rt2.Push(rt2.New(a.Right()), f)
+			rightId = l.Adr()
+			rt2.Push(rt2.New(l), f)
+			rt2.Assert(f, func(f frame.Frame) (bool, int) {
+				return rt2.ValueOf(f)[rightId] != nil, 62
+			})
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				/*				rightId.Index = new(int64)
-								*rightId.Index = int64(rt2.DataOf(f)[a.Right()].(int32))
-								sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-								sc.Update(leftId, func(interface{}) interface{} {
-									return sc.Select(rightId)
-								}) */
+				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+				right := rt2.ValueOf(f)[l.Adr()]
+				arr := sc.Select(l.Left().Object().Adr()).(scope.Array)
+				right = arr.Get(right)
+				vleft.Set(right)
 				return frame.End()
 			}
 			ret = frame.LATER
@@ -122,11 +124,15 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			}
 			ret = frame.LATER
 		case node.IndexNode:
-			//			leftId = scope.Designator(a.Left())
 			rt2.Push(rt2.New(a.Left()), f)
+			rt2.Assert(f, func(f frame.Frame) (bool, int) {
+				return rt2.ValueOf(f)[l.Adr()] != nil, 62
+			})
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				/*				leftId.Index = new(int64)
-				*leftId.Index = int64(rt2.DataOf(f)[a.Left()].(int32))*/
+				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+				left = rt2.ValueOf(f)[l.Adr()]
+				arr := sc.Select(l.Left().Object().Adr()).(scope.Array)
+				left = arr.Get(left)
 				return right(f)
 			}
 			ret = frame.LATER
