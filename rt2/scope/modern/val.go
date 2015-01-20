@@ -34,6 +34,8 @@ type proc struct {
 
 type rec struct {
 	link object.Object
+	scope.Record
+	l *level
 }
 
 func (r *rec) String() string {

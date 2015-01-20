@@ -35,6 +35,11 @@ type Ref interface {
 	Value
 }
 
+type Record interface {
+	Variable
+	Get(cp.ID) Value
+}
+
 //средство обновления значенияx
 type ValueFor func(in Value) (out Value)
 
@@ -45,6 +50,7 @@ func Simple(v Value) ValueFor {
 }
 
 var ValueFrom func(v Value) Value
+var ValueOf func(v Value)
 var GoTypeFrom func(v Value) interface{}
 var TypeFromGo func(v interface{}) Value
 var Ops Operations

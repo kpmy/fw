@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"fw/cp"
 	"fw/cp/constant/enter"
-	cpm "fw/cp/module"
+	//	cpm "fw/cp/module"
 	"fw/cp/node"
 	"fw/cp/object"
 	"fw/rt2/context"
@@ -17,11 +17,13 @@ import (
 )
 
 type level struct {
-	k     map[cp.ID]int
-	v     map[int]scope.Variable
-	r     map[int]scope.Ref
-	next  int
-	ready bool
+	k      map[cp.ID]int
+	v      map[int]scope.Variable
+	r      map[int]scope.Ref
+	l      map[int]*level
+	next   int
+	ready  bool
+	nested bool
 }
 
 type area struct {
@@ -34,6 +36,7 @@ type salloc struct {
 }
 
 type ref struct {
+	scope.Ref
 	id   cp.ID
 	link object.Object
 }
@@ -46,65 +49,12 @@ func newRef(x object.Object) *ref {
 	return &ref{link: x}
 }
 
-func (a *area) allocate(mod *cpm.Module, n node.EnterNode, r bool) {
-	ol := mod.Objects[n]
-	l := &level{next: 1, ready: r,
-		k: make(map[cp.ID]int),
+func newlvl() *level {
+	return &level{next: 1,
+		k: make(map[cp.ID]int), ready: true,
 		v: make(map[int]scope.Variable),
-		r: make(map[int]scope.Ref)}
-	a.data = append(a.data, l)
-	skip := make(map[cp.ID]interface{}) //для процедурных типов в общей куче могут валяться переменные, скипаем их
-	tl := mod.Types[n]
-	for _, t := range tl {
-		switch x := t.(type) {
-		case object.BasicType:
-			for link := x.Link(); link != nil; link = link.Link() {
-				skip[link.Adr()] = link
-			}
-		case object.RecordType:
-			for link := x.Link(); link != nil; link = link.Link() {
-				skip[link.Adr()] = link
-			}
-		}
-	}
-	for _, o := range ol {
-		imp := mod.ImportOf(o)
-		fmt.Println(reflect.TypeOf(o), o.Adr())
-		if imp == "" && skip[o.Adr()] == nil {
-			fmt.Println(l.next)
-			switch x := o.(type) {
-			case object.VariableObject:
-				switch t := o.Complex().(type) {
-				case nil, object.BasicType, object.ArrayType, object.DynArrayType:
-					l.v[l.next] = NewData(x)
-					l.k[x.Adr()] = l.next
-					l.next++
-				case object.RecordType:
-					l.v[l.next] = newRec(x)
-					l.k[x.Adr()] = l.next
-					l.next++
-				case object.PointerType:
-					fmt.Println("pointer")
-				default:
-					halt.As(20, reflect.TypeOf(t))
-				}
-			case object.TypeObject:
-				//do nothing
-			case object.ConstantObject:
-				//do nothing
-			case object.ProcedureObject:
-				//do nothing
-			case object.ParameterObject:
-				if n.Enter() == enter.PROCEDURE {
-					l.r[l.next] = newRef(x)
-					l.k[x.Adr()] = l.next
-					l.next++
-				}
-			default:
-				halt.As(20, reflect.TypeOf(x))
-			}
-		}
-	}
+		r: make(map[int]scope.Ref),
+		l: make(map[int]*level)}
 }
 
 func (a *area) top() *level {
@@ -131,7 +81,82 @@ func (a *area) Provide(x interface{}) scope.ValueFor {
 func (a *salloc) Allocate(n node.Node, final bool) {
 	fmt.Println("ALLOCATE")
 	mod := rtm.DomainModule(a.area.d)
-	a.area.allocate(mod, n.(node.EnterNode), final)
+
+	tl := mod.Types[n]
+	skip := make(map[cp.ID]interface{}) //для процедурных типов в общей куче могут валяться переменные, скипаем их
+	for _, t := range tl {
+		switch x := t.(type) {
+		case object.BasicType:
+			for link := x.Link(); link != nil; link = link.Link() {
+				skip[link.Adr()] = link
+			}
+		case object.RecordType:
+			for link := x.Link(); link != nil; link = link.Link() {
+				skip[link.Adr()] = link
+			}
+		}
+	}
+
+	var alloc func(*level, []object.Object)
+	alloc = func(l *level, ol []object.Object) {
+		for _, o := range ol {
+			imp := mod.ImportOf(o)
+			fmt.Println(reflect.TypeOf(o), o.Adr())
+			_, field := o.(object.FieldObject)
+			if imp == "" && (skip[o.Adr()] == nil || (field && l.nested)) {
+				fmt.Println("next", l.next)
+				switch x := o.(type) {
+				case object.VariableObject, object.FieldObject:
+					switch t := o.Complex().(type) {
+					case nil, object.BasicType, object.ArrayType, object.DynArrayType:
+						l.v[l.next] = NewData(x)
+						l.k[x.Adr()] = l.next
+						l.next++
+					case object.RecordType:
+						l.v[l.next] = newRec(x)
+						nl := newlvl()
+						nl.nested = true
+						l.l[l.next] = nl
+						l.k[x.Adr()] = l.next
+						fl := make([]object.Object, 0)
+						for rec := t; rec != nil; {
+							for x := rec.Link(); x != nil; x = x.Link() {
+								//fmt.Println(o.Name(), ".", x.Name(), x.Adr())
+								fl = append(fl, x)
+							}
+							rec = rec.BaseType()
+						}
+						//fmt.Println("record")
+						l.v[l.next].(*rec).l = nl
+						alloc(nl, fl)
+						l.next++
+					case object.PointerType:
+						fmt.Println("pointer")
+					default:
+						halt.As(20, reflect.TypeOf(t))
+					}
+				case object.TypeObject:
+					//do nothing
+				case object.ConstantObject:
+					//do nothing
+				case object.ProcedureObject:
+					//do nothing
+				case object.ParameterObject:
+					if n.(node.EnterNode).Enter() == enter.PROCEDURE {
+						l.r[l.next] = newRef(x)
+						l.k[x.Adr()] = l.next
+						l.next++
+					}
+				default:
+					halt.As(20, reflect.TypeOf(x))
+				}
+			}
+		}
+	}
+	nl := newlvl()
+	nl.ready = final
+	a.area.data = append(a.area.data, nl)
+	alloc(nl, mod.Objects[n])
 }
 
 func (a *salloc) Dispose(n node.Node) {
@@ -228,7 +253,7 @@ func (a *area) Update(id cp.ID, fval scope.ValueFor) {
 	upd(len(a.data), id)
 	assert.For(k != 0, 60)
 }
-func (a *area) Select(id cp.ID) (ret scope.Value) {
+func (a *area) Select(id cp.ID, val ...scope.ValueOf) (ret scope.Value) {
 	fmt.Println("SELECT", id)
 	var sel func(x int, id cp.ID)
 	sel = func(x int, id cp.ID) {
@@ -245,6 +270,8 @@ func (a *area) Select(id cp.ID) (ret scope.Value) {
 							sel(i, r.(*ref).id)
 							break
 						}
+					} else if len(val) > 0 {
+						val[0](ret)
 					}
 				}
 			}
@@ -268,6 +295,9 @@ func (l *level) String() (ret string) {
 		ret = fmt.Sprint(ret, "@", k, v, l.v[v])
 		if l.v[v] == nil {
 			ret = fmt.Sprintln(ret, l.r[v])
+		} else if l.l[v] != nil {
+			ret = fmt.Sprintln(ret, "{")
+			ret = fmt.Sprintln(ret, l.l[v], "}")
 		} else {
 			ret = fmt.Sprintln(ret)
 		}

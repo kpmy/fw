@@ -12,6 +12,7 @@ import (
 	"fw/rt2/frame"
 	"fw/rt2/scope"
 	"reflect"
+	"ypk/halt"
 )
 
 func incSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
@@ -116,7 +117,6 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 					//					x := rt2.DataOf(f)[l.Left()].(node.Node)
 					//					leftId = scope.Designator(a.Left(), x)
-					fmt.Println(leftId)
 					return right(f)
 				}
 				ret = frame.LATER
@@ -130,6 +130,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				}
 				ret = frame.LATER
 			default:
+				halt.As(100, l.Object().Adr(), l.Left().Object().Adr())
 				//				leftId = scope.Designator(a.Left())
 				seq, ret = right(f)
 			}
