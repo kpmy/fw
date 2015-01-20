@@ -10,9 +10,11 @@ type Operations interface {
 	Sub(Value, Value) Value
 
 	Eq(Value, Value) Value
+	Neq(Value, Value) Value
 	Lss(Value, Value) Value
 	Leq(Value, Value) Value
 
+	Not(Value) Value
 	Conv(Value, object.Type) Value
 	Len(object.Object, Value, Value) Value
 }

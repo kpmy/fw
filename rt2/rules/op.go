@@ -248,7 +248,7 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		n := rt2.NodeOf(f)
 		switch n.(node.OperationNode).Operation() {
 		case operation.NOT:
-			rt2.DataOf(f.Parent())[n] = not(rt2.DataOf(f)[n.Left()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Not(rt2.ValueOf(f)[n.Left().Adr()])
 			return frame.End()
 		case operation.IS:
 			/*	x := sc.Select(scope.Designator(n.Left())).(object.Object)
@@ -397,7 +397,7 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Len(n.Left().Object(), rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.NOT_EQUAL:
-			rt2.DataOf(f.Parent())[n] = neq(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Neq(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.GREATER:
 			rt2.DataOf(f.Parent())[n] = gtr(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])

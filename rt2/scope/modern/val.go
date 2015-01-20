@@ -516,6 +516,18 @@ func (o *ops) Conv(a scope.Value, typ object.Type) scope.Value {
 	panic(100)
 }
 
+func (o *ops) Not(a scope.Value) scope.Value {
+	switch x := a.(type) {
+	case *data:
+		return o.Not(vfrom(x))
+	case BOOLEAN:
+		return BOOLEAN(!x)
+	default:
+		halt.As(100, reflect.TypeOf(x))
+	}
+	panic(100)
+}
+
 func (o *ops) Eq(a, b scope.Value) scope.Value {
 	switch a.(type) {
 	case *data:
@@ -530,6 +542,31 @@ func (o *ops) Eq(a, b scope.Value) scope.Value {
 				switch y := b.(type) {
 				case INTEGER:
 					return BOOLEAN(x == y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			default:
+				panic(fmt.Sprintln(reflect.TypeOf(x)))
+			}
+		}
+	}
+	panic(0)
+}
+
+func (o *ops) Neq(a, b scope.Value) scope.Value {
+	switch a.(type) {
+	case *data:
+		return o.Neq(vfrom(a), b)
+	default:
+		switch b.(type) {
+		case *data:
+			return o.Neq(a, vfrom(b))
+		default:
+			switch x := a.(type) {
+			case INTEGER:
+				switch y := b.(type) {
+				case INTEGER:
+					return BOOLEAN(x != y)
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
