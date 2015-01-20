@@ -253,6 +253,7 @@ func (a *area) Update(id cp.ID, fval scope.ValueFor) {
 	upd(len(a.data), id)
 	assert.For(k != 0, 60)
 }
+
 func (a *area) Select(id cp.ID, val ...scope.ValueOf) (ret scope.Value) {
 	fmt.Println("SELECT", id)
 	var sel func(x int, id cp.ID)
@@ -267,7 +268,11 @@ func (a *area) Select(id cp.ID, val ...scope.ValueOf) (ret scope.Value) {
 					if ret == nil { //ref?
 						r := l.r[k]
 						if r != nil {
-							sel(i, r.(*ref).id)
+							if l.l[k] != nil { //rec
+								panic(0)
+							} else {
+								sel(i, r.(*ref).id)
+							}
 							break
 						}
 					} else if len(val) > 0 {

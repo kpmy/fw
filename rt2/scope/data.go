@@ -42,6 +42,7 @@ type Record interface {
 
 //средство обновления значенияx
 type ValueFor func(in Value) (out Value)
+type ValueOf func(in Value)
 
 func Simple(v Value) ValueFor {
 	return func(Value) Value {
@@ -50,7 +51,6 @@ func Simple(v Value) ValueFor {
 }
 
 var ValueFrom func(v Value) Value
-var ValueOf func(v Value)
 var GoTypeFrom func(v Value) interface{}
 var TypeFromGo func(v interface{}) Value
 var Ops Operations

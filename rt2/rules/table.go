@@ -56,6 +56,8 @@ func prologue(n node.Node) frame.Sequence {
 		return frame.Tail(frame.STOP)
 	case node.IndexNode:
 		return indexSeq
+	case node.FieldNode:
+		return Propose(fieldSeq)
 	case node.TrapNode:
 		return func(f frame.Frame) (frame.Sequence, frame.WAIT) {
 			switch code := next.Left().(type) {
@@ -129,7 +131,7 @@ func epilogue(n node.Node) frame.Sequence {
 			return frame.End()
 		}
 	case node.OperationNode, node.ReturnNode, node.IfNode, node.LoopNode,
-		node.DerefNode, node.IndexNode, node.TrapNode, node.GuardNode, node.RangeNode:
+		node.DerefNode, node.IndexNode, node.TrapNode, node.GuardNode, node.RangeNode, node.FieldNode:
 		return nil
 	default:
 		fmt.Println(reflect.TypeOf(n))

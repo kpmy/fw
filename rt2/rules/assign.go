@@ -12,7 +12,6 @@ import (
 	"fw/rt2/frame"
 	"fw/rt2/scope"
 	"reflect"
-	"ypk/halt"
 )
 
 func incSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
@@ -50,22 +49,23 @@ func decSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	a := rt2.NodeOf(f)
 
-	var leftId cp.ID
+	var left scope.Value
 	var rightId cp.ID
 
 	right := func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+		vleft := left.(scope.Variable)
 		switch a.Right().(type) {
 		case node.ConstantNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				sc.Update(leftId, sc.Provide(a.Right())) //scope.Simple(a.Right().(node.ConstantNode).Data()))
+				vleft.Set(sc.Provide(a.Right())(nil)) //scope.Simple(a.Right().(node.ConstantNode).Data()))
 				return frame.End()
 			}
 			ret = frame.NOW
 		case node.VariableNode, node.ParameterNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				sc.Update(leftId, scope.Simple(sc.Select(a.Right().Object().Adr())))
+				vleft.Set(sc.Select(a.Right().Object().Adr()))
 				return frame.End()
 			}
 			ret = frame.NOW
@@ -75,8 +75,8 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				return rt2.ValueOf(f)[a.Right().Adr()] != nil, 61
 			})
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				sc.Update(leftId, scope.Simple(rt2.ValueOf(f)[a.Right().Adr()]))
+				//sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+				vleft.Set(rt2.ValueOf(f)[a.Right().Adr()])
 				return frame.End()
 			}
 			ret = frame.LATER
@@ -95,7 +95,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			ret = frame.LATER
 		case node.ProcedureNode:
 			sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-			sc.Update(leftId, sc.Provide(a.Right().Object()))
+			vleft.Set(sc.Provide(a.Right().Object())(nil))
 			return frame.End()
 		default:
 			fmt.Println(reflect.TypeOf(a.Right()))
@@ -108,32 +108,19 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	case statement.ASSIGN:
 		switch l := a.Left().(type) {
 		case node.VariableNode, node.ParameterNode:
-			leftId = a.Left().Object().Adr()
+			sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+			left = sc.Select(a.Left().Object().Adr())
 			seq, ret = right(f)
 		case node.FieldNode:
-			switch l.Left().(type) {
-			case node.GuardNode:
-				rt2.Push(rt2.New(l.Left()), f)
-				seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-					//					x := rt2.DataOf(f)[l.Left()].(node.Node)
-					//					leftId = scope.Designator(a.Left(), x)
-					return right(f)
-				}
-				ret = frame.LATER
-			case node.DerefNode:
-				//				rt2.DataOf(f)[l.Left()] = scope.ID{}
-				rt2.Push(rt2.New(l.Left()), f)
-				seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
-					//					leftId = rt2.DataOf(f)[l.Left()].(scope.ID)
-					//					leftId.Path = a.Left().Object().Name()
-					return right(f)
-				}
-				ret = frame.LATER
-			default:
-				halt.As(100, l.Object().Adr(), l.Left().Object().Adr())
-				//				leftId = scope.Designator(a.Left())
-				seq, ret = right(f)
+			rt2.Push(rt2.New(l), f)
+			rt2.Assert(f, func(f frame.Frame) (bool, int) {
+				return rt2.ValueOf(f)[l.Adr()] != nil, 62
+			})
+			seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+				left = rt2.ValueOf(f)[l.Adr()]
+				return right(f)
 			}
+			ret = frame.LATER
 		case node.IndexNode:
 			//			leftId = scope.Designator(a.Left())
 			rt2.Push(rt2.New(a.Left()), f)

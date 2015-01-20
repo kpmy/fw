@@ -476,7 +476,7 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 
 	left := func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		n := rt2.NodeOf(f)
-		switch n.Left().(type) {
+		switch l := n.Left().(type) {
 		case node.ConstantNode:
 			rt2.ValueOf(f)[n.Left().Adr()] = sc.Provide(n.Left())(nil)
 			return right, frame.NOW
@@ -496,8 +496,10 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			return seq, ret
 		case node.FieldNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				//				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				//				rt2.DataOf(f)[n.Left()] = sc.Select(scope.Designator(n.Left()))
+				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+				sc.Select(l.Left().Object().Adr(), func(v scope.Value) {
+					rt2.ValueOf(f)[n.Left().Adr()] = v.(scope.Record).Get(l.Object().Adr())
+				})
 				return right, frame.NOW
 			}
 			ret = frame.NOW

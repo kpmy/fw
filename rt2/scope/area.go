@@ -20,7 +20,7 @@ type PARAM struct {
 type Manager interface {
 	context.ContextAware
 	Update(id cp.ID, val ValueFor)
-	Select(id cp.ID) Value
+	Select(cp.ID, ...ValueOf) Value
 	Target(...Allocator) Allocator
 	Provide(interface{}) ValueFor
 	String() string

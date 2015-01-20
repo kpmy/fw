@@ -50,6 +50,15 @@ func (r *rec) Set(v scope.Value) {
 
 }
 
+func (r *rec) Get(id cp.ID) scope.Value {
+	k := r.l.k[id]
+	if r.l.v[k] == nil { //ref
+		return r.l.r[k]
+	} else {
+		return r.l.v[k]
+	}
+}
+
 func newRec(o object.Object) *rec {
 	_, ok := o.Complex().(object.RecordType)
 	assert.For(ok, 20)
