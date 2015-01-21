@@ -6,8 +6,10 @@ import (
 	"fw/cp/node"
 	"fw/cp/object"
 	"fw/rt2/scope"
+	"math"
 	"math/big"
 	"reflect"
+	"strings"
 	"ypk/assert"
 	"ypk/halt"
 )
@@ -377,6 +379,10 @@ func vfrom(v scope.Value) scope.Value {
 			return n.val.(INTEGER)
 		case object.BYTE:
 			return n.val.(BYTE)
+		case object.CHAR:
+			return n.val.(CHAR)
+		case object.SET:
+			return n.val.(SET)
 		default:
 			halt.As(100, n.link.Type())
 		}
@@ -424,6 +430,13 @@ func (o *ops) Sum(a, b scope.Value) scope.Value {
 				switch y := b.(type) {
 				case INTEGER:
 					return INTEGER(int32(x) + int32(y))
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			case SET:
+				switch y := b.(type) {
+				case SET:
+					return SET{bits: x.bits.Add(x.bits, y.bits)}
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
@@ -533,6 +546,17 @@ func (o *ops) Conv(a scope.Value, typ object.Type) scope.Value {
 			return o.Conv(vfrom(x), typ)
 		case BYTE:
 			return INTEGER(x)
+		case SET:
+			return INTEGER(x.bits.Int64())
+		default:
+			halt.As(100, reflect.TypeOf(x))
+		}
+	case object.SET:
+		switch x := a.(type) {
+		case *data:
+			return o.Conv(vfrom(x), typ)
+		case INTEGER:
+			return SET{bits: big.NewInt(int64(x))}
 		default:
 			halt.As(100, reflect.TypeOf(x))
 		}
@@ -554,6 +578,53 @@ func (o *ops) Not(a scope.Value) scope.Value {
 	panic(100)
 }
 
+func (o *ops) Abs(a scope.Value) scope.Value {
+	switch x := a.(type) {
+	case *data:
+		return o.Abs(vfrom(x))
+	case INTEGER:
+		return INTEGER(int32(math.Abs(float64(x))))
+	default:
+		halt.As(100, reflect.TypeOf(x))
+	}
+	panic(100)
+}
+
+func (o *ops) Odd(a scope.Value) scope.Value {
+	switch x := a.(type) {
+	case *data:
+		return o.Odd(vfrom(x))
+	case INTEGER:
+		return BOOLEAN(int32(math.Abs(float64(x)))%2 == 1)
+	default:
+		halt.As(100, reflect.TypeOf(x))
+	}
+	panic(100)
+}
+
+func (o *ops) Cap(a scope.Value) scope.Value {
+	switch x := a.(type) {
+	case *data:
+		return o.Cap(vfrom(x))
+	case CHAR:
+		return CHAR([]rune(strings.ToUpper(string(x)))[0])
+	default:
+		halt.As(100, reflect.TypeOf(x))
+	}
+	panic(100)
+}
+
+func (o *ops) Bits(a scope.Value) scope.Value {
+	switch x := a.(type) {
+	case *data:
+		return o.Bits(vfrom(x))
+	case INTEGER:
+		return SET{bits: big.NewInt(int64(x))}
+	default:
+		halt.As(100, reflect.TypeOf(x))
+	}
+	panic(100)
+}
 func (o *ops) Eq(a, b scope.Value) scope.Value {
 	switch a.(type) {
 	case *data:
@@ -618,6 +689,31 @@ func (o *ops) Lss(a, b scope.Value) scope.Value {
 				switch y := b.(type) {
 				case INTEGER:
 					return BOOLEAN(x < y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			default:
+				panic(fmt.Sprintln(reflect.TypeOf(x)))
+			}
+		}
+	}
+	panic(0)
+}
+
+func (o *ops) Gtr(a, b scope.Value) scope.Value {
+	switch a.(type) {
+	case *data:
+		return o.Gtr(vfrom(a), b)
+	default:
+		switch b.(type) {
+		case *data:
+			return o.Gtr(a, vfrom(b))
+		default:
+			switch x := a.(type) {
+			case INTEGER:
+				switch y := b.(type) {
+				case INTEGER:
+					return BOOLEAN(x > y)
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}

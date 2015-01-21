@@ -254,16 +254,16 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Is(sc.Select(n.Left().Object().Adr()), n.Object())
 			return frame.End()
 		case operation.ABS:
-			rt2.DataOf(f.Parent())[n] = abs(rt2.DataOf(f)[n.Left()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Abs(rt2.ValueOf(f)[n.Left().Adr()])
 			return frame.End()
 		case operation.ODD:
-			rt2.DataOf(f.Parent())[n] = odd(rt2.DataOf(f)[n.Left()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Odd(rt2.ValueOf(f)[n.Left().Adr()])
 			return frame.End()
 		case operation.CAP:
-			rt2.DataOf(f.Parent())[n] = cap_char(rt2.DataOf(f)[n.Left()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Cap(rt2.ValueOf(f)[n.Left().Adr()])
 			return frame.End()
 		case operation.BITS:
-			rt2.DataOf(f.Parent())[n] = bits(rt2.DataOf(f)[n.Left()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Bits(rt2.ValueOf(f)[n.Left().Adr()])
 			return frame.End()
 		default:
 			panic("no such op")
@@ -399,7 +399,7 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Neq(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.GREATER:
-			rt2.DataOf(f.Parent())[n] = gtr(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Gtr(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.MAX:
 			rt2.DataOf(f.Parent())[n] = max(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])

@@ -13,8 +13,13 @@ type Operations interface {
 	Neq(Value, Value) Value
 	Lss(Value, Value) Value
 	Leq(Value, Value) Value
+	Gtr(Value, Value) Value
 
 	Not(Value) Value
+	Abs(Value) Value
+	Odd(Value) Value
+	Cap(Value) Value
+	Bits(Value) Value
 
 	Is(Value, object.ComplexType) Value
 	Conv(Value, object.Type) Value
