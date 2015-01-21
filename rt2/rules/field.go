@@ -17,8 +17,13 @@ func fieldSeq(in ...IN) (out OUT) {
 	f := in[0].frame
 	n := rt2.NodeOf(f)
 	sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-	switch l := n.Left().(type) {
-	case node.VariableNode:
+	var left node.Node
+	left, _ = rt2.RegOf(f)[n.Left()].(node.Node)
+	if left == nil {
+		left = n.Left()
+	}
+	switch l := left.(type) {
+	case node.VariableNode, node.ParameterNode:
 		sc.Select(l.Object().Adr(), func(v scope.Value) {
 			rt2.ValueOf(f.Parent())[n.Adr()] = v.(scope.Record).Get(n.Object().Adr())
 		})
@@ -35,6 +40,13 @@ func fieldSeq(in ...IN) (out OUT) {
 			return End()
 		}
 		out.next = LATER
+	case node.GuardNode:
+		rt2.Push(rt2.New(l), f)
+		rt2.Assert(f, func(f frame.Frame) (bool, int) {
+			return rt2.RegOf(f)[n.Left()] != nil, 61
+		})
+		out.next = LATER
+		out.do = fieldSeq
 	default:
 		halt.As(100, reflect.TypeOf(l))
 	}
