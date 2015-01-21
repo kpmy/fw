@@ -499,6 +499,32 @@ func (o *ops) Len(a object.Object, _a, _b scope.Value) (ret scope.Value) {
 	return ret
 }
 
+func (o *ops) Is(a scope.Value, typ object.ComplexType) scope.Value {
+	var compare func(x, a object.RecordType) bool
+	compare = func(x, a object.RecordType) bool {
+		switch {
+		case x.Name() == a.Name():
+			//	fmt.Println("eq")
+			return true //опасно сравнивать имена конеш
+		case x.BaseType() != nil:
+			//	fmt.Println("go base")
+			return compare(x.BaseType(), a)
+		default:
+			return false
+		}
+	}
+	switch x := a.(type) {
+	case *rec:
+		z, a := x.link.Complex().(object.RecordType)
+		y, b := typ.(object.RecordType)
+		fmt.Println("compare", x.link.Complex(), typ, a, b, a && b && compare(z, y))
+		return BOOLEAN(a && b && compare(z, y))
+	default:
+		halt.As(100, reflect.TypeOf(x))
+	}
+	panic(0)
+}
+
 func (o *ops) Conv(a scope.Value, typ object.Type) scope.Value {
 	switch typ {
 	case object.INTEGER:

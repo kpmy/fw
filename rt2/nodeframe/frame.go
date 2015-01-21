@@ -117,7 +117,10 @@ func (f *nodeFrame) OnPop() {
 			ok, code := ff.assertion(ff)
 			if !ok {
 				panic(fmt.Sprintln("assert", code, "for", reflect.TypeOf(ff.ir)))
+			} else {
+				fmt.Println("assert passed", code, "for", reflect.TypeOf(ff.ir))
 			}
+			ff.assertion = nil
 		}
 	}
 }

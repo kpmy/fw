@@ -11,6 +11,9 @@ func withSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	n := rt2.NodeOf(f)
 	rt2.RegOf(f)[0] = n.Left() //if
 	rt2.Push(rt2.New(n.Left()), f)
+	rt2.Assert(f, func(f frame.Frame) (bool, int) {
+		return rt2.ValueOf(f)[n.Left().Adr()] != nil, 60
+	})
 	seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
 		last := rt2.RegOf(f)[0].(node.Node)
 		done := scope.GoTypeFrom(rt2.ValueOf(f)[last.Adr()]).(bool)
@@ -23,6 +26,9 @@ func withSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		} else if last.Link() != nil { //elsif
 			rt2.RegOf(f)[0] = last.Link()
 			rt2.Push(rt2.New(last.Link()), f)
+			rt2.Assert(f, func(f frame.Frame) (bool, int) {
+				return rt2.ValueOf(f)[last.Link().Adr()] != nil, 61
+			})
 			return seq, frame.LATER
 		} else if n.Right() != nil { //else
 			rt2.Push(rt2.New(n.Right()), f)

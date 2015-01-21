@@ -15,6 +15,8 @@ type Operations interface {
 	Leq(Value, Value) Value
 
 	Not(Value) Value
+
+	Is(Value, object.ComplexType) Value
 	Conv(Value, object.Type) Value
 	Len(object.Object, Value, Value) Value
 }
