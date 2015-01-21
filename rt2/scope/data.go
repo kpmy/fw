@@ -8,7 +8,6 @@ import (
 type Operations interface {
 	Sum(Value, Value) Value
 	Sub(Value, Value) Value
-
 	Eq(Value, Value) Value
 	Neq(Value, Value) Value
 	Lss(Value, Value) Value
@@ -16,6 +15,15 @@ type Operations interface {
 	Gtr(Value, Value) Value
 	Max(Value, Value) Value
 	Min(Value, Value) Value
+	Div(Value, Value) Value
+	Mod(Value, Value) Value
+	Mult(Value, Value) Value
+	Divide(Value, Value) Value
+	In(Value, Value) Value
+	Ash(Value, Value) Value
+	And(Value, Value) Value
+	Or(Value, Value) Value
+	Geq(Value, Value) Value
 
 	Not(Value) Value
 	Abs(Value) Value

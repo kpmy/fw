@@ -392,31 +392,31 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Min(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.DIV:
-			rt2.DataOf(f.Parent())[n] = div(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Div(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.MOD:
-			rt2.DataOf(f.Parent())[n] = mod(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Mod(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.TIMES:
-			rt2.DataOf(f.Parent())[n] = times(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Mult(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.SLASH:
-			rt2.DataOf(f.Parent())[n] = slash(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Divide(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.IN:
-			rt2.DataOf(f.Parent())[n] = in(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.In(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.ASH:
-			rt2.DataOf(f.Parent())[n] = ash(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Ash(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.AND:
-			rt2.DataOf(f.Parent())[n] = and(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.And(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.OR:
-			rt2.DataOf(f.Parent())[n] = or(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Or(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.GREAT_EQUAL:
-			rt2.DataOf(f.Parent())[n] = geq(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Geq(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		default:
 			panic(fmt.Sprintln("unknown operation", n.(node.OperationNode).Operation()))

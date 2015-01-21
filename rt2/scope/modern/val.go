@@ -90,6 +90,8 @@ func (x *dynarr) Id() cp.ID {
 
 func (a *arr) Set(v scope.Value) {
 	switch x := v.(type) {
+	case *arr:
+		a.Set(STRING(x.String()))
 	case STRING:
 		v := make([]interface{}, int(a.length))
 		for i := 0; i < int(a.length) && i < len(x); i++ {
@@ -385,6 +387,8 @@ func vfrom(v scope.Value) scope.Value {
 			return n.val.(CHAR)
 		case object.SET:
 			return n.val.(SET)
+		case object.BOOLEAN:
+			return n.val.(BOOLEAN)
 		default:
 			halt.As(100, n.link.Type())
 		}
@@ -444,6 +448,32 @@ func (o *ops) Sum(a, b scope.Value) scope.Value {
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
+			case *arr:
+				switch y := b.(type) {
+				case *arr:
+					switch {
+					case x.link.Type() == y.link.Type() && x.link.Complex().(object.ArrayType).Base() == object.CHAR:
+						return STRING(x.String() + y.String())
+					default:
+						halt.As(100, x.link.Type(), y.link.Type())
+					}
+				case STRING:
+					switch {
+					case x.link.Complex().(object.ArrayType).Base() == object.CHAR:
+						return STRING(x.String() + string(y))
+					default:
+						halt.As(100, x.link.Type())
+					}
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			case STRING:
+				switch y := b.(type) {
+				case STRING:
+					return STRING(string(x) + string(y))
+				default:
+					halt.As(100, reflect.TypeOf(y))
+				}
 			default:
 				panic(fmt.Sprintln(reflect.TypeOf(x)))
 			}
@@ -475,6 +505,32 @@ func (o *ops) Sub(a, b scope.Value) scope.Value {
 					return SET{bits: x.bits.Sub(x.bits, y.bits)}
 				case INTEGER:
 					return SET{bits: x.bits.SetBit(x.bits, int(y), 0)}
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			default:
+				panic(fmt.Sprintln(reflect.TypeOf(x)))
+			}
+		}
+	}
+	panic(0)
+}
+
+func (o *ops) In(a, b scope.Value) scope.Value {
+	switch a.(type) {
+	case *data:
+		return o.In(vfrom(a), b)
+	default:
+		switch b.(type) {
+		case *data:
+			return o.In(a, vfrom(b))
+		default:
+			switch x := a.(type) {
+			case INTEGER:
+				switch y := b.(type) {
+				case SET:
+					fmt.Println("IN врет")
+					return BOOLEAN(false)
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
@@ -525,6 +581,188 @@ func (o *ops) Max(a, b scope.Value) scope.Value {
 				switch y := b.(type) {
 				case INTEGER:
 					return INTEGER(int32(math.Max(float64(x), float64(y))))
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			default:
+				panic(fmt.Sprintln(reflect.TypeOf(x)))
+			}
+		}
+	}
+	panic(0)
+}
+
+func (o *ops) And(a, b scope.Value) scope.Value {
+	switch a.(type) {
+	case *data:
+		return o.And(vfrom(a), b)
+	default:
+		switch b.(type) {
+		case *data:
+			return o.And(a, vfrom(b))
+		default:
+			switch x := a.(type) {
+			case BOOLEAN:
+				switch y := b.(type) {
+				case BOOLEAN:
+					return BOOLEAN(x && y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			default:
+				panic(fmt.Sprintln(reflect.TypeOf(x)))
+			}
+		}
+	}
+	panic(0)
+}
+
+func (o *ops) Or(a, b scope.Value) scope.Value {
+	switch a.(type) {
+	case *data:
+		return o.Or(vfrom(a), b)
+	default:
+		switch b.(type) {
+		case *data:
+			return o.Or(a, vfrom(b))
+		default:
+			switch x := a.(type) {
+			case BOOLEAN:
+				switch y := b.(type) {
+				case BOOLEAN:
+					return BOOLEAN(x || y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			default:
+				panic(fmt.Sprintln(reflect.TypeOf(x)))
+			}
+		}
+	}
+	panic(0)
+}
+
+func (o *ops) Ash(a, b scope.Value) scope.Value {
+	switch a.(type) {
+	case *data:
+		return o.Max(vfrom(a), b)
+	default:
+		switch b.(type) {
+		case *data:
+			return o.Max(a, vfrom(b))
+		default:
+			switch x := a.(type) {
+			case INTEGER:
+				switch y := b.(type) {
+				case INTEGER:
+					return INTEGER(x << uint(y))
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			default:
+				panic(fmt.Sprintln(reflect.TypeOf(x)))
+			}
+		}
+	}
+	panic(0)
+}
+
+func (o *ops) Div(a, b scope.Value) scope.Value {
+	switch a.(type) {
+	case *data:
+		return o.Div(vfrom(a), b)
+	default:
+		switch b.(type) {
+		case *data:
+			return o.Div(a, vfrom(b))
+		default:
+			switch x := a.(type) {
+			case INTEGER:
+				switch y := b.(type) {
+				case INTEGER:
+					return INTEGER(x / y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			default:
+				panic(fmt.Sprintln(reflect.TypeOf(x)))
+			}
+		}
+	}
+	panic(0)
+}
+
+func (o *ops) Mod(a, b scope.Value) scope.Value {
+	switch a.(type) {
+	case *data:
+		return o.Mod(vfrom(a), b)
+	default:
+		switch b.(type) {
+		case *data:
+			return o.Mod(a, vfrom(b))
+		default:
+			switch x := a.(type) {
+			case INTEGER:
+				switch y := b.(type) {
+				case INTEGER:
+					return INTEGER(x % y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			default:
+				panic(fmt.Sprintln(reflect.TypeOf(x)))
+			}
+		}
+	}
+	panic(0)
+}
+
+func (o *ops) Mult(a, b scope.Value) scope.Value {
+	switch a.(type) {
+	case *data:
+		return o.Mult(vfrom(a), b)
+	default:
+		switch b.(type) {
+		case *data:
+			return o.Mult(a, vfrom(b))
+		default:
+			switch x := a.(type) {
+			case INTEGER:
+				switch y := b.(type) {
+				case INTEGER:
+					return INTEGER(x * y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			default:
+				panic(fmt.Sprintln(reflect.TypeOf(x)))
+			}
+		}
+	}
+	panic(0)
+}
+
+func (o *ops) Divide(a, b scope.Value) scope.Value {
+	switch a.(type) {
+	case *data:
+		return o.Divide(vfrom(a), b)
+	default:
+		switch b.(type) {
+		case *data:
+			return o.Divide(a, vfrom(b))
+		default:
+			switch x := a.(type) {
+			case INTEGER:
+				switch y := b.(type) {
+				case INTEGER:
+					return REAL(float64(x) / float64(y))
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			case REAL:
+				switch y := b.(type) {
+				case REAL:
+					return REAL(float64(x) / float64(y))
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
@@ -619,6 +857,15 @@ func (o *ops) Conv(a scope.Value, typ object.Type) scope.Value {
 			return o.Conv(vfrom(x), typ)
 		case INTEGER:
 			return SET{bits: big.NewInt(int64(x))}
+		default:
+			halt.As(100, reflect.TypeOf(x))
+		}
+	case object.REAL:
+		switch x := a.(type) {
+		case *data:
+			return o.Conv(vfrom(x), typ)
+		case INTEGER:
+			return REAL(float64(x))
 		default:
 			halt.As(100, reflect.TypeOf(x))
 		}
@@ -801,6 +1048,31 @@ func (o *ops) Leq(a, b scope.Value) scope.Value {
 				switch y := b.(type) {
 				case INTEGER:
 					return BOOLEAN(x <= y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			default:
+				panic(fmt.Sprintln(reflect.TypeOf(x)))
+			}
+		}
+	}
+	panic(0)
+}
+
+func (o *ops) Geq(a, b scope.Value) scope.Value {
+	switch a.(type) {
+	case *data:
+		return o.Geq(vfrom(a), b)
+	default:
+		switch b.(type) {
+		case *data:
+			return o.Geq(a, vfrom(b))
+		default:
+			switch x := a.(type) {
+			case INTEGER:
+				switch y := b.(type) {
+				case INTEGER:
+					return BOOLEAN(x >= y)
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}

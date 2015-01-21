@@ -22,7 +22,7 @@ func derefSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 
 	} else {
 		switch l := n.Left().Object().(type) {
-		case object.ParameterObject:
+		case object.ParameterObject, object.VariableObject:
 			rt2.ValueOf(f.Parent())[n.Adr()] = sc.Select(l.Adr())
 		default:
 			halt.As(100, l.Adr(), reflect.TypeOf(l))
