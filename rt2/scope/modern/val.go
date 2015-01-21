@@ -324,6 +324,8 @@ func fromg(x interface{}) scope.Value {
 		return INTEGER(x)
 	case bool:
 		return BOOLEAN(x)
+	case *big.Int:
+		return SET{bits: x}
 	default:
 		halt.As(100, reflect.TypeOf(x))
 	}
@@ -437,6 +439,8 @@ func (o *ops) Sum(a, b scope.Value) scope.Value {
 				switch y := b.(type) {
 				case SET:
 					return SET{bits: x.bits.Add(x.bits, y.bits)}
+				case INTEGER: // INCL(SET, INTEGER)
+					return SET{bits: x.bits.SetBit(x.bits, int(y), 1)}
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
@@ -465,13 +469,71 @@ func (o *ops) Sub(a, b scope.Value) scope.Value {
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
+			case SET:
+				switch y := b.(type) {
+				case SET:
+					return SET{bits: x.bits.Sub(x.bits, y.bits)}
+				case INTEGER:
+					return SET{bits: x.bits.SetBit(x.bits, int(y), 0)}
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
 			default:
 				panic(fmt.Sprintln(reflect.TypeOf(x)))
 			}
 		}
 	}
 	panic(0)
+}
 
+func (o *ops) Min(a, b scope.Value) scope.Value {
+	switch a.(type) {
+	case *data:
+		return o.Min(vfrom(a), b)
+	default:
+		switch b.(type) {
+		case *data:
+			return o.Min(a, vfrom(b))
+		default:
+			switch x := a.(type) {
+			case INTEGER:
+				switch y := b.(type) {
+				case INTEGER:
+					return INTEGER(int32(math.Min(float64(x), float64(y))))
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			default:
+				panic(fmt.Sprintln(reflect.TypeOf(x)))
+			}
+		}
+	}
+	panic(0)
+}
+
+func (o *ops) Max(a, b scope.Value) scope.Value {
+	switch a.(type) {
+	case *data:
+		return o.Max(vfrom(a), b)
+	default:
+		switch b.(type) {
+		case *data:
+			return o.Max(a, vfrom(b))
+		default:
+			switch x := a.(type) {
+			case INTEGER:
+				switch y := b.(type) {
+				case INTEGER:
+					return INTEGER(int32(math.Max(float64(x), float64(y))))
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			default:
+				panic(fmt.Sprintln(reflect.TypeOf(x)))
+			}
+		}
+	}
+	panic(0)
 }
 
 func (o *ops) Len(a object.Object, _a, _b scope.Value) (ret scope.Value) {

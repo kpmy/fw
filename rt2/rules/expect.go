@@ -24,7 +24,7 @@ func expectExpr(parent frame.Frame, expr node.Node, next Do) OUT {
 	case node.OperationNode, node.CallNode:
 		rt2.Push(rt2.New(expr), parent)
 		wait := func(...IN) OUT {
-			if rt2.DataOf(parent)[expr] == nil {
+			if rt2.RegOf(parent)[expr] == nil && rt2.ValueOf(parent)[expr.Adr()] == nil {
 				panic("no result")
 			}
 			return OUT{do: next, next: NOW}

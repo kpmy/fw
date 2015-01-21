@@ -61,22 +61,6 @@ func float64Of(x interface{}) (a float64) {
 	return a
 }
 
-func min(_a interface{}, _b interface{}) interface{} {
-	assert.For(_a != nil, 20)
-	assert.For(_b != nil, 21)
-	var a int32 = int32Of(_a)
-	var b int32 = int32Of(_b)
-	return int32(math.Min(float64(a), float64(b)))
-}
-
-func max(_a interface{}, _b interface{}) interface{} {
-	assert.For(_a != nil, 20)
-	assert.For(_b != nil, 21)
-	var a int32 = int32Of(_a)
-	var b int32 = int32Of(_b)
-	return int32(math.Max(float64(a), float64(b)))
-}
-
 func div(_a interface{}, _b interface{}) interface{} {
 	assert.For(_a != nil, 20)
 	assert.For(_b != nil, 21)
@@ -402,10 +386,10 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Gtr(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.MAX:
-			rt2.DataOf(f.Parent())[n] = max(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Max(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.MIN:
-			rt2.DataOf(f.Parent())[n] = min(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Min(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
 		case operation.DIV:
 			rt2.DataOf(f.Parent())[n] = div(rt2.DataOf(f)[n.Left()], rt2.DataOf(f)[n.Right()])

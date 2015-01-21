@@ -14,6 +14,8 @@ type Operations interface {
 	Lss(Value, Value) Value
 	Leq(Value, Value) Value
 	Gtr(Value, Value) Value
+	Max(Value, Value) Value
+	Min(Value, Value) Value
 
 	Not(Value) Value
 	Abs(Value) Value
