@@ -13,13 +13,13 @@ import (
 //функция вернет в данные родительского фрейма вычисленное значение expr
 func expectExpr(parent frame.Frame, expr node.Node, next Do) OUT {
 	assert.For(expr != nil, 20)
-	//	sm := rt2.ScopeOf(parent)
+	sm := rt2.ScopeOf(parent)
 	switch e := expr.(type) {
 	case node.ConstantNode:
-		rt2.DataOf(parent)[expr] = e.Data()
+		rt2.ValueOf(parent)[expr.Adr()] = sm.Provide(e.Data())(nil)
 		return OUT{do: next, next: NOW}
 	case node.VariableNode, node.ParameterNode:
-		//		rt2.DataOf(parent)[expr] = sm.Select(scope.Designator(expr))
+		rt2.ValueOf(parent)[expr.Adr()] = sm.Select(expr.Object().Adr())
 		return OUT{do: next, next: NOW}
 	case node.OperationNode, node.CallNode:
 		rt2.Push(rt2.New(expr), parent)
@@ -44,9 +44,10 @@ func expectExpr(parent frame.Frame, expr node.Node, next Do) OUT {
 			return OUT{do: next, next: NOW}
 		}
 		return OUT{do: wait, next: LATER}*/
+		panic(0)
 		return End()
 	case node.ProcedureNode:
-		rt2.DataOf(parent)[expr] = e.Object()
+		rt2.RegOf(parent)[expr] = e.Object()
 		return OUT{do: next, next: NOW}
 	default:
 		panic(fmt.Sprintln("not an expression", reflect.TypeOf(expr)))

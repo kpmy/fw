@@ -28,7 +28,7 @@ func close() {
 func main() {
 	flag.Parse()
 	if name == "" {
-		name = "XevDemo13"
+		name = "XevDemo14"
 	}
 	global := &stdDomain{god: true}
 	modList := rtmod.New()

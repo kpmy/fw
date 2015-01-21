@@ -5,6 +5,7 @@ import (
 	"fw/cp/node"
 	"fw/rt2"
 	"fw/rt2/frame"
+	"fw/rt2/scope"
 	"reflect"
 	"ypk/assert"
 )
@@ -49,7 +50,7 @@ func caseSeq(f frame.Frame) (frame.Sequence, frame.WAIT) {
 	}
 
 	return This(expectExpr(f, n.Left(), func(...IN) (out OUT) {
-		_x := rt2.DataOf(f)[n.Left()]
+		_x := scope.GoTypeFrom(rt2.ValueOf(f)[n.Left().Adr()])
 		switch x := _x.(type) {
 		case nil:
 			panic("nil")
