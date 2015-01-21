@@ -7,6 +7,7 @@ import (
 	//	cpm "fw/cp/module"
 	"fw/cp/node"
 	"fw/cp/object"
+	"fw/rt2"
 	"fw/rt2/context"
 	"fw/rt2/frame"
 	rtm "fw/rt2/module"
@@ -131,7 +132,7 @@ func (a *salloc) Allocate(n node.Node, final bool) {
 						alloc(nl, fl)
 						l.next++
 					case object.PointerType:
-						fmt.Println("pointer")
+						panic(0)
 					default:
 						halt.As(20, reflect.TypeOf(t))
 					}
@@ -213,6 +214,32 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 				default:
 					halt.As(100, reflect.TypeOf(data))
 				}
+			case node.DerefNode:
+				rt2.Push(rt2.New(nv), f)
+				rt2.Assert(f, func(f frame.Frame) (bool, int) {
+					return rt2.ValueOf(f)[nv.Adr()] != nil, 60
+				})
+				dn := next
+				old := l.r[l.k[dn.Adr()]].(*ref)
+				seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+					switch dn.(type) {
+					case object.VariableObject, object.ParameterObject:
+						l.r[l.k[dn.Adr()]] = nil
+						data := rt2.ValueOf(f)[nv.Adr()]
+						switch data.(type) {
+						case STRING, SHORTSTRING:
+							val := &dynarr{link: old.link}
+							val.Set(data)
+							l.v[l.k[dn.Adr()]] = val
+						default:
+							halt.As(100, reflect.TypeOf(data))
+						}
+					default:
+						panic(fmt.Sprintln("unknown value", reflect.TypeOf(next)))
+					}
+					return end, frame.NOW
+				}
+				ret = frame.LATER
 			default:
 				halt.As(40, reflect.TypeOf(nv))
 			}

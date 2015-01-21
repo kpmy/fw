@@ -164,7 +164,8 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		}
 	case statement.NEW:
 		//		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-		//		heap := scope.This(f.Domain().Discover(context.HEAP))
+		//heap := scope.This(f.Domain().Discover(context.HEAP))
+		panic(0)
 		if a.Right() != nil {
 			seq, ret = This(expectExpr(f, a.Right(), func(...IN) OUT {
 				fmt.Println("NEW", rt2.DataOf(f)[a.Right()], "here")
