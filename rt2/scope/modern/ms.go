@@ -120,11 +120,7 @@ func (l *level) alloc(mod *cpm.Module, root node.Node, ol []object.Object, skip 
 				default:
 					halt.As(20, reflect.TypeOf(t))
 				}
-			case object.TypeObject:
-				//do nothing
-			case object.ConstantObject:
-				//do nothing
-			case object.ProcedureObject:
+			case object.TypeObject, object.ConstantObject, object.ProcedureObject, object.Module:
 				//do nothing
 			case object.ParameterObject:
 				if root.(node.EnterNode).Enter() == enter.PROCEDURE {
