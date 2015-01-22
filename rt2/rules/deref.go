@@ -10,7 +10,7 @@ import (
 	"fw/rt2/frame"
 	"fw/rt2/scope"
 	"reflect"
-	//"ypk/assert"
+	"ypk/assert"
 	"ypk/halt"
 )
 
@@ -19,7 +19,16 @@ func derefSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 	fmt.Println("deref from ptr", n.Ptr())
 	if n.Ptr() {
-		panic(0)
+		switch l := n.Left().Object().(type) {
+		case object.ParameterObject, object.VariableObject:
+			sc.Select(l.Adr(), func(v scope.Value) {
+				ptr, ok := v.(scope.Pointer)
+				assert.For(ok, 60, reflect.TypeOf(v))
+				rt2.ValueOf(f.Parent())[n.Adr()] = ptr.Get()
+			})
+		default:
+			halt.As(100, l.Adr(), reflect.TypeOf(l))
+		}
 	} else {
 		switch l := n.Left().Object().(type) {
 		case object.ParameterObject, object.VariableObject:

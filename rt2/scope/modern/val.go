@@ -43,6 +43,7 @@ type rec struct {
 type ptr struct {
 	link object.Object
 	scope.Pointer
+	val *ptrValue
 }
 
 type idx struct {
@@ -118,6 +119,8 @@ func (a *dynarr) Set(v scope.Value) {
 			v[i] = SHORTCHAR(x[i])
 		}
 		a.val = v
+	case INTEGER:
+		a.val = make([]interface{}, int(x))
 	default:
 		halt.As(100, reflect.TypeOf(x))
 	}
@@ -247,13 +250,28 @@ func (d *data) String() string {
 }
 
 func (p *ptr) String() string {
-	return "pointer"
+	return fmt.Sprint("pointer ", p.link.Complex().(object.PointerType).Name(), "&", p.val)
 }
 
 func (p *ptr) Id() cp.ID { return p.link.Adr() }
 
-func (p *ptr) Set(scope.Value) {
-	panic(0)
+func (p *ptr) Set(v scope.Value) {
+	switch x := v.(type) {
+	case *ptr:
+		p.Set(x.val)
+	case *ptrValue:
+		p.val = x
+	default:
+		halt.As(100, reflect.TypeOf(x))
+	}
+}
+
+func (p *ptr) Get() scope.Value {
+	if p.val == nil {
+		return NIL
+	} else {
+		return p.val.scope.Select(p.val.id)
+	}
 }
 
 func newPtr(o object.Object) scope.Variable {
@@ -261,6 +279,21 @@ func newPtr(o object.Object) scope.Variable {
 	assert.For(ok, 20)
 	return &ptr{link: o}
 }
+
+type ptrValue struct {
+	scope *area
+	id    cp.ID
+}
+
+func (p *ptrValue) String() string {
+	return fmt.Sprint(p.id)
+}
+
+type PTR int
+
+func (p PTR) String() string { return "NIL" }
+
+const NIL PTR = 0
 
 type INTEGER int32
 type BOOLEAN bool
@@ -828,23 +861,55 @@ func (o *ops) Len(a object.Object, _a, _b scope.Value) (ret scope.Value) {
 }
 
 func (o *ops) Is(a scope.Value, typ object.ComplexType) scope.Value {
-	var compare func(x, a object.RecordType) bool
-	compare = func(x, a object.RecordType) bool {
-		switch {
-		case x.Name() == a.Name():
-			//	fmt.Println("eq")
-			return true //опасно сравнивать имена конеш
-		case x.BaseType() != nil:
-			//	fmt.Println("go base")
-			return compare(x.BaseType(), a)
+	var compare func(x, a object.ComplexType) bool
+	compare = func(_x, _a object.ComplexType) bool {
+		switch x := _x.(type) {
+		case object.RecordType:
+			switch a := _a.(type) {
+			case object.RecordType:
+				switch {
+				case x.Name() == a.Name():
+					//	fmt.Println("eq")
+					return true //опасно сравнивать имена конеш
+				case x.BaseType() != nil:
+					//	fmt.Println("go base")
+					return compare(x.BaseType(), a)
+				default:
+					return false
+				}
+			default:
+				halt.As(100, reflect.TypeOf(a))
+			}
+		case object.PointerType:
+			switch a := _a.(type) {
+			case object.PointerType:
+				switch {
+				case x.Name() == a.Name():
+					//	fmt.Println("eq")
+					return true //опасно сравнивать имена конеш
+				case x.Base() != nil:
+					//	fmt.Println("go base")
+					return compare(x.Base(), a)
+				default:
+					return false
+				}
+			default:
+				halt.As(100, reflect.TypeOf(a))
+			}
 		default:
-			return false
+			halt.As(100, reflect.TypeOf(a))
 		}
+		panic(0)
 	}
 	switch x := a.(type) {
 	case *rec:
 		z, a := x.link.Complex().(object.RecordType)
 		y, b := typ.(object.RecordType)
+		fmt.Println("compare", x.link.Complex(), typ, a, b, a && b && compare(z, y))
+		return BOOLEAN(a && b && compare(z, y))
+	case *ptr:
+		z, a := x.link.Complex().(object.PointerType)
+		y, b := typ.(object.PointerType)
 		fmt.Println("compare", x.link.Complex(), typ, a, b, a && b && compare(z, y))
 		return BOOLEAN(a && b && compare(z, y))
 	default:

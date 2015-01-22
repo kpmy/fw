@@ -230,11 +230,13 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 					case object.VariableObject, object.ParameterObject:
 						l.r[l.k[dn.Adr()]] = nil
 						data := rt2.ValueOf(f)[nv.Adr()]
-						switch data.(type) {
+						switch deref := data.(type) {
 						case STRING, SHORTSTRING:
 							val := &dynarr{link: old.link}
-							val.Set(data)
+							val.Set(deref)
 							l.v[l.k[dn.Adr()]] = val
+						case *rec:
+							l.v[l.k[dn.Adr()]] = deref
 						default:
 							halt.As(100, reflect.TypeOf(data))
 						}

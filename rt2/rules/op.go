@@ -4,30 +4,14 @@ import (
 	"fmt"
 	"fw/cp/constant/operation"
 	"fw/cp/node"
-	"fw/cp/object"
 	"fw/rt2"
 	"fw/rt2/context"
 	"fw/rt2/frame"
 	"fw/rt2/scope"
-	"math"
 	"math/big"
 	"reflect"
-	"strings"
 	"ypk/assert"
 )
-
-func boolOf(x interface{}) (a bool) {
-	switch x.(type) {
-	case *bool:
-		z := *x.(*bool)
-		a = z
-	case bool:
-		a = x.(bool)
-	default:
-		panic(fmt.Sprintln("unsupported type", reflect.TypeOf(x)))
-	}
-	return a
-}
 
 func int32Of(x interface{}) (a int32) {
 	//fmt.Println(reflect.TypeOf(x))
@@ -43,185 +27,6 @@ func int32Of(x interface{}) (a int32) {
 		//panic(fmt.Sprintln("unsupported type", reflect.TypeOf(x)))
 	}
 	return a
-}
-
-func float64Of(x interface{}) (a float64) {
-	//fmt.Println(reflect.TypeOf(x))
-	switch v := x.(type) {
-	case *int32:
-		z := *x.(*int32)
-		a = float64(z)
-	case int32:
-		a = float64(x.(int32))
-	case float64:
-		a = v
-	default:
-		panic(fmt.Sprintln("unsupported type", reflect.TypeOf(x)))
-	}
-	return a
-}
-
-func div(_a interface{}, _b interface{}) interface{} {
-	assert.For(_a != nil, 20)
-	assert.For(_b != nil, 21)
-	var a int32 = int32Of(_a)
-	var b int32 = int32Of(_b)
-	return a / b
-}
-
-func mod(_a interface{}, _b interface{}) interface{} {
-	assert.For(_a != nil, 20)
-	assert.For(_b != nil, 21)
-	var a int32 = int32Of(_a)
-	var b int32 = int32Of(_b)
-	return a % b
-}
-
-func times(_a interface{}, _b interface{}) interface{} {
-	assert.For(_a != nil, 20)
-	assert.For(_b != nil, 21)
-	var a int32 = int32Of(_a)
-	var b int32 = int32Of(_b)
-	return a * b
-}
-
-func slash(_a interface{}, _b interface{}) interface{} {
-	assert.For(_a != nil, 20)
-	assert.For(_b != nil, 21)
-	var a float64 = float64Of(_a)
-	var b float64 = float64Of(_b)
-	return a / b
-}
-
-func ash(_a interface{}, _b interface{}) interface{} {
-	assert.For(_a != nil, 20)
-	assert.For(_b != nil, 21)
-	var a int32 = int32Of(_a)
-	var b int32 = int32Of(_b)
-	return a << uint(b)
-}
-
-func in(_a interface{}, _b interface{}) bool {
-	assert.For(_a != nil, 20)
-	assert.For(_b != nil, 21)
-	var a int32 = int32Of(_a)
-	var b int32 = int32Of(_b)
-	fmt.Println("операция IN все врет")
-	return a == b
-}
-
-func sub(_a interface{}, _b interface{}) interface{} {
-	assert.For(_a != nil, 20)
-	assert.For(_b != nil, 21)
-	var a int32 = int32Of(_a)
-	var b int32 = int32Of(_b)
-	return a - b
-}
-
-func and(_a interface{}, _b interface{}) bool {
-	assert.For(_a != nil, 20)
-	assert.For(_b != nil, 21)
-	var a bool = boolOf(_a)
-	var b bool = boolOf(_b)
-	return a && b
-}
-
-func or(_a interface{}, _b interface{}) bool {
-	assert.For(_a != nil, 20)
-	assert.For(_b != nil, 21)
-	var a bool = boolOf(_a)
-	var b bool = boolOf(_b)
-	return a || b
-}
-
-func lss(_a interface{}, _b interface{}) bool {
-	assert.For(_a != nil, 20)
-	assert.For(_b != nil, 21)
-	var a int32 = int32Of(_a)
-	var b int32 = int32Of(_b)
-	return a < b
-}
-
-func gtr(_a interface{}, _b interface{}) bool {
-	assert.For(_a != nil, 20)
-	assert.For(_b != nil, 21)
-	var a int32 = int32Of(_a)
-	var b int32 = int32Of(_b)
-	return a > b
-}
-
-func geq(_a interface{}, _b interface{}) bool {
-	assert.For(_a != nil, 20)
-	assert.For(_b != nil, 21)
-	var a int32 = int32Of(_a)
-	var b int32 = int32Of(_b)
-	return a >= b
-}
-
-func leq(_a interface{}, _b interface{}) bool {
-	assert.For(_a != nil, 20)
-	assert.For(_b != nil, 21)
-	var a int32 = int32Of(_a)
-	var b int32 = int32Of(_b)
-	return a <= b
-}
-
-func neq(_a interface{}, _b interface{}) bool {
-	assert.For(_a != nil, 20)
-	assert.For(_b != nil, 21)
-	var a int32 = int32Of(_a)
-	var b int32 = int32Of(_b)
-	return a != b
-}
-
-func not(_a interface{}) bool {
-	assert.For(_a != nil, 20)
-	var a bool = boolOf(_a)
-	return !a
-}
-
-func is(p object.Object, typ object.ComplexType) bool {
-	var compare func(x, a object.RecordType) bool
-	compare = func(x, a object.RecordType) bool {
-		switch {
-		case x.Name() == a.Name():
-			//	fmt.Println("eq")
-			return true //опасно сравнивать имена конеш
-		case x.BaseType() != nil:
-			//	fmt.Println("go base")
-			return compare(x.BaseType(), a)
-		default:
-			return false
-		}
-	}
-	x, a := p.Complex().(object.RecordType)
-	y, b := typ.(object.RecordType)
-	//fmt.Println("compare", p.Complex(), typ, a, b, a && b && compare(x, y))
-	return a && b && compare(x, y)
-}
-
-func abs(_a interface{}) interface{} {
-	assert.For(_a != nil, 20)
-	var a int32 = int32Of(_a)
-	return int32(math.Abs(float64(a)))
-}
-
-func odd(_a interface{}) bool {
-	assert.For(_a != nil, 20)
-	var a int32 = int32Of(_a)
-	return int32(math.Abs(float64(a)))%2 == 1
-}
-
-func cap_char(_a interface{}) interface{} {
-	assert.For(_a != nil, 20)
-	var a int32 = int32Of(_a)
-	x := []rune{rune(a), rune(0)}
-	return int32([]rune(strings.ToUpper(string(x)))[0])
-}
-
-func bits(_a interface{}) interface{} {
-	assert.For(_a != nil, 20)
-	return big.NewInt(int64(int32Of(_a)))
 }
 
 func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {

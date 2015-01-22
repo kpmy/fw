@@ -16,7 +16,7 @@ func expectExpr(parent frame.Frame, expr node.Node, next Do) OUT {
 	sm := rt2.ScopeOf(parent)
 	switch e := expr.(type) {
 	case node.ConstantNode:
-		rt2.ValueOf(parent)[expr.Adr()] = sm.Provide(e.Data())(nil)
+		rt2.ValueOf(parent)[expr.Adr()] = sm.Provide(e)(nil)
 		return OUT{do: next, next: NOW}
 	case node.VariableNode, node.ParameterNode:
 		rt2.ValueOf(parent)[expr.Adr()] = sm.Select(expr.Object().Adr())

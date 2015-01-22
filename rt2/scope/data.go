@@ -66,6 +66,7 @@ type Array interface {
 
 type Pointer interface {
 	Variable
+	Get() Value
 }
 
 //средство обновления значенияx

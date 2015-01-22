@@ -28,7 +28,7 @@ func fieldSeq(in ...IN) (out OUT) {
 			rt2.ValueOf(f.Parent())[n.Adr()] = v.(scope.Record).Get(n.Object().Adr())
 		})
 		out = End()
-	case node.FieldNode:
+	case node.FieldNode, node.DerefNode:
 		rt2.Push(rt2.New(l), f)
 		rt2.Assert(f, func(f frame.Frame) (bool, int) {
 			_, ok := rt2.ValueOf(f)[l.Adr()].(scope.Record)

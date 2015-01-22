@@ -126,7 +126,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case node.IndexNode:
 			rt2.Push(rt2.New(a.Left()), f)
 			rt2.Assert(f, func(f frame.Frame) (bool, int) {
-				return rt2.ValueOf(f)[l.Adr()] != nil, 62
+				return rt2.ValueOf(f)[l.Adr()] != nil, 63
 			})
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
@@ -139,8 +139,12 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case node.DerefNode:
 			//			rt2.DataOf(f)[a.Left()] = scope.ID{}
 			rt2.Push(rt2.New(a.Left()), f)
+			rt2.Assert(f, func(f frame.Frame) (bool, int) {
+				ok := rt2.ValueOf(f)[l.Adr()] != nil
+				return ok, 64
+			})
 			seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
-				//				leftId = rt2.DataOf(f)[a.Left()].(scope.ID)
+				left = rt2.ValueOf(f)[a.Left().Adr()]
 				return right(f)
 			}
 			ret = frame.LATER
@@ -163,18 +167,19 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			panic(fmt.Sprintln("wrong left", reflect.TypeOf(a.Left())))
 		}
 	case statement.NEW:
-		//sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-		heap := f.Domain().Discover(context.HEAP).(scope.Manager)
+		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+		heap := f.Domain().Discover(context.HEAP).(scope.Manager).Target().(scope.HeapAllocator)
 		if a.Right() != nil {
 			seq, ret = This(expectExpr(f, a.Right(), func(...IN) OUT {
 				fmt.Println("NEW", rt2.ValueOf(f)[a.Right().Adr()], "here")
-				//				sc.Update(scope.Designator(a.Left()), heap.Target().(scope.HeapAllocator).Allocate(a.Left(), rt2.DataOf(f)[a.Right()]))
+				fn := heap.Allocate(a.Left(), rt2.ValueOf(f)[a.Right().Adr()])
+				sc.Update(a.Left().Object().Adr(), fn)
 				return End()
 			}))
 		} else {
 			fmt.Println("NEW here")
-			heap.Target().(scope.HeapAllocator).Allocate(a.Left())
-			//sc.Update(scope.Designator(a.Left()), heap.Target().(scope.HeapAllocator).Allocate(a.Left()))
+			fn := heap.Allocate(a.Left())
+			sc.Update(a.Left().Object().Adr(), fn)
 			return frame.End()
 		}
 	default:
