@@ -3,6 +3,7 @@ package module
 import (
 	"fmt"
 	mod "fw/cp/module"
+	"fw/cp/node"
 	"fw/rt2/context"
 	"fw/xev"
 	"os"
@@ -88,4 +89,17 @@ func DomainModule(d context.Domain) *mod.Module {
 	assert.For(name != "", 40)
 	ml := uni.Discover(context.MOD).(List)
 	return ml.Loaded(name)
+}
+
+func ModuleOfNode(d context.Domain, x node.Node) *mod.Module {
+	uni := d.Discover(context.UNIVERSE).(context.Domain)
+	ml := uni.Discover(context.MOD).(List)
+	for _, m := range ml.AsList() {
+		for _, n := range m.Nodes {
+			if n == x {
+				return m
+			}
+		}
+	}
+	return nil
 }

@@ -40,6 +40,11 @@ type rec struct {
 	l *level
 }
 
+type ptr struct {
+	link object.Object
+	scope.Pointer
+}
+
 type idx struct {
 	arr *arr
 	idx int
@@ -54,7 +59,7 @@ func (r *rec) Id() cp.ID {
 }
 
 func (r *rec) Set(v scope.Value) {
-
+	panic(0)
 }
 
 func (r *rec) Get(id cp.ID) scope.Value {
@@ -76,17 +81,11 @@ func (p *proc) String() string {
 	return fmt.Sprint(p.link.Adr(), p.link.Name())
 }
 
-func (x *data) Id() cp.ID {
-	return x.link.Adr()
-}
+func (x *data) Id() cp.ID { return x.link.Adr() }
 
-func (x *arr) Id() cp.ID {
-	return x.link.Adr()
-}
+func (x *arr) Id() cp.ID { return x.link.Adr() }
 
-func (x *dynarr) Id() cp.ID {
-	return x.link.Adr()
-}
+func (x *dynarr) Id() cp.ID { return x.link.Adr() }
 
 func (a *arr) Set(v scope.Value) {
 	switch x := v.(type) {
@@ -247,6 +246,22 @@ func (d *data) String() string {
 	return fmt.Sprint(d.link.Name(), "=", d.val)
 }
 
+func (p *ptr) String() string {
+	return "pointer"
+}
+
+func (p *ptr) Id() cp.ID { return p.link.Adr() }
+
+func (p *ptr) Set(scope.Value) {
+	panic(0)
+}
+
+func newPtr(o object.Object) scope.Variable {
+	_, ok := o.Complex().(object.PointerType)
+	assert.For(ok, 20)
+	return &ptr{link: o}
+}
+
 type INTEGER int32
 type BOOLEAN bool
 type BYTE int8
@@ -275,7 +290,7 @@ func (x BYTE) String() string        { return fmt.Sprint(int8(x)) }
 func (x INTEGER) String() string     { return fmt.Sprint(int32(x)) }
 func (x BOOLEAN) String() string     { return fmt.Sprint(bool(x)) }
 
-func NewData(o object.Object) (ret scope.Variable) {
+func newData(o object.Object) (ret scope.Variable) {
 	switch o.Type() {
 	case object.INTEGER:
 		ret = &data{link: o, val: INTEGER(0)}
@@ -334,13 +349,13 @@ func fromg(x interface{}) scope.Value {
 	panic(100)
 }
 
-func NewProc(o object.Object) scope.Value {
+func newProc(o object.Object) scope.Value {
 	p, ok := o.(object.ProcedureObject)
 	assert.For(ok, 20, reflect.TypeOf(o))
 	return &proc{link: p}
 }
 
-func NewConst(n node.Node) scope.Value {
+func newConst(n node.Node) scope.Value {
 	switch x := n.(type) {
 	case node.ConstantNode:
 		switch x.Type() {

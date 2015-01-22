@@ -64,6 +64,10 @@ type Array interface {
 	Get(Value) Value
 }
 
+type Pointer interface {
+	Variable
+}
+
 //средство обновления значенияx
 type ValueFor func(in Value) (out Value)
 type ValueOf func(in Value)

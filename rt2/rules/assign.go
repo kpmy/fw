@@ -163,18 +163,18 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			panic(fmt.Sprintln("wrong left", reflect.TypeOf(a.Left())))
 		}
 	case statement.NEW:
-		//		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-		//heap := scope.This(f.Domain().Discover(context.HEAP))
-		panic(0)
+		//sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+		heap := f.Domain().Discover(context.HEAP).(scope.Manager)
 		if a.Right() != nil {
 			seq, ret = This(expectExpr(f, a.Right(), func(...IN) OUT {
-				fmt.Println("NEW", rt2.DataOf(f)[a.Right()], "here")
+				fmt.Println("NEW", rt2.ValueOf(f)[a.Right().Adr()], "here")
 				//				sc.Update(scope.Designator(a.Left()), heap.Target().(scope.HeapAllocator).Allocate(a.Left(), rt2.DataOf(f)[a.Right()]))
 				return End()
 			}))
 		} else {
 			fmt.Println("NEW here")
-			//			sc.Update(scope.Designator(a.Left()), heap.Target().(scope.HeapAllocator).Allocate(a.Left()))
+			heap.Target().(scope.HeapAllocator).Allocate(a.Left())
+			//sc.Update(scope.Designator(a.Left()), heap.Target().(scope.HeapAllocator).Allocate(a.Left()))
 			return frame.End()
 		}
 	default:

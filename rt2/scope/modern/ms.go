@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"fw/cp"
 	"fw/cp/constant/enter"
-	//	cpm "fw/cp/module"
+	cpm "fw/cp/module"
 	"fw/cp/node"
 	"fw/cp/object"
 	"fw/rt2"
@@ -30,6 +30,7 @@ type level struct {
 type area struct {
 	d    context.Domain
 	data []*level
+	all  scope.Allocator
 }
 
 type salloc struct {
@@ -69,13 +70,72 @@ func (a *area) Provide(x interface{}) scope.ValueFor {
 	return func(scope.Value) scope.Value {
 		switch z := x.(type) {
 		case node.ConstantNode:
-			return NewConst(z)
+			return newConst(z)
 		case object.ProcedureObject:
-			return NewProc(z)
+			return newProc(z)
 		default:
 			halt.As(100, reflect.TypeOf(z))
 		}
 		panic(0)
+	}
+}
+
+//var alloc func(*level, []object.Object, map[cp.ID]interface{})
+func (l *level) alloc(mod *cpm.Module, root node.Node, ol []object.Object, skip map[cp.ID]interface{}) {
+	for _, o := range ol {
+		imp := mod.ImportOf(o)
+		fmt.Println(reflect.TypeOf(o), o.Adr())
+		_, field := o.(object.FieldObject)
+		if imp == "" && (skip[o.Adr()] == nil || (field && l.nested)) {
+			fmt.Println("next", l.next)
+			switch x := o.(type) {
+			case object.VariableObject, object.FieldObject:
+				switch t := o.Complex().(type) {
+				case nil, object.BasicType, object.ArrayType, object.DynArrayType:
+					l.v[l.next] = newData(x)
+					l.k[x.Adr()] = l.next
+					l.next++
+				case object.RecordType:
+					l.v[l.next] = newRec(x)
+					nl := newlvl()
+					nl.nested = true
+					l.l[l.next] = nl
+					l.k[x.Adr()] = l.next
+					fl := make([]object.Object, 0)
+					for rec := t; rec != nil; {
+						for x := rec.Link(); x != nil; x = x.Link() {
+							//fmt.Println(o.Name(), ".", x.Name(), x.Adr())
+							fl = append(fl, x)
+						}
+						rec = rec.BaseType()
+					}
+					//fmt.Println("record")
+					l.v[l.next].(*rec).l = nl
+					nl.alloc(mod, root, fl, skip)
+					l.next++
+				case object.PointerType:
+					l.v[l.next] = newPtr(x)
+					l.k[x.Adr()] = l.next
+					l.next++
+				default:
+					halt.As(20, reflect.TypeOf(t))
+				}
+			case object.TypeObject:
+				//do nothing
+			case object.ConstantObject:
+				//do nothing
+			case object.ProcedureObject:
+				//do nothing
+			case object.ParameterObject:
+				if root.(node.EnterNode).Enter() == enter.PROCEDURE {
+					l.r[l.next] = newRef(x)
+					l.k[x.Adr()] = l.next
+					l.next++
+				}
+			default:
+				halt.As(20, reflect.TypeOf(x))
+			}
+		}
 	}
 }
 
@@ -98,66 +158,10 @@ func (a *salloc) Allocate(n node.Node, final bool) {
 		}
 	}
 
-	var alloc func(*level, []object.Object)
-	alloc = func(l *level, ol []object.Object) {
-		for _, o := range ol {
-			imp := mod.ImportOf(o)
-			fmt.Println(reflect.TypeOf(o), o.Adr())
-			_, field := o.(object.FieldObject)
-			if imp == "" && (skip[o.Adr()] == nil || (field && l.nested)) {
-				fmt.Println("next", l.next)
-				switch x := o.(type) {
-				case object.VariableObject, object.FieldObject:
-					switch t := o.Complex().(type) {
-					case nil, object.BasicType, object.ArrayType, object.DynArrayType:
-						l.v[l.next] = NewData(x)
-						l.k[x.Adr()] = l.next
-						l.next++
-					case object.RecordType:
-						l.v[l.next] = newRec(x)
-						nl := newlvl()
-						nl.nested = true
-						l.l[l.next] = nl
-						l.k[x.Adr()] = l.next
-						fl := make([]object.Object, 0)
-						for rec := t; rec != nil; {
-							for x := rec.Link(); x != nil; x = x.Link() {
-								//fmt.Println(o.Name(), ".", x.Name(), x.Adr())
-								fl = append(fl, x)
-							}
-							rec = rec.BaseType()
-						}
-						//fmt.Println("record")
-						l.v[l.next].(*rec).l = nl
-						alloc(nl, fl)
-						l.next++
-					case object.PointerType:
-						panic(0)
-					default:
-						halt.As(20, reflect.TypeOf(t))
-					}
-				case object.TypeObject:
-					//do nothing
-				case object.ConstantObject:
-					//do nothing
-				case object.ProcedureObject:
-					//do nothing
-				case object.ParameterObject:
-					if n.(node.EnterNode).Enter() == enter.PROCEDURE {
-						l.r[l.next] = newRef(x)
-						l.k[x.Adr()] = l.next
-						l.next++
-					}
-				default:
-					halt.As(20, reflect.TypeOf(x))
-				}
-			}
-		}
-	}
 	nl := newlvl()
 	nl.ready = final
 	a.area.data = append(a.area.data, nl)
-	alloc(nl, mod.Objects[n])
+	nl.alloc(mod, n, mod.Objects[n], skip)
 }
 
 func (a *salloc) Dispose(n node.Node) {
@@ -189,7 +193,7 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 		case object.VariableObject:
 			switch nv := val.(type) {
 			case node.ConstantNode:
-				v := NewConst(nv)
+				v := newConst(nv)
 				l.v[l.k[o.Adr()]].Set(v)
 			case node.VariableNode:
 				v := a.area.Select(nv.Object().Adr())
@@ -205,7 +209,7 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 			case node.ConstantNode: //array :) заменяем ссылку на переменную
 				old := l.r[l.k[o.Adr()]].(*ref)
 				l.r[l.k[o.Adr()]] = nil
-				data := NewConst(nv)
+				data := newConst(nv)
 				switch data.(type) {
 				case STRING, SHORTSTRING:
 					val := &dynarr{link: old.link}
@@ -250,6 +254,8 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 	}
 	return seq, ret
 }
+
+func (a *salloc) Join(m scope.Manager) { a.area = m.(*area) }
 
 func (a *area) Update(id cp.ID, fval scope.ValueFor) {
 	assert.For(id != 0, 20)
@@ -314,7 +320,18 @@ func (a *area) Select(id cp.ID, val ...scope.ValueOf) (ret scope.Value) {
 	return ret
 }
 
-func (a *area) Target(...scope.Allocator) scope.Allocator { return &salloc{area: a} }
+func (a *area) Target(all ...scope.Allocator) scope.Allocator {
+	if len(all) > 0 {
+		a.all = all[0]
+	}
+	if a.all == nil {
+		return &salloc{area: a}
+	} else {
+		a.all.Join(a)
+		return a.all
+	}
+}
+
 func (a *area) String() (ret string) {
 	for _, l := range a.data {
 		ret = fmt.Sprintln(ret, l)
@@ -365,8 +382,14 @@ func fn(mgr scope.Manager, name string) (ret object.Object) {
 	return ret
 }
 
-func nn() scope.Manager {
-	return &area{}
+func nn(role string) scope.Manager {
+	if role == context.SCOPE {
+		return &area{all: &salloc{}}
+	} else if role == context.HEAP {
+		return &area{all: &halloc{}}
+	} else {
+		panic(0)
+	}
 }
 
 func init() {

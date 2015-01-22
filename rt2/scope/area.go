@@ -26,7 +26,9 @@ type Manager interface {
 	String() string
 }
 
-type Allocator interface{}
+type Allocator interface {
+	Join(Manager)
+}
 
 type ScopeAllocator interface {
 	Allocator
@@ -43,4 +45,4 @@ type HeapAllocator interface {
 
 var FindObjByName func(m Manager, name string) object.Object
 
-var New func() Manager
+var New func(role string) Manager
