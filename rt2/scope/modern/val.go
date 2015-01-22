@@ -107,6 +107,8 @@ func (a *dynarr) Set(v scope.Value) {
 	switch x := v.(type) {
 	case *arr:
 		a.val = x.val
+	case *dynarr:
+		a.val = x.val
 	case STRING:
 		v := make([]interface{}, len(x))
 		for i := 0; i < len(x); i++ {
@@ -515,6 +517,18 @@ func (o *ops) Sum(a, b scope.Value) scope.Value {
 				case STRING:
 					switch {
 					case x.link.Complex().(object.ArrayType).Base() == object.CHAR:
+						return STRING(x.String() + string(y))
+					default:
+						halt.As(100, x.link.Type())
+					}
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			case *dynarr:
+				switch y := b.(type) {
+				case STRING:
+					switch {
+					case x.link.Complex().(object.DynArrayType).Base() == object.CHAR:
 						return STRING(x.String() + string(y))
 					default:
 						halt.As(100, x.link.Type())
@@ -932,7 +946,7 @@ func (o *ops) Is(a scope.Value, typ object.ComplexType) scope.Value {
 	panic(0)
 }
 
-func (o *ops) Conv(a scope.Value, typ object.Type) scope.Value {
+func (o *ops) Conv(a scope.Value, typ object.Type, comp ...object.ComplexType) scope.Value {
 	switch typ {
 	case object.INTEGER:
 		switch x := a.(type) {
@@ -964,6 +978,24 @@ func (o *ops) Conv(a scope.Value, typ object.Type) scope.Value {
 			return REAL(float64(x))
 		default:
 			halt.As(100, reflect.TypeOf(x))
+		}
+	case object.NOTYPE:
+		assert.For(len(comp) > 0, 20)
+		switch t := comp[0].(type) {
+		case object.BasicType:
+			switch t.Type() {
+			case object.SHORTSTRING:
+				switch x := a.(type) {
+				case *dynarr:
+					return SHORTSTRING(x.String())
+				default:
+					halt.As(100, reflect.TypeOf(x))
+				}
+			default:
+				halt.As(100, t.Type())
+			}
+		default:
+			halt.As(100, reflect.TypeOf(t))
 		}
 	default:
 		halt.As(100, typ)

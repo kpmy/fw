@@ -21,7 +21,7 @@ func expectExpr(parent frame.Frame, expr node.Node, next Do) OUT {
 	case node.VariableNode, node.ParameterNode:
 		rt2.ValueOf(parent)[expr.Adr()] = sm.Select(expr.Object().Adr())
 		return OUT{do: next, next: NOW}
-	case node.OperationNode, node.CallNode:
+	case node.OperationNode, node.CallNode, node.DerefNode:
 		rt2.Push(rt2.New(expr), parent)
 		wait := func(...IN) OUT {
 			if rt2.RegOf(parent)[expr] == nil && rt2.ValueOf(parent)[expr.Adr()] == nil {

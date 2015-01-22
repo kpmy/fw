@@ -32,7 +32,7 @@ type Operations interface {
 	Bits(Value) Value
 
 	Is(Value, object.ComplexType) Value
-	Conv(Value, object.Type) Value
+	Conv(Value, object.Type, ...object.ComplexType) Value
 	Len(object.Object, Value, Value) Value
 }
 

@@ -209,6 +209,7 @@ type monadicNode struct {
 	nodeFields
 	operation operation.Operation
 	typ       object.Type
+	comp      object.ComplexType
 }
 
 func (v *monadicNode) self() MonadicNode { return v }
@@ -219,6 +220,13 @@ func (v *monadicNode) Operation() operation.Operation { return v.operation }
 
 func (v *monadicNode) SetType(t object.Type) { v.typ = t }
 func (v *monadicNode) Type() object.Type     { return v.typ }
+
+func (v *monadicNode) Complex(x ...object.ComplexType) object.ComplexType {
+	if len(x) > 0 {
+		v.comp = x[0]
+	}
+	return v.comp
+}
 
 type conditionalNode struct {
 	nodeFields

@@ -201,9 +201,17 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 					t.Link().SetRef(t)
 				}
 				ret = t
+			case "SHORTSTRING":
+				t := object.NewBasicType(object.SHORTSTRING, n.Id)
+				t.Base(object.SHORTCHAR)
+				ret = t
+			case "STRING":
+				t := object.NewBasicType(object.STRING, n.Id)
+				t.Base(object.CHAR)
+				ret = t
 			case "CHAR", "SHORTCHAR", "INTEGER", "LONGINT", "BYTE",
 				"SHORTINT", "BOOLEAN", "REAL", "SHORTREAL", "SET", "UNDEF",
-				"NOTYP", "SHORTSTRING", "STRING":
+				"NOTYP":
 			case "POINTER":
 				t := object.NewPointerType(n.Data.Typ.Name)
 				base := r.findLink(n, "base")
@@ -408,6 +416,13 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			case "CONV":
 				ret.(node.OperationNode).SetOperation(operation.ALIEN_CONV)
 				initType(n.Data.Nod.Typ, ret.(node.MonadicNode))
+				typ := r.findLink(n, "type")
+				if typ != nil {
+					ret.(node.MonadicNode).Complex(r.doType(typ))
+					if ret.(node.MonadicNode).Complex() == nil {
+						panic("error in node")
+					}
+				}
 			}
 		case "conditional":
 			ret = node.New(constant.CONDITIONAL, n.Id)

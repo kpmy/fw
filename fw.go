@@ -27,7 +27,7 @@ func close() {
 func main() {
 	flag.Parse()
 	if name == "" {
-		name = "XevDemo22"
+		name = "XevTest0"
 	}
 	global := &stdDomain{god: true}
 	global.global = global

@@ -10,7 +10,8 @@ import (
 type Type int
 
 const (
-	NOTYPE Type = iota
+	WRONG Type = iota
+	NOTYPE
 	INTEGER
 	SHORTINT
 	LONGINT
@@ -90,6 +91,7 @@ func (c *comp) Adr(a ...int) cp.ID {
 type BasicType interface {
 	ComplexType
 	Type() Type
+	Base(...Type) Type
 }
 
 type PointerType interface {
@@ -125,10 +127,16 @@ func NewBasicType(t Type, id int) BasicType {
 
 type basic struct {
 	comp
-	typ Type
+	typ, base Type
 }
 
 func (b *basic) Type() Type { return b.typ }
+func (b *basic) Base(x ...Type) Type {
+	if len(x) > 0 {
+		b.base = x[0]
+	}
+	return b.base
+}
 
 func NewDynArrayType(b Type, id int) (ret DynArrayType) {
 	ret = &dyn{base: b}

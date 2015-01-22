@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"fw/cp/constant/operation"
 	"fw/cp/node"
+	"fw/cp/object"
 	"fw/rt2"
 	"fw/rt2/context"
 	"fw/rt2/frame"
@@ -63,37 +64,11 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	switch n.Operation() {
 	case operation.ALIEN_CONV:
 		conv := func(x scope.Value) {
-			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Conv(x, n.Type())
-			/*switch n.Type() {
-			case object.INTEGER:
-				switch v := x.(type) {
-				case int8:
-					rt2.DataOf(f.Parent())[n] = int32(x.(int8))
-				case *big.Int:
-					rt2.DataOf(f.Parent())[n] = int32(v.Int64())
-				case int32:
-					rt2.DataOf(f.Parent())[n] = v
-				case
-				default:
-					panic(fmt.Sprintln("ooops", reflect.TypeOf(x)))
-				}
-			case object.SET:
-				switch v := x.(type) {
-				case int32:
-					rt2.DataOf(f.Parent())[n] = big.NewInt(int64(v))
-				default:
-					panic(fmt.Sprintln("ooops", reflect.TypeOf(x)))
-				}
-			case object.REAL:
-				switch v := x.(type) {
-				case int32:
-					rt2.DataOf(f.Parent())[n] = float64(v)
-				default:
-					panic(fmt.Sprintln("ooops", reflect.TypeOf(x)))
-				}
-			default:
-				panic(fmt.Sprintln("wrong type", n.Type()))
-			} */
+			if n.Type() != object.NOTYPE {
+				rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Conv(x, n.Type())
+			} else {
+				rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Conv(x, n.Type(), n.(node.MonadicNode).Complex())
+			}
 		}
 		switch n.Left().(type) {
 		case node.VariableNode, node.ParameterNode:
@@ -101,7 +76,7 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			assert.For(x != nil, 40)
 			conv(scope.ValueFrom(x))
 			return frame.End()
-		case node.OperationNode:
+		case node.OperationNode, node.DerefNode:
 			return This(expectExpr(f, n.Left(), func(...IN) OUT {
 				conv(rt2.ValueOf(f)[n.Left().Adr()])
 				return End()
@@ -118,6 +93,7 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				//				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 				//				rt2.DataOf(f)[n.Left()] = sc.Select(scope.Designator(n.Left()))
+				panic(0)
 				return op, frame.NOW
 			}
 			ret = frame.NOW
@@ -133,6 +109,7 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				//				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 				//				rt2.DataOf(f)[n.Left()] = sc.Select(scope.Designator(n.Left()))
+				panic(0)
 				return op, frame.NOW
 			}
 			ret = frame.NOW
@@ -252,6 +229,7 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				//				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 				//				rt2.DataOf(f)[n.Right()] = sc.Select(scope.Designator(n.Right()))
+				panic(0)
 				return op, frame.NOW
 			}
 			ret = frame.NOW

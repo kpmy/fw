@@ -90,6 +90,7 @@ type MonadicNode interface {
 	SetType(typ object.Type)
 	Type() object.Type
 	self() MonadicNode
+	Complex(...object.ComplexType) object.ComplexType
 }
 
 type ConditionalNode interface {

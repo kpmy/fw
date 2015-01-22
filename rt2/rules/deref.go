@@ -26,15 +26,34 @@ func derefSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				assert.For(ok, 60, reflect.TypeOf(v))
 				rt2.ValueOf(f.Parent())[n.Adr()] = ptr.Get()
 			})
+			return frame.End()
 		default:
 			halt.As(100, l.Adr(), reflect.TypeOf(l))
 		}
 	} else {
-		switch l := n.Left().Object().(type) {
-		case object.ParameterObject, object.VariableObject:
-			rt2.ValueOf(f.Parent())[n.Adr()] = sc.Select(l.Adr())
-		default:
-			halt.As(100, l.Adr(), reflect.TypeOf(l))
+		if n.Left().Object() != nil {
+			switch l := n.Left().Object().(type) {
+			case object.ParameterObject, object.VariableObject:
+				rt2.ValueOf(f.Parent())[n.Adr()] = sc.Select(l.Adr())
+				return frame.End()
+			default:
+				halt.As(100, l.Adr(), reflect.TypeOf(l))
+			}
+		} else {
+			switch left := n.Left().(type) {
+			case node.DerefNode:
+				rt2.Push(rt2.New(left), f)
+				rt2.Assert(f, func(f frame.Frame) (bool, int) {
+					return rt2.ValueOf(f)[left.Adr()] != nil, 60
+				})
+				seq = Propose(func(...IN) OUT {
+					rt2.ValueOf(f.Parent())[n.Adr()] = rt2.ValueOf(f)[left.Adr()]
+					return End()
+				})
+				ret = LATER.wait()
+			default:
+				halt.As(100, reflect.TypeOf(left))
+			}
 		}
 	}
 	/* if ok {
@@ -52,5 +71,5 @@ func derefSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			}
 		}
 	} */
-	return frame.End()
+	return seq, ret
 }
