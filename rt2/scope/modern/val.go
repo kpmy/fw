@@ -196,8 +196,11 @@ func (d *data) Set(v scope.Value) {
 	fmt.Println("set data")
 	switch x := v.(type) {
 	case *data:
-		assert.For(d.link.Type() == x.link.Type(), 20)
-		d.val = x.val
+		if d.link.Type() == x.link.Type() {
+			d.val = x.val
+		} else {
+			d.Set(x.val.(scope.Value))
+		}
 	case *proc:
 		assert.For(d.link.Type() == object.COMPLEX, 20)
 		t, ok := d.link.Complex().(object.BasicType)
@@ -210,6 +213,8 @@ func (d *data) Set(v scope.Value) {
 			d.val = x
 		case object.LONGINT:
 			d.val = LONGINT(x)
+		case object.REAL:
+			d.val = REAL(x)
 		default:
 			halt.As(20, d.link.Type())
 		}
@@ -437,6 +442,8 @@ func vfrom(v scope.Value) scope.Value {
 			return n.val.(SET)
 		case object.BOOLEAN:
 			return n.val.(BOOLEAN)
+		case object.REAL:
+			return n.val.(REAL)
 		default:
 			halt.As(100, n.link.Type())
 		}
@@ -519,6 +526,13 @@ func (o *ops) Sum(a, b scope.Value) scope.Value {
 				switch y := b.(type) {
 				case STRING:
 					return STRING(string(x) + string(y))
+				default:
+					halt.As(100, reflect.TypeOf(y))
+				}
+			case REAL:
+				switch y := b.(type) {
+				case REAL:
+					return REAL(x + y)
 				default:
 					halt.As(100, reflect.TypeOf(y))
 				}
@@ -928,6 +942,8 @@ func (o *ops) Conv(a scope.Value, typ object.Type) scope.Value {
 			return INTEGER(x)
 		case SET:
 			return INTEGER(x.bits.Int64())
+		case REAL:
+			return INTEGER(x)
 		default:
 			halt.As(100, reflect.TypeOf(x))
 		}
