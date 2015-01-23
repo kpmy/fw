@@ -1,8 +1,6 @@
 package rules
 
 import (
-	"fmt"
-	//	"fw/cp"
 	"fw/cp/node"
 	"fw/cp/object"
 	"fw/rt2"
@@ -17,7 +15,7 @@ import (
 func derefSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	n := rt2.NodeOf(f).(node.DerefNode)
 	sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-	fmt.Println("deref from ptr", n.Ptr())
+	//fmt.Println("deref from ptr", n.Ptr())
 	if n.Ptr() {
 		switch l := n.Left().Object().(type) {
 		case object.ParameterObject, object.VariableObject:

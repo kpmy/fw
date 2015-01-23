@@ -18,7 +18,7 @@ func returnSeq(f frame.Frame) (frame.Sequence, frame.WAIT) {
 		case node.ConstantNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				rt2.DataOf(f.Parent())[a.Object()] = a.Left().(node.ConstantNode).Data()
+				//rt2.DataOf(f.Parent())[a.Object()] = a.Left().(node.ConstantNode).Data()
 				rt2.ValueOf(f.Parent())[a.Object().Adr()] = sc.Provide(a.Left())(nil)
 				return frame.End()
 			}

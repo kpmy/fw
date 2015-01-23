@@ -2,8 +2,8 @@ package utils
 
 import "fmt"
 
-var debugFrame = true
-var debugScope = true
+var debugFrame = false
+var debugScope = false
 var debugTrap = true
 
 func PrintFrame(x ...interface{}) {

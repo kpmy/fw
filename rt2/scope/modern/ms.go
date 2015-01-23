@@ -12,6 +12,7 @@ import (
 	"fw/rt2/frame"
 	rtm "fw/rt2/module"
 	"fw/rt2/scope"
+	"fw/utils"
 	"reflect"
 	"ypk/assert"
 	"ypk/halt"
@@ -89,10 +90,10 @@ func (a *area) Provide(x interface{}) scope.ValueFor {
 func (l *level) alloc(mod *cpm.Module, root node.Node, ol []object.Object, skip map[cp.ID]interface{}) {
 	for _, o := range ol {
 		imp := mod.ImportOf(o)
-		fmt.Println(reflect.TypeOf(o), o.Adr())
+		utils.PrintScope(reflect.TypeOf(o), o.Adr())
 		_, field := o.(object.FieldObject)
 		if imp == "" && (skip[o.Adr()] == nil || (field && l.nested)) {
-			fmt.Println("next", l.next)
+			utils.PrintScope("next", l.next)
 			switch x := o.(type) {
 			case object.VariableObject, object.FieldObject:
 				switch t := o.Complex().(type) {
@@ -142,7 +143,7 @@ func (l *level) alloc(mod *cpm.Module, root node.Node, ol []object.Object, skip 
 
 func (a *salloc) Allocate(n node.Node, final bool) {
 	mod := rtm.DomainModule(a.area.d)
-	fmt.Println("ALLOCATE FOR", mod.Name, n.Adr())
+	utils.PrintScope("ALLOCATE FOR", mod.Name, n.Adr())
 	tl := mod.Types[n]
 	skip := make(map[cp.ID]interface{}) //для процедурных типов в общей куче могут валяться переменные, скипаем их
 	for _, t := range tl {
@@ -173,7 +174,7 @@ func (a *salloc) Dispose(n node.Node) {
 }
 
 func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, ret frame.WAIT) {
-	fmt.Println("INITIALIZE")
+	utils.PrintScope("INITIALIZE")
 	l := a.area.top()
 	assert.For(l != nil && !l.ready, 20)
 	val := par.Values
@@ -188,11 +189,17 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 	}
 	seq = end
 	ret = frame.NOW
+	var sm scope.Manager
 	for next := par.Objects; next != nil; next = next.Link() {
 		mod := rtm.ModuleOfNode(f.Domain(), val)
-		global := f.Domain().Discover(context.UNIVERSE).(context.Domain)
-		global = global.Discover(mod.Name).(context.Domain)
-		ar := global.Discover(context.SCOPE).(scope.Manager)
+		if mod != nil {
+			global := f.Domain().Discover(context.UNIVERSE).(context.Domain)
+			fmt.Println(mod.Name)
+			global = global.Discover(mod.Name).(context.Domain)
+			sm = global.Discover(context.SCOPE).(scope.Manager)
+		} else {
+			sm = a.area
+		}
 		switch o := next.(type) {
 		case object.VariableObject:
 			switch nv := val.(type) {
@@ -200,7 +207,7 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 				v := newConst(nv)
 				l.v[l.k[o.Adr()]].Set(v)
 			case node.VariableNode:
-				v := ar.Select(nv.Object().Adr())
+				v := sm.Select(nv.Object().Adr())
 				l.v[l.k[o.Adr()]].Set(v)
 			default:
 				halt.As(40, reflect.TypeOf(nv))
@@ -209,7 +216,7 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 			switch nv := val.(type) {
 			case node.VariableNode:
 				old := l.r[l.k[o.Adr()]].(*ref)
-				l.r[l.k[o.Adr()]] = &ref{link: old.link, sc: ar, id: nv.Object().Adr()}
+				l.r[l.k[o.Adr()]] = &ref{link: old.link, sc: sm, id: nv.Object().Adr()}
 			case node.ConstantNode: //array :) заменяем ссылку на переменную
 				old := l.r[l.k[o.Adr()]].(*ref)
 				l.r[l.k[o.Adr()]] = nil
@@ -268,7 +275,7 @@ func (a *area) Update(id cp.ID, fval scope.ValueFor) {
 	var upd func(x int, id cp.ID)
 	var k int
 	upd = func(x int, id cp.ID) {
-		fmt.Println("UPDATE", id)
+		utils.PrintScope("UPDATE", id)
 		for i := x - 1; i >= 0 && k == 0; i-- {
 			l := a.data[i]
 			if l.ready {
@@ -278,7 +285,7 @@ func (a *area) Update(id cp.ID, fval scope.ValueFor) {
 					if v == nil { //ref?
 						r := l.r[k]
 						if r != nil {
-							fmt.Println("ref")
+							utils.PrintScope("ref")
 							if r.(*ref).sc == a {
 								upd(i, r.(*ref).id)
 							} else {
@@ -302,7 +309,7 @@ func (a *area) Update(id cp.ID, fval scope.ValueFor) {
 func (a *area) Select(id cp.ID, val ...scope.ValueOf) (ret scope.Value) {
 	var sel func(x int, id cp.ID)
 	sel = func(x int, id cp.ID) {
-		fmt.Println("SELECT", id)
+		utils.PrintScope("SELECT", id)
 		for i := x - 1; i >= 0 && ret == nil; i-- {
 			l := a.data[i]
 			k := 0
@@ -316,7 +323,7 @@ func (a *area) Select(id cp.ID, val ...scope.ValueOf) (ret scope.Value) {
 							if l.l[k] != nil { //rec
 								panic(0)
 							} else {
-								fmt.Println("ref")
+								utils.PrintScope("ref")
 								if r.(*ref).sc == a {
 									sel(i, r.(*ref).id)
 								} else {
@@ -378,7 +385,7 @@ func (a *area) Domain() context.Domain { return a.d }
 func (a *area) Handle(msg interface{}) {}
 
 func fn(mgr scope.Manager, name string) (ret object.Object) {
-	fmt.Println("FIND", name)
+	utils.PrintScope("FIND", name)
 	a, ok := mgr.(*area)
 	assert.For(ok, 20)
 	assert.For(name != "", 21)
@@ -387,12 +394,12 @@ func fn(mgr scope.Manager, name string) (ret object.Object) {
 		for _, v := range l.v {
 			switch vv := v.(type) {
 			case *data:
-				fmt.Println(vv.link.Name())
+				utils.PrintScope(vv.link.Name())
 				if vv.link.Name() == name {
 					ret = vv.link
 				}
 			default:
-				fmt.Println(reflect.TypeOf(vv))
+				utils.PrintScope(reflect.TypeOf(vv))
 			}
 		}
 	}

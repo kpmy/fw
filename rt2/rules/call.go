@@ -12,6 +12,7 @@ import (
 	"fw/rt2/frame"
 	rt_mod "fw/rt2/module"
 	"fw/rt2/scope"
+	"fw/utils"
 	"reflect"
 	"ypk/assert"
 	"ypk/halt"
@@ -148,7 +149,7 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				m := ml.Loaded(imp)
 				proc := m.ObjectByName(m.Enter, n.Left().Object().Name())
 				nl := m.NodeByObject(proc)
-				fmt.Println("foreign call", len(nl))
+				utils.PrintFrame("foreign call", len(nl))
 				call(nl[0], f.Domain().Discover(context.UNIVERSE).(context.Domain).Discover(imp).(context.Domain))
 			}
 		}

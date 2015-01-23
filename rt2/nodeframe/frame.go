@@ -70,18 +70,18 @@ type nodeFrame struct {
 }
 
 func done(f frame.Frame) {
-	fmt.Println("____")
-	fmt.Println(f.Domain().Discover(context.SCOPE))
-	fmt.Println("--")
-	fmt.Println(f.Domain().Discover(context.HEAP))
-	fmt.Println("^^^^")
+	utils.PrintFrame("____")
+	utils.PrintFrame(f.Domain().Discover(context.SCOPE))
+	utils.PrintFrame("--")
+	utils.PrintFrame(f.Domain().Discover(context.HEAP))
+	utils.PrintFrame("^^^^")
 }
 
 func (f *nodeFrame) Do() frame.WAIT {
 	assert.For(f.seq != nil, 20)
 	next, ret := f.seq(f)
 	utils.PrintFrame(f.num, ret, reflect.TypeOf(f.ir), f.ir)
-	fmt.Println("data:", f.data, f.value)
+	utils.PrintFrame("data:", f.data, f.value)
 	if next != nil {
 		assert.For(ret != frame.STOP, 40)
 		f.seq = next
@@ -118,7 +118,7 @@ func (f *nodeFrame) OnPop() {
 			if !ok {
 				panic(fmt.Sprintln("assert", code, "for", reflect.TypeOf(ff.ir)))
 			} else {
-				fmt.Println("assert passed", code, "for", reflect.TypeOf(ff.ir))
+				utils.PrintFrame("assert passed", code, "for", reflect.TypeOf(ff.ir))
 			}
 			ff.assertion = nil
 		}

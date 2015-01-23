@@ -179,7 +179,7 @@ func (f *flow) Do() (ret frame.WAIT) {
 			}
 		}
 	}
-	fmt.Println(">", ret)
+	utils.PrintFrame(">", ret)
 	return ret
 }
 
@@ -217,7 +217,7 @@ func run(global context.Domain, init []*module.Module) {
 		global.Attach(context.STACK, root)
 		for i := len(init) - 1; i >= 0; i-- {
 			ret := init[i]
-			fmt.Println("queue", ret.Name)
+			utils.PrintScope("queue", ret.Name)
 			nf = rt2.New(ret.Enter)
 			root.PushFor(nf, nil)
 			ff = append(ff, nf)
@@ -227,7 +227,7 @@ func run(global context.Domain, init []*module.Module) {
 		i := 0
 		t0 := time.Now()
 		for x := frame.NOW; x == frame.NOW; x = root.Do() {
-			fmt.Println("STEP", i)
+			utils.PrintFrame("STEP", i)
 			assert.For(i < 1000, 40)
 			i++
 		}

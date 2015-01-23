@@ -550,7 +550,7 @@ func buildMod(r *Result) *module.Module {
 				this.mod = g.CptProc
 			}
 			this.scopes[sc], this.types[sc] = r.buildScope(g.NodeList)
-			fmt.Println(sc, len(this.scopes[sc]), len(this.types[sc]))
+			//fmt.Println(sc, len(this.scopes[sc]), len(this.types[sc]))
 		}
 	}
 	//временные структуры перегоняем в рабочие
@@ -582,7 +582,7 @@ func buildMod(r *Result) *module.Module {
 	for k, v := range scopes {
 		if k < 0 {
 			impList[v.mod] = module.Import{Objects: v.scopes[k], Name: v.mod}
-			fmt.Println("типы не учтены", len(v.types[k]))
+			//fmt.Println("типы не учтены", len(v.types[k]))
 		}
 	}
 	return &module.Module{Nodes: nodeList, Objects: scopeList, Types: typeList, Enter: root, Imports: impList}

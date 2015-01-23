@@ -6,6 +6,7 @@ import (
 	"fw/cp/node"
 	"fw/cp/object"
 	"fw/rt2/scope"
+	"fw/utils"
 	"math"
 	"math/big"
 	"reflect"
@@ -243,7 +244,7 @@ func (a *dynarr) String() (ret string) {
 }
 
 func (d *data) Set(v scope.Value) {
-	fmt.Println("set data")
+	utils.PrintScope("set data")
 	switch x := v.(type) {
 	case *data:
 		if d.link.Type() == x.link.Type() {
@@ -961,6 +962,8 @@ func (o *ops) Len(a object.Object, _a, _b scope.Value) (ret scope.Value) {
 			switch t := _a.(type) {
 			case *arr:
 				ret = INTEGER(t.length)
+			case *dynarr:
+				ret = INTEGER(len(t.val))
 			default:
 				halt.As(100, "unsupported", reflect.TypeOf(t))
 			}
@@ -1253,7 +1256,6 @@ func (o *ops) Lss(a, b scope.Value) scope.Value {
 			case LONGINT:
 				switch y := b.(type) {
 				case LONGINT:
-					fmt.Println("LESSER", x, y, BOOLEAN(x < y))
 					return BOOLEAN(x < y)
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))

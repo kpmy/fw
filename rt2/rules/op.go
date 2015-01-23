@@ -87,7 +87,8 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	case operation.NOT:
 		switch n.Left().(type) {
 		case node.ConstantNode:
-			rt2.DataOf(f)[n.Left()] = n.Left().(node.ConstantNode).Data()
+			//			rt2.DataOf(f)[n.Left()] = n.Left().(node.ConstantNode).Data()
+			panic(0)
 			return op, frame.NOW
 		case node.VariableNode, node.ParameterNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
