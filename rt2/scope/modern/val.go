@@ -467,6 +467,18 @@ func gfrom(v scope.Value) interface{} {
 		}
 	case *proc:
 		return n.link
+	case *dynarr:
+		switch n.link.Complex().(object.DynArrayType).Base() {
+		case object.SHORTCHAR:
+			if n.val != nil {
+				return n.String()
+			} else {
+				return ""
+			}
+		default:
+			halt.As(100, n.link.Complex().(object.DynArrayType).Base())
+		}
+		panic(0)
 	case INTEGER:
 		return int32(n)
 	case BOOLEAN:

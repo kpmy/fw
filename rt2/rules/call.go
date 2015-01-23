@@ -12,7 +12,9 @@ import (
 	"fw/rt2/frame"
 	rt_mod "fw/rt2/module"
 	"fw/rt2/scope"
+	"reflect"
 	"ypk/assert"
+	"ypk/halt"
 )
 
 /**
@@ -24,7 +26,7 @@ import (
 	.Right() указывает на узлы, которые передаются в параметры
 */
 
-var sys map[string]func(f frame.Frame, par node.Node)
+var sys map[string]func(f frame.Frame, par node.Node) (frame.Sequence, frame.WAIT)
 
 type Msg struct {
 	Type string
@@ -49,36 +51,61 @@ func callHandler(f frame.Frame, obj object.Object, data interface{}) {
 	rt2.Push(rt2.New(cn), f)
 }
 
-func process(f frame.Frame, par node.Node) {
+func process(f frame.Frame, par node.Node) (frame.Sequence, frame.WAIT) {
 	assert.For(par != nil, 20)
 	sm := f.Domain().Discover(context.SCOPE).(scope.Manager)
-	switch par.(type) {
-	case node.ConstantNode:
-		msg := &Msg{}
-		val := par.(node.ConstantNode).Data().(string)
-		if err := json.Unmarshal([]byte(val), msg); err == nil {
-			switch msg.Type {
-			case "log":
-				fmt.Println(msg.Data)
-				callHandler(f, scope.FindObjByName(sm, "go_handler"), `{"type":"log"}`)
-			default:
-				panic(40)
+	do := func(val string) {
+		if val != "" {
+			msg := &Msg{}
+			if err := json.Unmarshal([]byte(val), msg); err == nil {
+				switch msg.Type {
+				case "log":
+					fmt.Println(msg.Data)
+					callHandler(f, scope.FindObjByName(sm, "go_handler"), `{"type":"log"}`)
+				default:
+					panic(40)
+				}
+			} else {
+				fmt.Println(val, "not a json")
 			}
 		}
-	default:
-		panic(fmt.Sprintln("unsupported param"))
 	}
+	var val string
+	switch p := par.(type) {
+	case node.ConstantNode:
+		val = par.(node.ConstantNode).Data().(string)
+		do(val)
+		return frame.Tail(frame.STOP), frame.LATER
+	case node.VariableNode, node.ParameterNode:
+		val = scope.GoTypeFrom(sm.Select(p.Object().Adr())).(string)
+		do(val)
+		return frame.Tail(frame.STOP), frame.LATER
+	case node.DerefNode:
+		rt2.Push(rt2.New(p), f)
+		return This(expectExpr(f, p, func(...IN) (out OUT) {
+			v := rt2.ValueOf(f)[p.Adr()]
+			assert.For(v != nil, 60)
+			val = scope.GoTypeFrom(v).(string)
+			do(val)
+			out.do = Tail(STOP)
+			out.next = LATER
+			return out
+		}))
+	default:
+		halt.As(100, "unsupported param", reflect.TypeOf(p))
+	}
+	panic(0)
 }
 
 func init() {
-	sys = make(map[string]func(f frame.Frame, par node.Node))
+	sys = make(map[string]func(f frame.Frame, par node.Node) (frame.Sequence, frame.WAIT))
 	sys["go_process"] = process
 }
 
-func syscall(f frame.Frame) {
+func syscall(f frame.Frame) (frame.Sequence, frame.WAIT) {
 	n := rt2.NodeOf(f)
 	name := n.Left().Object().Name()
-	sys[name](f, n.Right())
+	return sys[name](f, n.Right())
 }
 
 func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
@@ -137,8 +164,7 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			name := n.Left().Object().Name()
 			switch {
 			case name == "go_process":
-				syscall(f)
-				return frame.Tail(frame.STOP), frame.LATER
+				return syscall(f)
 			default:
 				panic(fmt.Sprintln("unknown sysproc variable", name))
 			}
