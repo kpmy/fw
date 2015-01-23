@@ -194,7 +194,7 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 		mod := rtm.ModuleOfNode(f.Domain(), val)
 		if mod != nil {
 			global := f.Domain().Discover(context.UNIVERSE).(context.Domain)
-			fmt.Println(mod.Name)
+			//fmt.Println(mod.Name)
 			global = global.Discover(mod.Name).(context.Domain)
 			sm = global.Discover(context.SCOPE).(scope.Manager)
 		} else {

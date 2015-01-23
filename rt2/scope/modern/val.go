@@ -195,7 +195,7 @@ func (i *idx) String() string {
 }
 
 func (i *idx) Set(v scope.Value) {
-	fmt.Println(i, len(i.arr.val))
+	//fmt.Println(i, len(i.arr.val))
 	switch x := v.(type) {
 	case *idx:
 		i.arr.val[i.idx] = x.arr.val[x.idx]
@@ -1032,12 +1032,12 @@ func (o *ops) Is(a scope.Value, typ object.ComplexType) scope.Value {
 	case *rec:
 		z, a := x.link.Complex().(object.RecordType)
 		y, b := typ.(object.RecordType)
-		fmt.Println("compare", x.link.Complex(), typ, a, b, a && b && compare(z, y))
+		//fmt.Println("compare", x.link.Complex(), typ, a, b, a && b && compare(z, y))
 		return BOOLEAN(a && b && compare(z, y))
 	case *ptr:
 		z, a := x.link.Complex().(object.PointerType)
 		y, b := typ.(object.PointerType)
-		fmt.Println("compare", x.link.Complex(), typ, a, b, a && b && compare(z, y))
+		//fmt.Println("compare", x.link.Complex(), typ, a, b, a && b && compare(z, y))
 		return BOOLEAN(a && b && compare(z, y))
 	default:
 		halt.As(100, reflect.TypeOf(x))

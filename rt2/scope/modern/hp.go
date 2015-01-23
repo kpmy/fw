@@ -18,7 +18,7 @@ type halloc struct {
 }
 
 func (h *halloc) Allocate(n node.Node, par ...interface{}) scope.ValueFor {
-	fmt.Println("HEAP ALLOCATE")
+	//fmt.Println("HEAP ALLOCATE")
 	mod := rtm.ModuleOfNode(h.area.d, n)
 	if h.area.data == nil {
 		h.area.data = append(h.area.data, newlvl())

@@ -143,7 +143,7 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		} else {
 			if imp := m.ImportOf(n.Left().Object()); imp == "" {
 				proc := m.NodeByObject(n.Left().Object())
-				fmt.Println(len(proc), len(n.Left().Object().Ref()))
+				//fmt.Println(len(proc), len(n.Left().Object().Ref()))
 				call(proc[0], nil)
 			} else {
 				m := ml.Loaded(imp)

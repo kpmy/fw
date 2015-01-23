@@ -3,7 +3,6 @@ package object
 import (
 	"fmt"
 	"fw/cp"
-	"reflect"
 	"ypk/assert"
 )
 
@@ -198,7 +197,7 @@ type ptr struct {
 }
 
 func NewPointerType(n string) PointerType {
-	fmt.Println("new ptr type", n)
+	//fmt.Println("new ptr type", n)
 	return &ptr{name: n}
 }
 
@@ -206,7 +205,7 @@ func (p *ptr) Name() string { return p.name }
 func (p *ptr) Base(x ...ComplexType) ComplexType {
 	if len(x) == 1 {
 		p.basetyp = x[0]
-		fmt.Println("pbasetyp", p.basetyp, reflect.TypeOf(p.basetyp))
+		//fmt.Println("pbasetyp", p.basetyp, reflect.TypeOf(p.basetyp))
 	} else if len(x) > 1 {
 		panic("there can be only one")
 	}

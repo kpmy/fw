@@ -590,7 +590,7 @@ func buildMod(r *Result) *module.Module {
 
 func DoAST(r *Result) (mod *module.Module) {
 	mod = buildMod(r)
-	fmt.Println(len(mod.Nodes), len(mod.Objects))
+	//fmt.Println(len(mod.Nodes), len(mod.Objects))
 	reset()
 	return mod
 }
