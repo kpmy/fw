@@ -1,6 +1,7 @@
 package node
 
 import (
+	"fmt"
 	"fw/cp"
 	"fw/cp/constant"
 	"fw/cp/constant/enter"
@@ -157,6 +158,10 @@ func (d *dyadicNode) Operation() operation.Operation { return d.operation }
 
 func (d *dyadicNode) self() DyadicNode { return d }
 
+func (d *dyadicNode) String() string {
+	return fmt.Sprintln("dyadic ", d.Adr(), d.operation)
+}
+
 type assignNode struct {
 	nodeFields
 	stat statement.Statement
@@ -226,6 +231,10 @@ func (v *monadicNode) Complex(x ...object.ComplexType) object.ComplexType {
 		v.comp = x[0]
 	}
 	return v.comp
+}
+
+func (v *monadicNode) String() string {
+	return fmt.Sprintln("monadic ", v.Adr(), v.operation)
 }
 
 type conditionalNode struct {

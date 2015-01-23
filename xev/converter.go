@@ -238,8 +238,10 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 			switch n.Data.Typ.Base {
 			case "CHAR":
 				ret = object.NewArrayType(object.CHAR, int64(n.Data.Typ.Par), n.Id)
+			case "SHORTCHAR":
+				ret = object.NewArrayType(object.SHORTCHAR, int64(n.Data.Typ.Par), n.Id)
 			default:
-				panic(fmt.Sprintln("unknown array type", n.Data.Typ.Typ))
+				panic(fmt.Sprintln("unknown array type", n.Data.Typ.Base))
 			}
 		case "RECORD":
 			switch n.Data.Typ.Base {

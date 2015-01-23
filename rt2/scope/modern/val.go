@@ -91,11 +91,17 @@ func (x *dynarr) Id() cp.ID { return x.link.Adr() }
 func (a *arr) Set(v scope.Value) {
 	switch x := v.(type) {
 	case *arr:
-		a.Set(STRING(x.String()))
+		a.Set(STRING(x.tryString()))
 	case STRING:
 		v := make([]interface{}, int(a.length))
 		for i := 0; i < int(a.length) && i < len(x); i++ {
 			v[i] = CHAR(x[i])
+		}
+		a.val = v
+	case SHORTSTRING:
+		v := make([]interface{}, int(a.length))
+		for i := 0; i < int(a.length) && i < len(x); i++ {
+			v[i] = SHORTCHAR(x[i])
 		}
 		a.val = v
 	default:
@@ -126,6 +132,26 @@ func (a *dynarr) Set(v scope.Value) {
 	default:
 		halt.As(100, reflect.TypeOf(x))
 	}
+}
+
+func (a *arr) tryString() (ret string) {
+	for i := 0; i < len(a.val) && a.val[i] != nil; i++ {
+		switch x := a.val[i].(type) {
+		case CHAR:
+			if int(x) == 0 {
+				break
+			}
+			ret = fmt.Sprint(ret, string([]rune{rune(x)}))
+		case SHORTCHAR:
+			if int(x) == 0 {
+				break
+			}
+			ret = fmt.Sprint(ret, string([]rune{rune(x)}))
+		default:
+			halt.As(100, reflect.TypeOf(x))
+		}
+	}
+	return ret
 }
 
 func (a *arr) String() (ret string) {
@@ -172,11 +198,33 @@ func (i *idx) Set(v scope.Value) {
 	switch x := v.(type) {
 	case *idx:
 		i.arr.val[i.idx] = x.arr.val[x.idx]
+	case *data:
+		i.Set(x.val.(scope.Value))
 	case CHAR:
 		i.arr.val[i.idx] = x
 	default:
 		halt.As(100, reflect.TypeOf(x))
 	}
+}
+
+func (a *dynarr) tryString() (ret string) {
+	for i := 0; i < len(a.val) && a.val[i] != nil; i++ {
+		switch x := a.val[i].(type) {
+		case CHAR:
+			if int(x) == 0 {
+				break
+			}
+			ret = fmt.Sprint(ret, string([]rune{rune(x)}))
+		case SHORTCHAR:
+			if int(x) == 0 {
+				break
+			}
+			ret = fmt.Sprint(ret, string([]rune{rune(x)}))
+		default:
+			halt.As(100, reflect.TypeOf(x))
+		}
+	}
+	return ret
 }
 
 func (a *dynarr) String() (ret string) {
@@ -209,6 +257,8 @@ func (d *data) Set(v scope.Value) {
 		assert.For(ok, 21, reflect.TypeOf(d.link.Complex()))
 		assert.For(t.Type() == object.PROCEDURE, 22)
 		d.val = x
+	case *idx:
+		d.val = x.arr.val[x.idx]
 	case INTEGER:
 		switch d.link.Type() {
 		case object.INTEGER:
@@ -446,6 +496,8 @@ func vfrom(v scope.Value) scope.Value {
 			return n.val.(BOOLEAN)
 		case object.REAL:
 			return n.val.(REAL)
+		case object.LONGINT:
+			return n.val.(LONGINT)
 		default:
 			halt.As(100, n.link.Type())
 		}
@@ -471,12 +523,24 @@ func gfrom(v scope.Value) interface{} {
 		switch n.link.Complex().(object.DynArrayType).Base() {
 		case object.SHORTCHAR:
 			if n.val != nil {
-				return n.String()
+				return n.tryString()
 			} else {
 				return ""
 			}
 		default:
 			halt.As(100, n.link.Complex().(object.DynArrayType).Base())
+		}
+		panic(0)
+	case *arr:
+		switch n.link.Complex().(object.ArrayType).Base() {
+		case object.SHORTCHAR:
+			if n.val != nil {
+				return n.tryString()
+			} else {
+				return ""
+			}
+		default:
+			halt.As(100, n.link.Complex().(object.ArrayType).Base())
 		}
 		panic(0)
 	case INTEGER:
@@ -522,14 +586,14 @@ func (o *ops) Sum(a, b scope.Value) scope.Value {
 				case *arr:
 					switch {
 					case x.link.Type() == y.link.Type() && x.link.Complex().(object.ArrayType).Base() == object.CHAR:
-						return STRING(x.String() + y.String())
+						return STRING(x.tryString() + y.tryString())
 					default:
 						halt.As(100, x.link.Type(), y.link.Type())
 					}
 				case STRING:
 					switch {
 					case x.link.Complex().(object.ArrayType).Base() == object.CHAR:
-						return STRING(x.String() + string(y))
+						return STRING(x.tryString() + string(y))
 					default:
 						halt.As(100, x.link.Type())
 					}
@@ -541,7 +605,7 @@ func (o *ops) Sum(a, b scope.Value) scope.Value {
 				case STRING:
 					switch {
 					case x.link.Complex().(object.DynArrayType).Base() == object.CHAR:
-						return STRING(x.String() + string(y))
+						return STRING(x.tryString() + string(y))
 					default:
 						halt.As(100, x.link.Type())
 					}
@@ -559,6 +623,13 @@ func (o *ops) Sum(a, b scope.Value) scope.Value {
 				switch y := b.(type) {
 				case REAL:
 					return REAL(x + y)
+				default:
+					halt.As(100, reflect.TypeOf(y))
+				}
+			case LONGINT:
+				switch y := b.(type) {
+				case LONGINT:
+					return LONGINT(x + y)
 				default:
 					halt.As(100, reflect.TypeOf(y))
 				}
@@ -772,6 +843,13 @@ func (o *ops) Div(a, b scope.Value) scope.Value {
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
+			case LONGINT:
+				switch y := b.(type) {
+				case LONGINT:
+					return LONGINT(x / y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
 			default:
 				panic(fmt.Sprintln(reflect.TypeOf(x)))
 			}
@@ -794,6 +872,13 @@ func (o *ops) Mod(a, b scope.Value) scope.Value {
 				switch y := b.(type) {
 				case INTEGER:
 					return INTEGER(x % y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			case LONGINT:
+				switch y := b.(type) {
+				case LONGINT:
+					return LONGINT(x % y)
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
@@ -874,11 +959,10 @@ func (o *ops) Len(a object.Object, _a, _b scope.Value) (ret scope.Value) {
 			ret = INTEGER(int32(typ.Len()))
 		case object.DynArrayType:
 			switch t := _a.(type) {
-			//case string:
-			//	ret = int64(utf8.RuneCountInString(_a.(string)))
+			case *arr:
+				ret = INTEGER(t.length)
 			default:
-				ret = INTEGER(0)
-				fmt.Sprintln("unsupported", reflect.TypeOf(t))
+				halt.As(100, "unsupported", reflect.TypeOf(t))
 			}
 		default:
 			panic(fmt.Sprintln("unsupported", reflect.TypeOf(a.Complex())))
@@ -991,6 +1075,15 @@ func (o *ops) Conv(a scope.Value, typ object.Type, comp ...object.ComplexType) s
 		default:
 			halt.As(100, reflect.TypeOf(x))
 		}
+	case object.CHAR:
+		switch x := a.(type) {
+		case *data:
+			return o.Conv(vfrom(x), typ)
+		case LONGINT:
+			return CHAR(rune(x))
+		default:
+			halt.As(100, reflect.TypeOf(x))
+		}
 	case object.NOTYPE:
 		assert.For(len(comp) > 0, 20)
 		switch t := comp[0].(type) {
@@ -999,7 +1092,9 @@ func (o *ops) Conv(a scope.Value, typ object.Type, comp ...object.ComplexType) s
 			case object.SHORTSTRING:
 				switch x := a.(type) {
 				case *dynarr:
-					return SHORTSTRING(x.String())
+					return SHORTSTRING(x.tryString())
+				case *arr:
+					return SHORTSTRING(x.tryString())
 				default:
 					halt.As(100, reflect.TypeOf(x))
 				}
@@ -1091,6 +1186,13 @@ func (o *ops) Eq(a, b scope.Value) scope.Value {
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
+			case LONGINT:
+				switch y := b.(type) {
+				case LONGINT:
+					return BOOLEAN(x == y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
 			default:
 				panic(fmt.Sprintln(reflect.TypeOf(x)))
 			}
@@ -1116,6 +1218,13 @@ func (o *ops) Neq(a, b scope.Value) scope.Value {
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
+			case LONGINT:
+				switch y := b.(type) {
+				case LONGINT:
+					return BOOLEAN(x != y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
 			default:
 				panic(fmt.Sprintln(reflect.TypeOf(x)))
 			}
@@ -1137,6 +1246,14 @@ func (o *ops) Lss(a, b scope.Value) scope.Value {
 			case INTEGER:
 				switch y := b.(type) {
 				case INTEGER:
+					return BOOLEAN(x < y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			case LONGINT:
+				switch y := b.(type) {
+				case LONGINT:
+					fmt.Println("LESSER", x, y, BOOLEAN(x < y))
 					return BOOLEAN(x < y)
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))

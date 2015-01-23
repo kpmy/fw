@@ -41,10 +41,15 @@ type ref struct {
 	scope.Ref
 	id   cp.ID
 	link object.Object
+	sc   scope.Manager
 }
 
 func (r *ref) String() string {
-	return fmt.Sprint(r.link.Name(), "@", r.id)
+	var m string
+	if r.sc != nil {
+		m = rtm.DomainModule(r.sc.Domain()).Name
+	}
+	return fmt.Sprint(m, " ", r.link.Name(), "@", r.id)
 }
 
 func newRef(x object.Object) *ref {
@@ -136,9 +141,8 @@ func (l *level) alloc(mod *cpm.Module, root node.Node, ol []object.Object, skip 
 }
 
 func (a *salloc) Allocate(n node.Node, final bool) {
-	fmt.Println("ALLOCATE")
 	mod := rtm.DomainModule(a.area.d)
-
+	fmt.Println("ALLOCATE FOR", mod.Name, n.Adr())
 	tl := mod.Types[n]
 	skip := make(map[cp.ID]interface{}) //для процедурных типов в общей куче могут валяться переменные, скипаем их
 	for _, t := range tl {
@@ -185,6 +189,10 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 	seq = end
 	ret = frame.NOW
 	for next := par.Objects; next != nil; next = next.Link() {
+		mod := rtm.ModuleOfNode(f.Domain(), val)
+		global := f.Domain().Discover(context.UNIVERSE).(context.Domain)
+		global = global.Discover(mod.Name).(context.Domain)
+		ar := global.Discover(context.SCOPE).(scope.Manager)
 		switch o := next.(type) {
 		case object.VariableObject:
 			switch nv := val.(type) {
@@ -192,7 +200,7 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 				v := newConst(nv)
 				l.v[l.k[o.Adr()]].Set(v)
 			case node.VariableNode:
-				v := a.area.Select(nv.Object().Adr())
+				v := ar.Select(nv.Object().Adr())
 				l.v[l.k[o.Adr()]].Set(v)
 			default:
 				halt.As(40, reflect.TypeOf(nv))
@@ -201,7 +209,7 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 			switch nv := val.(type) {
 			case node.VariableNode:
 				old := l.r[l.k[o.Adr()]].(*ref)
-				l.r[l.k[o.Adr()]] = &ref{link: old.link, id: nv.Object().Adr()}
+				l.r[l.k[o.Adr()]] = &ref{link: old.link, sc: ar, id: nv.Object().Adr()}
 			case node.ConstantNode: //array :) заменяем ссылку на переменную
 				old := l.r[l.k[o.Adr()]].(*ref)
 				l.r[l.k[o.Adr()]] = nil
@@ -257,10 +265,10 @@ func (a *salloc) Join(m scope.Manager) { a.area = m.(*area) }
 
 func (a *area) Update(id cp.ID, fval scope.ValueFor) {
 	assert.For(id != 0, 20)
-	fmt.Println("UPDATE", id)
 	var upd func(x int, id cp.ID)
 	var k int
 	upd = func(x int, id cp.ID) {
+		fmt.Println("UPDATE", id)
 		for i := x - 1; i >= 0 && k == 0; i-- {
 			l := a.data[i]
 			if l.ready {
@@ -270,7 +278,13 @@ func (a *area) Update(id cp.ID, fval scope.ValueFor) {
 					if v == nil { //ref?
 						r := l.r[k]
 						if r != nil {
-							upd(i, r.(*ref).id)
+							fmt.Println("ref")
+							if r.(*ref).sc == a {
+								upd(i, r.(*ref).id)
+							} else {
+								k = -1
+								r.(*ref).sc.Update(r.(*ref).id, fval)
+							}
 							break
 						}
 					} else {
@@ -286,9 +300,9 @@ func (a *area) Update(id cp.ID, fval scope.ValueFor) {
 }
 
 func (a *area) Select(id cp.ID, val ...scope.ValueOf) (ret scope.Value) {
-	fmt.Println("SELECT", id)
 	var sel func(x int, id cp.ID)
 	sel = func(x int, id cp.ID) {
+		fmt.Println("SELECT", id)
 		for i := x - 1; i >= 0 && ret == nil; i-- {
 			l := a.data[i]
 			k := 0
@@ -302,7 +316,12 @@ func (a *area) Select(id cp.ID, val ...scope.ValueOf) (ret scope.Value) {
 							if l.l[k] != nil { //rec
 								panic(0)
 							} else {
-								sel(i, r.(*ref).id)
+								fmt.Println("ref")
+								if r.(*ref).sc == a {
+									sel(i, r.(*ref).id)
+								} else {
+									ret = r.(*ref).sc.Select(r.(*ref).id)
+								}
 							}
 							break
 						}
