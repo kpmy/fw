@@ -69,7 +69,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				return frame.End()
 			}
 			ret = frame.NOW
-		case node.OperationNode, node.CallNode, node.DerefNode:
+		case node.OperationNode, node.CallNode, node.DerefNode, node.FieldNode:
 			rt2.Push(rt2.New(a.Right()), f)
 			rt2.Assert(f, func(f frame.Frame) (bool, int) {
 				return rt2.ValueOf(f)[a.Right().Adr()] != nil, 61
@@ -177,7 +177,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				return End()
 			}))
 		} else {
-			fmt.Println("NEW here")
+			//fmt.Println("NEW here")
 			fn := heap.Allocate(a.Left())
 			sc.Update(a.Left().Object().Adr(), fn)
 			return frame.End()

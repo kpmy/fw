@@ -166,6 +166,8 @@ func convertData(typ string, val string, conv convertable) {
 		conv.SetData(val)
 	case "":
 		conv.SetType(object.NOTYPE)
+	case "NIL":
+		conv.SetType(object.NIL)
 	default:
 		panic(fmt.Sprintln("no such constant type", typ))
 	}

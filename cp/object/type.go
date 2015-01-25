@@ -26,6 +26,7 @@ const (
 	COMPLEX
 	STRING
 	SHORTSTRING
+	NIL
 )
 
 func (t Type) String() string {
@@ -60,6 +61,8 @@ func (t Type) String() string {
 		return "STRING"
 	case SHORTSTRING:
 		return "SHORTSTRING"
+	case NIL:
+		return "NIL"
 	default:
 		return fmt.Sprint("looks like new type here", int(t))
 	}

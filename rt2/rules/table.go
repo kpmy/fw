@@ -10,7 +10,7 @@ import (
 	"fw/rt2/decision"
 	"fw/rt2/frame"
 	"fw/rt2/frame/std"
-	rt_module "fw/rt2/module"
+	//	rt_module "fw/rt2/module"
 	"fw/rt2/scope"
 	"fw/utils"
 	"reflect"
@@ -114,7 +114,7 @@ func epilogue(n node.Node) frame.Sequence {
 		}
 	case node.EnterNode:
 		return func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-			fmt.Println(rt_module.DomainModule(f.Domain()).Name)
+			//fmt.Println(rt_module.DomainModule(f.Domain()).Name)
 			sm := f.Domain().Discover(context.SCOPE).(scope.Manager)
 			sm.Target().(scope.ScopeAllocator).Dispose(n)
 			//возвращаем результаты вызова функции
@@ -228,7 +228,7 @@ func run(global context.Domain, init []*module.Module) {
 		t0 := time.Now()
 		for x := frame.NOW; x == frame.NOW; x = root.Do() {
 			utils.PrintFrame("STEP", i)
-			assert.For(i < 1000, 40)
+			//assert.For(i < 1000, 40)
 			i++
 		}
 		t1 := time.Now()

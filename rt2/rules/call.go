@@ -61,7 +61,7 @@ func process(f frame.Frame, par node.Node) (frame.Sequence, frame.WAIT) {
 			if err := json.Unmarshal([]byte(val), msg); err == nil {
 				switch msg.Type {
 				case "log":
-					fmt.Println(msg.Data)
+					fmt.Print(msg.Data)
 					callHandler(f, scope.FindObjByName(sm, "go_handler"), `{"type":"log"}`)
 				default:
 					panic(40)

@@ -474,6 +474,8 @@ func newConst(n node.Node) scope.Value {
 			return STRING(x.Data().(string))
 		case object.SHORTSTRING:
 			return SHORTSTRING(x.Data().(string))
+		case object.NIL:
+			return NIL
 		default:
 			panic(fmt.Sprintln(x.Type()))
 		}
@@ -1214,6 +1216,14 @@ func (o *ops) Neq(a, b scope.Value) scope.Value {
 			return o.Neq(a, vfrom(b))
 		default:
 			switch x := a.(type) {
+			case *ptr:
+				switch y := b.(type) {
+				case PTR:
+					assert.For(y == NIL, 40)
+					return BOOLEAN(x.val != nil && x.val.id != 0)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
 			case INTEGER:
 				switch y := b.(type) {
 				case INTEGER:

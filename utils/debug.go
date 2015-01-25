@@ -14,12 +14,12 @@ func PrintFrame(x ...interface{}) {
 
 func PrintScope(x ...interface{}) {
 	if debugScope {
-		fmt.Println(x[0], x[1])
+		fmt.Println(x...)
 	}
 }
 
 func PrintTrap(x ...interface{}) {
 	if debugTrap {
-		fmt.Println(x[0], x[1])
+		fmt.Println(x...)
 	}
 }

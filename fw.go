@@ -10,17 +10,22 @@ import (
 	_ "fw/rt2/rules"
 	"fw/rt2/scope"
 	_ "fw/rt2/scope/modern"
+	"fw/utils"
 	"time"
 	"ypk/assert"
 )
 
 var name string
+var heap scope.Manager
 
 func init() {
 	flag.StringVar(&name, "i", "", "-i name.ext")
 }
 
 func close() {
+	utils.PrintFrame("____")
+	utils.PrintFrame(heap)
+	utils.PrintFrame("^^^^")
 	fmt.Println("closed")
 }
 
@@ -33,7 +38,8 @@ func main() {
 	global.global = global
 	modList := rtmod.New()
 	global.Attach(context.MOD, modList)
-	global.Attach(context.HEAP, scope.New(context.HEAP))
+	heap = scope.New(context.HEAP)
+	global.Attach(context.HEAP, heap)
 	t0 := time.Now()
 	var init []*mod.Module
 	_, err := modList.Load(name, func(m *mod.Module) {

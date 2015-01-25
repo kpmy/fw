@@ -72,8 +72,8 @@ type nodeFrame struct {
 func done(f frame.Frame) {
 	utils.PrintFrame("____")
 	utils.PrintFrame(f.Domain().Discover(context.SCOPE))
-	utils.PrintFrame("--")
-	utils.PrintFrame(f.Domain().Discover(context.HEAP))
+	//	utils.PrintFrame("--")
+	//	utils.PrintFrame(f.Domain().Discover(context.HEAP))
 	utils.PrintFrame("^^^^")
 }
 
@@ -99,7 +99,7 @@ func (f *nodeFrame) Do() frame.WAIT {
 func (f *nodeFrame) onPush() {
 	f.num = count
 	count++
-	assert.For(count < 15, 40)
+	//	assert.For(count < 15, 40)
 	utils.PrintFrame("_", "PUSH", reflect.TypeOf(f.ir))
 	f.seq = decision.PrologueFor(f.ir)
 }

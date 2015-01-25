@@ -191,13 +191,13 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 	ret = frame.NOW
 	var sm scope.Manager
 	for next := par.Objects; next != nil; next = next.Link() {
+		global := f.Domain().Discover(context.UNIVERSE).(context.Domain)
 		mod := rtm.ModuleOfNode(f.Domain(), val)
 		if mod != nil {
-			global := f.Domain().Discover(context.UNIVERSE).(context.Domain)
 			//fmt.Println(mod.Name)
 			global = global.Discover(mod.Name).(context.Domain)
 			sm = global.Discover(context.SCOPE).(scope.Manager)
-		} else {
+		} else { //для фиктивных узлов, которые созданы рантаймом, типа INC/DEC
 			sm = a.area
 		}
 		switch o := next.(type) {
@@ -209,6 +209,19 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 			case node.VariableNode:
 				v := sm.Select(nv.Object().Adr())
 				l.v[l.k[o.Adr()]].Set(v)
+			case node.FieldNode:
+				nf := rt2.New(nv)
+				rt2.Push(nf, f)
+				rt2.Assert(f, func(f frame.Frame) (bool, int) {
+					return rt2.ValueOf(f)[nv.Adr()] != nil, 60
+				})
+				rt2.ReplaceDomain(nf, global)
+				seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+					v := rt2.ValueOf(f)[nv.Adr()]
+					l.v[l.k[o.Adr()]].Set(v)
+					return end, frame.NOW
+				}
+				ret = frame.LATER
 			default:
 				halt.As(40, reflect.TypeOf(nv))
 			}
