@@ -22,7 +22,17 @@ func prologue(n node.Node) frame.Sequence {
 	//fmt.Println(reflect.TypeOf(n))
 	switch next := n.(type) {
 	case node.EnterNode:
-		return enterSeq
+		var tail frame.Sequence
+		tail = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+			q := f.Root().Queue()
+			if q != nil {
+				f.Root().PushFor(q, nil)
+				return tail, frame.NOW
+			} else {
+				return enterSeq, frame.NOW
+			}
+		}
+		return tail
 	case node.AssignNode:
 		return assignSeq
 	case node.OperationNode:
@@ -107,10 +117,7 @@ func epilogue(n node.Node) frame.Sequence {
 			next := n.Link()
 			//fmt.Println("from", reflect.TypeOf(n))
 			//fmt.Println("next", reflect.TypeOf(next))
-			q := f.Root().Queue()
-			if q != nil {
-				f.Root().PushFor(q, nil)
-			} else if next != nil {
+			if next != nil {
 				f.Root().PushFor(rt2.New(next), f.Parent())
 			}
 			return frame.End()

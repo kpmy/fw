@@ -27,7 +27,7 @@ func close() {
 	utils.PrintFrame(heap)
 	utils.PrintFrame("^^^^")
 	fmt.Println("closed")
-	fmt.Println(heap)
+	//fmt.Println(heap)
 }
 
 func main() {
