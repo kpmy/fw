@@ -126,13 +126,17 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		}
 		seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			//			rt2.DataOf(f.Parent())[n] = rt2.DataOf(f)[n.Left().Object()]
-			rt2.ValueOf(f.Parent())[n.Adr()] = rt2.ValueOf(f)[n.Left().Object().Adr()]
+			if f.Parent() != nil {
+				rt2.ValueOf(f.Parent())[n.Adr()] = rt2.ValueOf(f)[n.Left().Object().Adr()]
+			}
 			return frame.End()
 		}
 		ret = frame.LATER
 	}
 
 	switch p := n.Left().(type) {
+	case node.EnterNode:
+		call(p, nil)
 	case node.ProcedureNode:
 		m := rt_mod.DomainModule(f.Domain())
 		ml := f.Domain().Discover(context.UNIVERSE).(context.Domain).Discover(context.MOD).(rt_mod.List)
@@ -172,7 +176,7 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		}
 
 	default:
-		panic("unknown call left")
+		halt.As(100, "unknown call left: ", reflect.TypeOf(p))
 	}
 	return seq, ret
 }

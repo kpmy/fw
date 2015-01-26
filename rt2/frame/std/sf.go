@@ -6,7 +6,9 @@ import (
 	"fw/rt2/context"
 	"fw/rt2/frame"
 	"fw/rt2/scope"
+	"reflect"
 	"ypk/assert"
+	"ypk/halt"
 )
 
 type FlowFrame interface {
@@ -15,6 +17,7 @@ type FlowFrame interface {
 type RootFrame struct {
 	inner  list.List
 	domain context.Domain
+	queue  []frame.Frame
 }
 
 func (f *RootFrame) init() *RootFrame {
@@ -26,18 +29,40 @@ func NewRoot() *RootFrame {
 	return new(RootFrame).init()
 }
 
+func (r *RootFrame) Queue(f ...frame.Frame) (ret frame.Frame) {
+	if len(f) == 0 {
+		if len(r.queue) > 0 {
+			ret = r.queue[0]
+			old := r.queue
+			r.queue = nil
+			for i := 1; i < len(old); i++ {
+				r.queue = append(r.queue, old[i])
+			}
+		}
+		return ret
+	} else {
+		for i := range f {
+			assert.For(f[i].Domain() != nil, 20)
+		}
+		r.queue = append(r.queue, f...)
+		return nil
+	}
+}
+
 func (f *RootFrame) PushFor(fr, parent frame.Frame) {
 	_, ok := fr.(*RootFrame)
 	if ok {
 		panic("impossibru")
 	}
 	f.inner.PushFront(fr)
-	if parent == nil {
-		domain := f.Domain().(context.Factory).New()
-		domain.Attach(context.SCOPE, scope.New(context.SCOPE))
-		fr.Init(domain)
-	} else {
-		fr.Init(parent.Domain())
+	if fr.Domain() == nil {
+		if parent == nil {
+			domain := f.Domain().(context.Factory).New()
+			domain.Attach(context.SCOPE, scope.New(context.SCOPE))
+			fr.Init(domain)
+		} else {
+			fr.Init(parent.Domain())
+		}
 	}
 	fr.OnPush(f, parent)
 }
@@ -92,7 +117,7 @@ func (f *RootFrame) Do() (res frame.WAIT) {
 				if x == f.Top() {
 					f.Pop()
 				} else {
-					panic("do not stop if not top on stack")
+					halt.As(100, reflect.TypeOf(x), reflect.TypeOf(f.Top()), "do not stop if not top on stack")
 				}
 				break
 			} else {

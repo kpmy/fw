@@ -319,6 +319,9 @@ func (p *ptr) Set(v scope.Value) {
 		p.Set(x.val)
 	case *ptrValue:
 		p.val = x
+	case PTR:
+		assert.For(x == NIL, 40)
+		p.val = nil
 	default:
 		halt.As(100, reflect.TypeOf(x))
 	}
@@ -341,6 +344,7 @@ func newPtr(o object.Object) scope.Variable {
 type ptrValue struct {
 	scope *area
 	id    cp.ID
+	link  object.Object
 }
 
 func (p *ptrValue) String() string {
@@ -349,7 +353,9 @@ func (p *ptrValue) String() string {
 
 type PTR int
 
-func (p PTR) String() string { return "NIL" }
+func (p PTR) String() string {
+	return "NIL"
+}
 
 const NIL PTR = 0
 
@@ -476,6 +482,13 @@ func newConst(n node.Node) scope.Value {
 			return SHORTSTRING(x.Data().(string))
 		case object.NIL:
 			return NIL
+		case object.COMPLEX: //не может существовать в реальности, используется для передачи параметров от рантайма
+			switch d := x.Data().(type) {
+			case *ptrValue:
+				return d
+			default:
+				halt.As(100, reflect.TypeOf(d))
+			}
 		default:
 			panic(fmt.Sprintln(x.Type()))
 		}

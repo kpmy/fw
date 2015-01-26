@@ -40,7 +40,7 @@ type ScopeAllocator interface {
 type HeapAllocator interface {
 	Allocator
 	Allocate(n node.Node, par ...interface{}) ValueFor //указатель лежит в скоупе процедуры/модуля, а рекорд - в куче, поэтому нужно после создания экземпляра обновить указатель
-	Dispose(n node.Node)
+	Dispose(id cp.ID)
 }
 
 var FindObjByName func(m Manager, name string) object.Object

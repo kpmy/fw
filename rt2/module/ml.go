@@ -1,9 +1,9 @@
 package module
 
 import (
-	"fmt"
 	mod "fw/cp/module"
 	"fw/cp/node"
+	"fw/cp/object"
 	"fw/rt2/context"
 	"fw/xev"
 	"os"
@@ -55,7 +55,7 @@ func (l *list) Handle(msg interface{}) {}
 
 func (l *list) Load(name string, ldr ...Loader) (ret *mod.Module, err error) {
 	assert.For(name != "", 20)
-	fmt.Println("loading", name, "loaded", l.Loaded(name) != nil)
+	//fmt.Println("loading", name, "loaded", l.Loaded(name) != nil)
 	ret = l.Loaded(name)
 	var loader Loader = func(m *mod.Module) {}
 	if len(ldr) > 0 {
@@ -66,13 +66,13 @@ func (l *list) Load(name string, ldr ...Loader) (ret *mod.Module, err error) {
 		ret = xev.Load(path, name+".oz")
 		ret.Name = name
 		for _, imp := range ret.Imports {
-			fmt.Println("imports", imp.Name, "loaded", l.Loaded(imp.Name) != nil)
+			//fmt.Println("imports", imp.Name, "loaded", l.Loaded(imp.Name) != nil)
 			_, err = l.Load(imp.Name, loader)
 		}
 		if err == nil {
 			l.inner[name] = ret
 			loader(ret)
-			fmt.Println("loaded", name)
+			//fmt.Println("loaded", name)
 		}
 	}
 	return ret, err
@@ -98,6 +98,36 @@ func ModuleOfNode(d context.Domain, x node.Node) *mod.Module {
 		for _, n := range m.Nodes {
 			if n == x {
 				return m
+			}
+		}
+	}
+	return nil
+}
+
+func ModuleOfObject(d context.Domain, x object.Object) *mod.Module {
+	uni := d.Discover(context.UNIVERSE).(context.Domain)
+	ml := uni.Discover(context.MOD).(List)
+	for _, m := range ml.AsList() {
+		for _, v := range m.Objects {
+			for _, o := range v {
+				if o == x {
+					return m
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func ModuleOfType(d context.Domain, x object.ComplexType) *mod.Module {
+	uni := d.Discover(context.UNIVERSE).(context.Domain)
+	ml := uni.Discover(context.MOD).(List)
+	for _, m := range ml.AsList() {
+		for _, v := range m.Types {
+			for _, o := range v {
+				if o == x {
+					return m
+				}
 			}
 		}
 	}

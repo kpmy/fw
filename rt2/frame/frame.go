@@ -36,11 +36,13 @@ func (w WAIT) String() string {
 }
 
 // LIFO-стек, позволяет затолкнуть фрейм связанный с другим фреймом
+// добавлен Queue, что-то типа механизма прерываний, позволяет передать внеочередной фрейм на выполнение
 type Stack interface {
 	PushFor(f, parent Frame)
 	Pop()
 	Top() Frame
 	ForEach(run func(this Frame) bool)
+	Queue(...Frame) Frame
 }
 
 //фрейм

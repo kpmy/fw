@@ -107,7 +107,10 @@ func epilogue(n node.Node) frame.Sequence {
 			next := n.Link()
 			//fmt.Println("from", reflect.TypeOf(n))
 			//fmt.Println("next", reflect.TypeOf(next))
-			if next != nil {
+			q := f.Root().Queue()
+			if q != nil {
+				f.Root().PushFor(q, nil)
+			} else if next != nil {
 				f.Root().PushFor(rt2.New(next), f.Parent())
 			}
 			return frame.End()

@@ -27,12 +27,13 @@ func close() {
 	utils.PrintFrame(heap)
 	utils.PrintFrame("^^^^")
 	fmt.Println("closed")
+	fmt.Println(heap)
 }
 
 func main() {
 	flag.Parse()
 	if name == "" {
-		name = "XevDemo19"
+		name = "XevTest0"
 	}
 	global := &stdDomain{god: true}
 	global.global = global

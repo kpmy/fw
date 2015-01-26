@@ -14,6 +14,7 @@ import (
 	"fw/rt2/scope"
 	"fw/utils"
 	"reflect"
+
 	"ypk/assert"
 	"ypk/halt"
 )
@@ -167,6 +168,11 @@ func (a *salloc) Allocate(n node.Node, final bool) {
 
 func (a *salloc) Dispose(n node.Node) {
 	x := a.area.data
+	old := x[len(x)-1]
+	old.k = nil
+	old.v = nil
+	old.l = nil
+	old.r = nil
 	a.area.data = nil
 	for i := 0; i < len(x)-1; i++ {
 		a.area.data = append(a.area.data, x[i])
@@ -193,6 +199,7 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 	for next := par.Objects; next != nil; next = next.Link() {
 		global := f.Domain().Discover(context.UNIVERSE).(context.Domain)
 		mod := rtm.ModuleOfNode(f.Domain(), val)
+		//mod := rtm.ModuleOfNode(f.Domain(), val.Object())
 		if mod != nil {
 			//fmt.Println(mod.Name)
 			global = global.Discover(mod.Name).(context.Domain)
