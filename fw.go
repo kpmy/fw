@@ -3,10 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	mod "fw/cp/module"
+	cpm "fw/cp/module"
 	"fw/rt2/context"
 	"fw/rt2/decision"
-	rtmod "fw/rt2/module"
+	rtm "fw/rt2/module"
 	_ "fw/rt2/rules"
 	"fw/rt2/scope"
 	_ "fw/rt2/scope/modern"
@@ -37,13 +37,13 @@ func main() {
 	}
 	global := &stdDomain{god: true}
 	global.global = global
-	modList := rtmod.New()
+	modList := rtm.New()
 	global.Attach(context.MOD, modList)
 	heap = scope.New(context.HEAP)
 	global.Attach(context.HEAP, heap)
 	t0 := time.Now()
-	var init []*mod.Module
-	_, err := modList.Load(name, func(m *mod.Module) {
+	var init []*cpm.Module
+	_, err := modList.Load(name, func(m *cpm.Module) {
 		init = append(init, m)
 	})
 	t1 := time.Now()

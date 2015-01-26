@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"fw/cp"
 	"fw/cp/constant"
+	cpm "fw/cp/module"
 	"fw/cp/node"
 	"fw/cp/object"
 	"fw/rt2"
 	"fw/rt2/context"
 	"fw/rt2/frame"
-	rt_mod "fw/rt2/module"
+	rtm "fw/rt2/module"
 	"fw/rt2/scope"
 	"fw/utils"
 	"reflect"
@@ -30,8 +31,9 @@ import (
 var sys map[string]func(f frame.Frame, par node.Node) (frame.Sequence, frame.WAIT)
 
 type Msg struct {
-	Type string
-	Data string
+	Type    string
+	Command string
+	Data    string
 }
 
 func callHandler(f frame.Frame, obj object.Object, data interface{}) {
@@ -40,7 +42,7 @@ func callHandler(f frame.Frame, obj object.Object, data interface{}) {
 	if obj == nil {
 		return
 	}
-	m := rt_mod.DomainModule(f.Domain())
+	m := rtm.DomainModule(f.Domain())
 	cn := node.New(constant.CALL, int(cp.SomeAdr()))
 	ol := m.NodeByObject(obj)
 	assert.For(len(ol) <= 1, 40)
@@ -63,6 +65,20 @@ func process(f frame.Frame, par node.Node) (frame.Sequence, frame.WAIT) {
 				case "log":
 					fmt.Print(msg.Data)
 					callHandler(f, scope.FindObjByName(sm, "go_handler"), `{"type":"log"}`)
+				case "core":
+					switch msg.Command {
+					case "load":
+						fmt.Println("try to load", msg.Data)
+						glob := f.Domain().Discover(context.UNIVERSE).(context.Domain)
+						modList := glob.Discover(context.MOD).(rtm.List)
+						fl := glob.Discover(context.MT).(*flow)
+						_, err := modList.Load(msg.Data, func(m *cpm.Module) {
+							fl.grow(glob, m)
+						})
+						assert.For(err == nil, 60)
+					default:
+						halt.As(100, msg.Command)
+					}
 				default:
 					panic(40)
 				}
@@ -138,8 +154,8 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	case node.EnterNode:
 		call(p, nil)
 	case node.ProcedureNode:
-		m := rt_mod.DomainModule(f.Domain())
-		ml := f.Domain().Discover(context.UNIVERSE).(context.Domain).Discover(context.MOD).(rt_mod.List)
+		m := rtm.DomainModule(f.Domain())
+		ml := f.Domain().Discover(context.UNIVERSE).(context.Domain).Discover(context.MOD).(rtm.List)
 		if p.Super() {
 			fmt.Println("supercall, stop for now")
 			seq = Propose(Tail(STOP))
@@ -158,7 +174,7 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			}
 		}
 	case node.VariableNode:
-		m := rt_mod.DomainModule(f.Domain())
+		m := rtm.DomainModule(f.Domain())
 		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 		obj := scope.GoTypeFrom(sc.Select(n.Left().Object().Adr()))
 

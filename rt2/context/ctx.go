@@ -6,6 +6,7 @@ const (
 	MOD      = "fw/rt2/module"
 	UNIVERSE = "fw/rt2/ctx"
 	HEAP     = "fw/rt2/scope,heap"
+	MT       = "fw/rt2/table,flow"
 )
 
 type Factory interface {

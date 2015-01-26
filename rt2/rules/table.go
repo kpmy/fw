@@ -217,26 +217,26 @@ func (f *flow) Handle(msg interface{}) {
 	assert.For(msg != nil, 20)
 }
 
+func (f *flow) grow(global context.Domain, m *module.Module) {
+	utils.PrintScope("queue", m.Name)
+	nf := rt2.New(m.Enter)
+	f.root.PushFor(nf, nil)
+	f.fl = append(f.fl, nf)
+	global.Attach(m.Name, nf.Domain())
+}
+
 func run(global context.Domain, init []*module.Module) {
 	{
-		var (
-			root *std.RootFrame = std.NewRoot()
-			nf   frame.Frame
-			ff   []frame.Frame
-		)
-		global.Attach(context.STACK, root)
+		fl := &flow{root: std.NewRoot()}
+		global.Attach(context.STACK, fl.root.(context.ContextAware))
+		global.Attach(context.MT, fl)
 		for i := len(init) - 1; i >= 0; i-- {
-			ret := init[i]
-			utils.PrintScope("queue", ret.Name)
-			nf = rt2.New(ret.Enter)
-			root.PushFor(nf, nil)
-			ff = append(ff, nf)
-			global.Attach(ret.Name, nf.Domain())
+			fl.grow(global, init[i])
 		}
-		root.PushFor(&flow{fl: ff}, nil)
+		fl.root.PushFor(fl, nil)
 		i := 0
 		t0 := time.Now()
-		for x := frame.NOW; x == frame.NOW; x = root.Do() {
+		for x := frame.NOW; x == frame.NOW; x = fl.root.(frame.Frame).Do() {
 			utils.PrintFrame("STEP", i)
 			//assert.For(i < 1000, 40)
 			i++
