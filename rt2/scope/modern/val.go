@@ -520,11 +520,19 @@ func gfrom(v scope.Value) interface{} {
 		} else {
 			return gfrom(n.val.(scope.Value))
 		}
+	case *rec:
+		return n
 	case *proc:
 		return n.link
 	case *dynarr:
 		switch n.link.Complex().(object.DynArrayType).Base() {
 		case object.SHORTCHAR:
+			if n.val != nil {
+				return n.tryString()
+			} else {
+				return ""
+			}
+		case object.CHAR:
 			if n.val != nil {
 				return n.tryString()
 			} else {
@@ -546,6 +554,9 @@ func gfrom(v scope.Value) interface{} {
 			halt.As(100, n.link.Complex().(object.ArrayType).Base())
 		}
 		panic(0)
+	case PTR:
+		assert.For(n == NIL, 40)
+		return nil
 	case INTEGER:
 		return int32(n)
 	case BOOLEAN:

@@ -208,7 +208,7 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 
 	right := func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		n := rt2.NodeOf(f)
-		switch n.Right().(type) {
+		switch r := n.Right().(type) {
 		case node.ConstantNode:
 			rt2.ValueOf(f)[n.Right().Adr()] = sc.Provide(n.Right())(nil)
 			return op, frame.NOW
@@ -219,8 +219,12 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			}
 			ret = frame.NOW
 			return seq, ret
-		case node.OperationNode, node.DerefNode:
+		case node.OperationNode, node.DerefNode, node.CallNode:
 			rt2.Push(rt2.New(n.Right()), f)
+			rt2.Assert(f, func(f frame.Frame) (bool, int) {
+				return rt2.ValueOf(f)[r.Adr()] != nil, 60
+			})
+
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				return op, frame.NOW
 			}
@@ -241,23 +245,50 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		}
 	}
 
+	short := func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+		n := rt2.NodeOf(f).(node.OperationNode)
+		switch n.Operation() {
+		case operation.AND:
+			val := scope.GoTypeFrom(rt2.ValueOf(f)[n.Left().Adr()]).(bool)
+			if val {
+				return right, frame.NOW
+			} else {
+				rt2.ValueOf(f.Parent())[n.Adr()] = scope.TypeFromGo(false)
+				return frame.End()
+			}
+		case operation.OR:
+			val := scope.GoTypeFrom(rt2.ValueOf(f)[n.Left().Adr()]).(bool)
+			if !val {
+				return right, frame.NOW
+			} else {
+				rt2.ValueOf(f.Parent())[n.Adr()] = scope.TypeFromGo(true)
+				return frame.End()
+			}
+		default:
+			return right, frame.NOW
+		}
+	}
+
 	left := func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		n := rt2.NodeOf(f)
 		switch l := n.Left().(type) {
 		case node.ConstantNode:
 			rt2.ValueOf(f)[n.Left().Adr()] = sc.Provide(n.Left())(nil)
-			return right, frame.NOW
+			return short, frame.NOW
 		case node.VariableNode, node.ParameterNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				rt2.ValueOf(f)[n.Left().Adr()] = sc.Select(n.Left().Object().Adr())
-				return right, frame.NOW
+				return short, frame.NOW
 			}
 			ret = frame.NOW
 			return seq, ret
-		case node.OperationNode, node.DerefNode, node.RangeNode:
+		case node.OperationNode, node.DerefNode, node.RangeNode, node.CallNode:
 			rt2.Push(rt2.New(n.Left()), f)
+			rt2.Assert(f, func(f frame.Frame) (bool, int) {
+				return rt2.ValueOf(f)[l.Adr()] != nil, 60
+			})
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				return right, frame.NOW
+				return short, frame.NOW
 			}
 			ret = frame.LATER
 			return seq, ret
@@ -267,7 +298,7 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc.Select(l.Left().Object().Adr(), func(v scope.Value) {
 					rt2.ValueOf(f)[n.Left().Adr()] = v.(scope.Record).Get(l.Object().Adr())
 				})
-				return right, frame.NOW
+				return short, frame.NOW
 			}
 			ret = frame.NOW
 			return seq, ret

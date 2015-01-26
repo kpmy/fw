@@ -11,7 +11,7 @@ import (
 
 func ifExpr(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	n := rt2.NodeOf(f)
-	switch n.Left().(type) {
+	switch l := n.Left().(type) {
 	case node.OperationNode:
 		rt2.Push(rt2.New(n.Left()), f)
 		seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
@@ -20,6 +20,11 @@ func ifExpr(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			return frame.End()
 		}
 		ret = frame.LATER
+	case node.ConstantNode, node.VariableNode, node.ParameterNode:
+		return This(expectExpr(f, l, func(...IN) OUT {
+			rt2.ValueOf(f.Parent())[n.Adr()] = rt2.ValueOf(f)[l.Adr()]
+			return End()
+		}))
 	default:
 		panic(fmt.Sprintf("unknown condition expression", reflect.TypeOf(n.Left())))
 	}

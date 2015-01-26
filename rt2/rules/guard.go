@@ -2,8 +2,6 @@ package rules
 
 import (
 	"fmt"
-	"fw/cp"
-	"fw/cp/constant"
 	"fw/cp/node"
 	"fw/rt2"
 	"fw/rt2/context"
@@ -26,11 +24,6 @@ func guardSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		rt2.RegOf(f.Parent())[n] = n.Left()
 		return frame.End()
 	} else {
-		trap := node.New(constant.TRAP, int(cp.SomeAdr())).(node.TrapNode)
-		code := node.New(constant.CONSTANT, int(cp.SomeAdr())).(node.ConstantNode)
-		code.SetData(0)
-		trap.SetLeft(code)
-		rt2.Push(rt2.New(trap), f)
-		return frame.Tail(frame.STOP), frame.LATER
+		return doTrap(f, 0)
 	}
 }

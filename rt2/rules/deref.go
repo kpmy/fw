@@ -3,6 +3,7 @@ package rules
 import (
 	"fw/cp/node"
 	"fw/cp/object"
+	"fw/cp/traps"
 	"fw/rt2"
 	"fw/rt2/context"
 	"fw/rt2/frame"
@@ -23,8 +24,13 @@ func derefSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				ptr, ok := v.(scope.Pointer)
 				assert.For(ok, 60, reflect.TypeOf(v))
 				rt2.ValueOf(f.Parent())[n.Adr()] = ptr.Get()
+				if scope.GoTypeFrom(ptr.Get()) == nil {
+					seq, ret = doTrap(f, traps.NILderef)
+				} else {
+					seq, ret = frame.End()
+				}
 			})
-			return frame.End()
+			return seq, ret
 		default:
 			halt.As(100, l.Adr(), reflect.TypeOf(l))
 		}

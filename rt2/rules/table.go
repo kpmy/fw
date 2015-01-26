@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"fw/cp/module"
 	"fw/cp/node"
+	"fw/cp/traps"
 	"fw/rt2"
 	"fw/rt2/context"
 	"fw/rt2/decision"
 	"fw/rt2/frame"
 	"fw/rt2/frame/std"
-	//	rt_module "fw/rt2/module"
 	"fw/rt2/scope"
 	"fw/utils"
 	"reflect"
@@ -62,7 +62,7 @@ func prologue(n node.Node) frame.Sequence {
 		return func(f frame.Frame) (frame.Sequence, frame.WAIT) {
 			switch code := next.Left().(type) {
 			case node.ConstantNode:
-				utils.PrintTrap("TRAP:", code.Data())
+				utils.PrintTrap("TRAP:", traps.This(code.Data()))
 				return frame.Tail(frame.WRONG), frame.NOW
 			default:
 				panic(fmt.Sprintln("unsupported code", reflect.TypeOf(code)))

@@ -3,6 +3,7 @@ package xev
 import (
 	"encoding/xml"
 	"fmt"
+	"io"
 )
 
 type CptType struct {
@@ -104,9 +105,10 @@ func traverse(r *Result) {
 	}
 }
 
-func LoadOXF(data []byte) *Result {
+func LoadOXF(rd io.Reader) *Result {
 	r := new(Result)
-	err := xml.Unmarshal(data, r)
+	dec := xml.NewDecoder(rd)
+	err := dec.Decode(r)
 	if err == nil {
 		//fmt.Println(len(r.GraphList))
 		//traverse(r)
