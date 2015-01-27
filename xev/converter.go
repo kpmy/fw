@@ -57,6 +57,7 @@ func (r *Result) findLink(n *Node, ls string) (ret *Node) {
 		}
 		if target != -1 {
 			ret = r.findNode(target)
+			assert.For(ret != nil, 60, "link broken: ", n.Id, " ", ls, " ", target)
 		}
 		if ret != nil {
 			ecache[eid{id: n.Id, link: ls}] = ret
