@@ -187,6 +187,7 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 					})
 					assert.For(fn != nil, 40)
 					proc := m.NodeByObject(fn)
+					assert.For(proc != nil, 40)
 					call(proc[0], nil)
 					panic(0)
 				default:

@@ -159,11 +159,18 @@ func (a *salloc) Allocate(n node.Node, final bool) {
 			}
 		}
 	}
+	ol := mod.Objects[n]
+	switch o := n.Object().(type) {
+	case object.ProcedureObject:
+		for l := o.Link(); l != nil; l = l.Link() {
+			ol = append(ol, l)
+		}
 
+	}
 	nl := newlvl()
 	nl.ready = final
 	a.area.data = append(a.area.data, nl)
-	nl.alloc(mod, n, mod.Objects[n], skip)
+	nl.alloc(mod, n, ol, skip)
 }
 
 func (a *salloc) Dispose(n node.Node) {

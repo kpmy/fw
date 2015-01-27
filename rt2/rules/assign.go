@@ -116,7 +116,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case node.FieldNode:
 			rt2.Push(rt2.New(l), f)
 			rt2.Assert(f, func(f frame.Frame) (bool, int) {
-				return rt2.ValueOf(f)[l.Adr()] != nil, 62
+				return rt2.ValueOf(f)[l.Adr()] != nil, 63
 			})
 			seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
 				left = rt2.ValueOf(f)[l.Adr()]
@@ -126,7 +126,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case node.IndexNode:
 			rt2.Push(rt2.New(a.Left()), f)
 			rt2.Assert(f, func(f frame.Frame) (bool, int) {
-				return rt2.ValueOf(f)[l.Adr()] != nil, 63
+				return rt2.ValueOf(f)[l.Adr()] != nil, 64
 			})
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
@@ -141,7 +141,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			rt2.Push(rt2.New(a.Left()), f)
 			rt2.Assert(f, func(f frame.Frame) (bool, int) {
 				ok := rt2.ValueOf(f)[l.Adr()] != nil
-				return ok, 64
+				return ok, 65
 			})
 			seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
 				left = rt2.ValueOf(f)[a.Left().Adr()]
