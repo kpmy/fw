@@ -34,6 +34,7 @@ type Operations interface {
 	Is(Value, object.ComplexType) Value
 	Conv(Value, object.Type, ...object.ComplexType) Value
 	Len(object.Object, Value, Value) Value
+	TypeOf(Value) (object.Type, object.ComplexType)
 }
 
 type Value interface {

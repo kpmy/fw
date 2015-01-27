@@ -25,28 +25,26 @@ type named interface {
 	Name() string
 }
 
-func (m *Module) ObjectByName(scope node.Node, name string) (ret object.Object) {
+func (m *Module) ObjectByName(scope node.Node, name string) (rl []object.Object) {
 	assert.For(name != "", 20)
-	find := func(v []object.Object) object.Object {
+	find := func(v []object.Object) (ret []object.Object) {
 		for _, o := range v {
 			if o.Name() == name {
-				return o
+				ret = append(ret, o)
 			}
+			//fmt.Println(o.Name(), name, o.Name() == name)
 		}
-		return nil
+		return ret
 	}
 	if scope == nil {
 		for _, v := range m.Objects {
-			ret = find(v)
-			if ret != nil {
-				break
-			}
+			rl = append(rl, find(v)...)
 		}
 	} else {
-		ret = find(m.Objects[scope])
+		rl = find(m.Objects[scope])
 	}
 
-	return ret
+	return rl
 }
 
 func (m *Module) TypeByName(scope node.Node, name string) (ret object.ComplexType) {

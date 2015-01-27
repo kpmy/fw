@@ -161,16 +161,60 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			seq = Propose(Tail(STOP))
 			ret = frame.NOW
 		} else {
-			if imp := m.ImportOf(n.Left().Object()); imp == "" {
-				proc := m.NodeByObject(n.Left().Object())
+			if imp := m.ImportOf(n.Left().Object()); imp == "" || imp == m.Name {
+				switch p.Object().Mode() {
+				case object.LOCAL_PROC, object.EXTERNAL_PROC:
+					proc := m.NodeByObject(n.Left().Object())
+					call(proc[0], nil)
+				case object.TYPE_PROC:
+					sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+					var fn object.ProcedureObject
+					var dm context.Domain
+					sc.Select(n.Right().Object().Adr(), func(v scope.Value) {
+						_, c := scope.Ops.TypeOf(v)
+						mod := rtm.ModuleOfType(f.Domain(), c)
+						dm = f.Domain().Discover(context.UNIVERSE).(context.Domain).Discover(mod.Name).(context.Domain)
+						ol := mod.Objects[mod.Enter]
+						for _, _po := range ol {
+							switch po := _po.(type) {
+							case object.ProcedureObject:
+								if po.Name() == p.Object().Name() && po.Link().Complex() == c {
+									fn = po
+								}
+
+							}
+						}
+					})
+					assert.For(fn != nil, 40)
+					proc := m.NodeByObject(fn)
+					call(proc[0], nil)
+					panic(0)
+				default:
+					halt.As(100, "wrong proc mode ", p.Object().Mode())
+				}
+
 				//fmt.Println(len(proc), len(n.Left().Object().Ref()))
-				call(proc[0], nil)
+				//fmt.Println("proc refs", proc)
+
 			} else {
 				m := ml.Loaded(imp)
-				proc := m.ObjectByName(m.Enter, n.Left().Object().Name())
-				nl := m.NodeByObject(proc)
-				utils.PrintFrame("foreign call", len(nl))
-				call(nl[0], f.Domain().Discover(context.UNIVERSE).(context.Domain).Discover(imp).(context.Domain))
+				pl := m.ObjectByName(m.Enter, n.Left().Object().Name())
+				var proc object.ProcedureObject
+				var nl []node.Node
+				for _, n := range pl {
+					if n.Mode() == p.Object().Mode() {
+						proc = n.(object.ProcedureObject)
+					}
+				}
+				//utils.PrintFrame("proc refs", len(proc))
+				switch proc.Mode() {
+				case object.LOCAL_PROC, object.EXTERNAL_PROC:
+					nl = m.NodeByObject(proc)
+					utils.PrintFrame("foreign call", len(nl), "proc refs", proc)
+					call(nl[0], f.Domain().Discover(context.UNIVERSE).(context.Domain).Discover(imp).(context.Domain))
+				default:
+					halt.As(100, "wrong proc mode ", p.Object().Mode())
+				}
 			}
 		}
 	case node.VariableNode:

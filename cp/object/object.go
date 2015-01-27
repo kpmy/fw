@@ -2,6 +2,7 @@ package object
 
 import (
 	"fw/cp"
+	"strconv"
 	"ypk/assert"
 )
 
@@ -20,6 +21,33 @@ const (
 	MODULE
 )
 
+func (m Mode) String() string {
+	switch m {
+	case HEAD:
+		return "HEAD"
+	case VARIABLE:
+		return "VARIABLE"
+	case LOCAL_PROC:
+		return "LOCAL PROCEDURE"
+	case EXTERNAL_PROC:
+		return "EXTERNAL PROCEDURE"
+	case TYPE_PROC:
+		return "METHOD"
+	case CONSTANT:
+		return "CONSTANT"
+	case PARAMETER:
+		return "PARAMETER"
+	case FIELD:
+		return "FIELD"
+	case TYPE:
+		return "TYPE"
+	case MODULE:
+		return "MODULE"
+	default:
+		return strconv.Itoa(int(m))
+	}
+}
+
 type Object interface {
 	SetName(name string)
 	SetType(typ Type)
@@ -32,6 +60,7 @@ type Object interface {
 	SetRef(n Ref)
 	Ref() []Ref
 	cp.Id
+	Mode(...Mode) Mode
 }
 
 type Ref interface {
@@ -98,6 +127,7 @@ func New(mode Mode, id int) (ret Object) {
 	default:
 		panic("no such object mode")
 	}
+	ret.Mode(mode)
 	ret.Adr(id)
 	return ret
 }
@@ -109,6 +139,7 @@ type objectFields struct {
 	comp ComplexType
 	ref  []Ref
 	adr  cp.ID
+	mod  Mode
 }
 
 func (of *objectFields) SetType(typ Type)         { of.typ = typ }
@@ -126,6 +157,14 @@ func (of *objectFields) Adr(a ...int) cp.ID {
 		of.adr = cp.ID(a[0])
 	}
 	return of.adr
+}
+
+func (of *objectFields) Mode(a ...Mode) Mode {
+	assert.For(len(a) <= 1, 20)
+	if len(a) == 1 {
+		of.mod = a[0]
+	}
+	return of.mod
 }
 
 func (of *objectFields) SetRef(n Ref) {

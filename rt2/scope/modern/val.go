@@ -1377,6 +1377,18 @@ func (o *ops) Geq(a, b scope.Value) scope.Value {
 	panic(0)
 }
 
+func (o *ops) TypeOf(x scope.Value) (object.Type, object.ComplexType) {
+	switch v := x.(type) {
+	case *ptr:
+		if v.val != nil {
+			return v.val.link.Type(), v.val.link.Complex()
+		}
+	default:
+		halt.As(100, reflect.TypeOf(v))
+	}
+	return object.NOTYPE, nil
+}
+
 func init() {
 	scope.ValueFrom = vfrom
 	scope.GoTypeFrom = gfrom

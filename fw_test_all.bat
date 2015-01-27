@@ -24,3 +24,4 @@ start fw_test XevDemo21
 start fw_test XevDemo22
 
 start fw_test XevTest0
+start fw_test XevInit
