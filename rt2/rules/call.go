@@ -167,29 +167,32 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 					proc := m.NodeByObject(n.Left().Object())
 					call(proc[0], nil)
 				case object.TYPE_PROC:
-					sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-					var fn object.ProcedureObject
-					var dm context.Domain
-					sc.Select(n.Right().Object().Adr(), func(v scope.Value) {
+					var proc []node.Node
+					//sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+					return This(expectExpr(f, n.Right(), func(...IN) (out OUT) {
+						v := rt2.ValueOf(f)[n.Right().Adr()]
+						var fn object.ProcedureObject
 						_, c := scope.Ops.TypeOf(v)
 						mod := rtm.ModuleOfType(f.Domain(), c)
-						dm = f.Domain().Discover(context.UNIVERSE).(context.Domain).Discover(mod.Name).(context.Domain)
 						ol := mod.Objects[mod.Enter]
 						for _, _po := range ol {
 							switch po := _po.(type) {
 							case object.ProcedureObject:
-								if po.Name() == p.Object().Name() && po.Link().Complex() == c {
+								if po.Name() == p.Object().Name() && po.Link() != nil && po.Link().Complex() == c {
 									fn = po
 								}
 
 							}
 						}
-					})
-					assert.For(fn != nil, 40)
-					proc := m.NodeByObject(fn)
-					assert.For(proc != nil, 40)
-					call(proc[0], nil)
-					panic(0)
+						assert.For(fn != nil, 40)
+						proc = mod.NodeByObject(fn)
+						assert.For(proc != nil, 40)
+						call(proc[0], nil)
+						out.do = Tail(STOP)
+						out.next = LATER
+						return out
+					}))
+
 				default:
 					halt.As(100, "wrong proc mode ", p.Object().Mode())
 				}

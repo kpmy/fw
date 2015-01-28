@@ -1383,6 +1383,8 @@ func (o *ops) TypeOf(x scope.Value) (object.Type, object.ComplexType) {
 		if v.val != nil {
 			return v.val.link.Type(), v.val.link.Complex()
 		}
+	case *rec:
+		return v.link.Type(), v.link.Complex()
 	default:
 		halt.As(100, reflect.TypeOf(v))
 	}
