@@ -165,6 +165,17 @@ func (a *salloc) Allocate(n node.Node, final bool) {
 		for l := o.Link(); l != nil; l = l.Link() {
 			ol = append(ol, l)
 		}
+	case nil:
+		for _, o := range ol {
+			switch t := o.(type) {
+			case object.ProcedureObject:
+				for l := t.Link(); l != nil; l = l.Link() {
+					skip[l.Adr()] = l
+				}
+			}
+		}
+	default:
+		halt.As(100, reflect.TypeOf(o))
 
 	}
 	nl := newlvl()
@@ -220,7 +231,7 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 			case node.ConstantNode:
 				v := newConst(nv)
 				l.v[l.k[o.Adr()]].Set(v)
-			case node.VariableNode:
+			case node.VariableNode, node.ParameterNode:
 				v := sm.Select(nv.Object().Adr())
 				l.v[l.k[o.Adr()]].Set(v)
 			case node.FieldNode:

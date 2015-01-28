@@ -165,15 +165,18 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				switch p.Object().Mode() {
 				case object.LOCAL_PROC, object.EXTERNAL_PROC:
 					proc := m.NodeByObject(n.Left().Object())
+					assert.For(proc != nil, 40)
 					call(proc[0], nil)
 				case object.TYPE_PROC:
 					var proc []node.Node
 					//sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 					return This(expectExpr(f, n.Right(), func(...IN) (out OUT) {
 						v := rt2.ValueOf(f)[n.Right().Adr()]
+						var dm context.Domain
 						var fn object.ProcedureObject
 						_, c := scope.Ops.TypeOf(v)
 						mod := rtm.ModuleOfType(f.Domain(), c)
+						dm = f.Domain().Discover(context.UNIVERSE).(context.Domain).Discover(mod.Name).(context.Domain)
 						ol := mod.Objects[mod.Enter]
 						for _, _po := range ol {
 							switch po := _po.(type) {
@@ -187,7 +190,7 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 						assert.For(fn != nil, 40)
 						proc = mod.NodeByObject(fn)
 						assert.For(proc != nil, 40)
-						call(proc[0], nil)
+						call(proc[0], dm)
 						out.do = Tail(STOP)
 						out.next = LATER
 						return out
