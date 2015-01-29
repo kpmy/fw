@@ -602,7 +602,16 @@ func (o *ops) Sum(a, b scope.Value) scope.Value {
 			case SET:
 				switch y := b.(type) {
 				case SET:
-					return SET{bits: x.bits.Add(x.bits, y.bits)}
+					res := big.NewInt(0)
+					for i := 0; i < 64; i++ {
+						if x.bits.Bit(i) == 1 {
+							res.SetBit(res, i, 1)
+						}
+						if y.bits.Bit(i) == 1 {
+							res.SetBit(res, i, 1)
+						}
+					}
+					return SET{bits: res}
 				case INTEGER: // INCL(SET, INTEGER)
 					return SET{bits: x.bits.SetBit(x.bits, int(y), 1)}
 				default:
@@ -688,9 +697,17 @@ func (o *ops) Sub(a, b scope.Value) scope.Value {
 			case SET:
 				switch y := b.(type) {
 				case SET:
-					return SET{bits: x.bits.Sub(x.bits, y.bits)}
+					res := big.NewInt(0).Set(x.bits)
+					for i := 0; i < 64; i++ {
+						if y.bits.Bit(i) == 1 {
+							res.SetBit(res, i, 0)
+						}
+					}
+					return SET{bits: res}
 				case INTEGER:
-					return SET{bits: x.bits.SetBit(x.bits, int(y), 0)}
+					null := big.NewInt(0)
+					res := null.SetBit(x.bits, int(y), 0)
+					return SET{bits: res}
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
@@ -715,8 +732,8 @@ func (o *ops) In(a, b scope.Value) scope.Value {
 			case INTEGER:
 				switch y := b.(type) {
 				case SET:
-					fmt.Println("IN врет")
-					return BOOLEAN(false)
+					assert.For(int(x) < 64, 20)
+					return BOOLEAN(y.bits.Bit(int(x)) == 1)
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
@@ -831,11 +848,11 @@ func (o *ops) Or(a, b scope.Value) scope.Value {
 func (o *ops) Ash(a, b scope.Value) scope.Value {
 	switch a.(type) {
 	case *data:
-		return o.Max(vfrom(a), b)
+		return o.Ash(vfrom(a), b)
 	default:
 		switch b.(type) {
 		case *data:
-			return o.Max(a, vfrom(b))
+			return o.Ash(a, vfrom(b))
 		default:
 			switch x := a.(type) {
 			case INTEGER:
@@ -934,6 +951,19 @@ func (o *ops) Mult(a, b scope.Value) scope.Value {
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
+			case SET:
+				switch y := b.(type) {
+				case SET:
+					res := big.NewInt(0)
+					for i := 0; i < 64; i++ {
+						if x.bits.Bit(i) == 1 && y.bits.Bit(i) == 1 {
+							res.SetBit(res, i, 1)
+						}
+					}
+					return SET{bits: res}
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
 			default:
 				panic(fmt.Sprintln(reflect.TypeOf(x)))
 			}
@@ -963,6 +993,19 @@ func (o *ops) Divide(a, b scope.Value) scope.Value {
 				switch y := b.(type) {
 				case REAL:
 					return REAL(float64(x) / float64(y))
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			case SET:
+				switch y := b.(type) {
+				case SET:
+					res := big.NewInt(0)
+					for i := 0; i < 64; i++ {
+						if x.bits.Bit(i) != y.bits.Bit(i) {
+							res.SetBit(res, i, 1)
+						}
+					}
+					return SET{bits: res}
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
@@ -1192,7 +1235,7 @@ func (o *ops) Bits(a scope.Value) scope.Value {
 	case *data:
 		return o.Bits(vfrom(x))
 	case INTEGER:
-		return SET{bits: big.NewInt(int64(x))}
+		return SET{bits: big.NewInt(0).SetBit(big.NewInt(0), int(x), 1)}
 	default:
 		halt.As(100, reflect.TypeOf(x))
 	}
@@ -1259,6 +1302,13 @@ func (o *ops) Neq(a, b scope.Value) scope.Value {
 				switch y := b.(type) {
 				case LONGINT:
 					return BOOLEAN(x != y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			case SET:
+				switch y := b.(type) {
+				case SET:
+					return BOOLEAN(x.bits.Cmp(y.bits) != 0)
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}

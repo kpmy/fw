@@ -234,6 +234,19 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 			case node.VariableNode, node.ParameterNode:
 				v := sm.Select(nv.Object().Adr())
 				l.v[l.k[o.Adr()]].Set(v)
+			case node.OperationNode:
+				nf := rt2.New(nv)
+				rt2.Push(nf, f)
+				rt2.Assert(f, func(f frame.Frame) (bool, int) {
+					return rt2.ValueOf(f)[nv.Adr()] != nil, 59
+				})
+				rt2.ReplaceDomain(nf, global)
+				seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+					v := rt2.ValueOf(f)[nv.Adr()]
+					l.v[l.k[o.Adr()]].Set(v)
+					return end, frame.NOW
+				}
+				ret = frame.LATER
 			case node.FieldNode:
 				nf := rt2.New(nv)
 				rt2.Push(nf, f)
@@ -270,7 +283,7 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 			case node.DerefNode:
 				rt2.Push(rt2.New(nv), f)
 				rt2.Assert(f, func(f frame.Frame) (bool, int) {
-					return rt2.ValueOf(f)[nv.Adr()] != nil, 60
+					return rt2.ValueOf(f)[nv.Adr()] != nil, 61
 				})
 				dn := next
 				old := l.r[l.k[dn.Adr()]].(*ref)
