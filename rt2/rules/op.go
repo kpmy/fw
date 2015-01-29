@@ -87,14 +87,11 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	case operation.NOT:
 		switch n.Left().(type) {
 		case node.ConstantNode:
-			//			rt2.DataOf(f)[n.Left()] = n.Left().(node.ConstantNode).Data()
-			panic(0)
+			rt2.ValueOf(f)[n.Left().Adr()] = sc.Provide(n.Left())(nil)
 			return op, frame.NOW
 		case node.VariableNode, node.ParameterNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				//				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				//				rt2.DataOf(f)[n.Left()] = sc.Select(scope.Designator(n.Left()))
-				panic(0)
+				rt2.ValueOf(f)[n.Left().Adr()] = sc.Select(n.Left().Object().Adr())
 				return op, frame.NOW
 			}
 			ret = frame.NOW

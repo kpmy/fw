@@ -1312,6 +1312,13 @@ func (o *ops) Neq(a, b scope.Value) scope.Value {
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
+			case BOOLEAN:
+				switch y := b.(type) {
+				case BOOLEAN:
+					return BOOLEAN(x != y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
 			default:
 				panic(fmt.Sprintln(reflect.TypeOf(x)))
 			}
