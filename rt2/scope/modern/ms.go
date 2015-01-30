@@ -254,12 +254,28 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 			case node.FieldNode, node.DerefNode:
 				nf := rt2.New(nv)
 				rt2.Push(nf, f)
+				rt2.ReplaceDomain(nf, global)
 				rt2.Assert(f, func(f frame.Frame) (bool, int) {
 					return rt2.ValueOf(f)[nv.Adr()] != nil, 60
 				})
-				rt2.ReplaceDomain(nf, global)
 				seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
 					v := rt2.ValueOf(f)[nv.Adr()]
+					l.v[l.k[o.Adr()]].Set(v)
+					return end, frame.NOW
+				}
+				ret = frame.LATER
+			case node.IndexNode:
+				nf := rt2.New(nv)
+				rt2.Push(nf, f)
+				rt2.ReplaceDomain(nf, global)
+				rt2.Assert(f, func(f frame.Frame) (bool, int) {
+					return rt2.ValueOf(f)[nv.Adr()] != nil, 64
+				})
+				seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+					sc := global.Discover(context.SCOPE).(scope.Manager)
+					left := rt2.ValueOf(f)[nv.Adr()]
+					arr := sc.Select(nv.Left().Object().Adr()).(scope.Array)
+					v := arr.Get(left)
 					l.v[l.k[o.Adr()]].Set(v)
 					return end, frame.NOW
 				}

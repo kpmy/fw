@@ -112,10 +112,14 @@ func (a *arr) Set(v scope.Value) {
 
 func (a *dynarr) Set(v scope.Value) {
 	switch x := v.(type) {
+	case *data:
+		a.Set(vfrom(x))
 	case *arr:
 		a.val = x.val
 	case *dynarr:
 		a.val = x.val
+	case *idx:
+		a.Set(x.Get())
 	case STRING:
 		z := []rune(string(x))
 		v := make([]interface{}, len(z))
@@ -218,6 +222,8 @@ func (i *idx) Set(v scope.Value) {
 func (i *idx) Get() scope.Value {
 	x := i.arr.val[i.idx]
 	switch z := x.(type) {
+	case *arr:
+		return z
 	case CHAR:
 		return z
 	case nil:
@@ -1544,6 +1550,8 @@ func (o *ops) TypeOf(x scope.Value) (object.Type, object.ComplexType) {
 	case *dynarr:
 		return v.link.Type(), v.link.Complex()
 	case *arr:
+		return v.link.Type(), v.link.Complex()
+	case *data:
 		return v.link.Type(), v.link.Complex()
 	default:
 		halt.As(100, reflect.TypeOf(v))

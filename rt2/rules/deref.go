@@ -35,19 +35,24 @@ func derefSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			halt.As(100, l.Adr(), reflect.TypeOf(l))
 		}
 	} else {
+		deref := func(val scope.Value) {
+			t, c := scope.Ops.TypeOf(val)
+			switch cc := c.(type) {
+			case object.ArrayType:
+				rt2.ValueOf(f.Parent())[n.Adr()] = scope.TypeFromGo(scope.GoTypeFrom(val))
+			case object.DynArrayType:
+				rt2.ValueOf(f.Parent())[n.Adr()] = scope.TypeFromGo(scope.GoTypeFrom(val))
+			//case nil:
+			//	panic(0)
+			default:
+				halt.As(100, t, reflect.TypeOf(cc))
+			}
+		}
 		if n.Left().Object() != nil {
 			switch l := n.Left().Object().(type) {
 			case object.ParameterObject, object.VariableObject:
 				val := sc.Select(l.Adr())
-				_, c := scope.Ops.TypeOf(val)
-				switch cc := c.(type) {
-				case object.ArrayType:
-					rt2.ValueOf(f.Parent())[n.Adr()] = scope.TypeFromGo(scope.GoTypeFrom(val))
-				case object.DynArrayType:
-					rt2.ValueOf(f.Parent())[n.Adr()] = scope.TypeFromGo(scope.GoTypeFrom(val))
-				default:
-					halt.As(100, reflect.TypeOf(cc))
-				}
+				deref(val)
 				return frame.End()
 			default:
 				halt.As(100, l.Adr(), reflect.TypeOf(l))
@@ -60,7 +65,21 @@ func derefSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 					return rt2.ValueOf(f)[left.Adr()] != nil, 60
 				})
 				seq = Propose(func(...IN) OUT {
-					rt2.ValueOf(f.Parent())[n.Adr()] = rt2.ValueOf(f)[left.Adr()]
+					deref(rt2.ValueOf(f)[left.Adr()])
+					return End()
+				})
+				ret = LATER.wait()
+			case node.IndexNode:
+				rt2.Push(rt2.New(left), f)
+				rt2.Assert(f, func(f frame.Frame) (bool, int) {
+					return rt2.ValueOf(f)[left.Adr()] != nil, 60
+				})
+				seq = Propose(func(...IN) OUT {
+					val := rt2.ValueOf(f)[left.Adr()]
+					arr := sc.Select(left.Left().Object().Adr()).(scope.Array)
+					deref(arr.Get(val).(scope.Pointer).Get())
+					//rt2.ValueOf(f.Parent())[n.Adr()] = rt2.ValueOf(f)[left.Adr()]
+					//halt.As(100, reflect.TypeOf(rt2.ValueOf(f)[left.Adr()]))
 					return End()
 				})
 				ret = LATER.wait()
