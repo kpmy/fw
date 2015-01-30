@@ -229,6 +229,8 @@ func (i *idx) Set(v scope.Value) {
 	case STRING:
 		_ = t.(object.ArrayType)
 		i.arr.val[i.idx].(*arr).Set(x)
+	case REAL:
+		i.arr.val[i.idx] = x
 	default:
 		halt.As(100, reflect.TypeOf(x), x, t)
 	}
@@ -1032,6 +1034,13 @@ func (o *ops) Mult(a, b scope.Value) scope.Value {
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
+			case REAL:
+				switch y := b.(type) {
+				case REAL:
+					return REAL(x * y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
 			case SET:
 				switch y := b.(type) {
 				case SET:
@@ -1500,6 +1509,13 @@ func (o *ops) Gtr(a, b scope.Value) scope.Value {
 				switch y := b.(type) {
 				case STRING:
 					//fmt.Println(x, y, x > y)
+					return BOOLEAN(x > y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			case REAL:
+				switch y := b.(type) {
+				case REAL:
 					return BOOLEAN(x > y)
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))

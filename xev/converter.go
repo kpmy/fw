@@ -234,8 +234,10 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 				ret = object.NewDynArrayType(object.BYTE, n.Id)
 			case "SHORTCHAR":
 				ret = object.NewDynArrayType(object.SHORTCHAR, n.Id)
+			case "REAL":
+				ret = object.NewDynArrayType(object.REAL, n.Id)
 			default:
-				panic(fmt.Sprintln("unknown dyn type", n.Data.Typ.Typ))
+				panic(fmt.Sprintln("unknown dyn type", n.Data.Typ.Base, n.Data.Typ.Typ))
 			}
 		case "ARRAY":
 			switch n.Data.Typ.Base {
@@ -243,6 +245,8 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 				ret = object.NewArrayType(object.CHAR, int64(n.Data.Typ.Par), n.Id)
 			case "SHORTCHAR":
 				ret = object.NewArrayType(object.SHORTCHAR, int64(n.Data.Typ.Par), n.Id)
+			case "REAL":
+				ret = object.NewArrayType(object.REAL, int64(n.Data.Typ.Par), n.Id)
 			case "COMPLEX":
 				ret = object.NewArrayType(object.COMPLEX, int64(n.Data.Typ.Par), n.Id)
 				base := r.findLink(n, "base")

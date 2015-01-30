@@ -54,7 +54,7 @@ func callHandler(f frame.Frame, obj object.Object, data interface{}) {
 	rt2.Push(rt2.New(cn), f)
 }
 
-func process(f frame.Frame, par node.Node) (frame.Sequence, frame.WAIT) {
+func go_process(f frame.Frame, par node.Node) (frame.Sequence, frame.WAIT) {
 	assert.For(par != nil, 20)
 	sm := f.Domain().Discover(context.SCOPE).(scope.Manager)
 	do := func(val string) {
@@ -114,9 +114,20 @@ func process(f frame.Frame, par node.Node) (frame.Sequence, frame.WAIT) {
 	panic(0)
 }
 
+func go_math(f frame.Frame, par node.Node) (frame.Sequence, frame.WAIT) {
+	assert.For(par != nil, 20)
+	switch p := par.(type) {
+
+	default:
+		halt.As(100, reflect.TypeOf(p))
+	}
+	panic(126)
+}
+
 func init() {
 	sys = make(map[string]func(f frame.Frame, par node.Node) (frame.Sequence, frame.WAIT))
-	sys["go_process"] = process
+	sys["go_process"] = go_process
+	sys["go_math"] = go_math
 }
 
 func syscall(f frame.Frame) (frame.Sequence, frame.WAIT) {
@@ -235,7 +246,7 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		} else {
 			name := n.Left().Object().Name()
 			switch {
-			case name == "go_process":
+			case sys[name] != nil:
 				return syscall(f)
 			default:
 				panic(fmt.Sprintln("unknown sysproc variable", name))
