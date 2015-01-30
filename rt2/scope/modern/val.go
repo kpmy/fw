@@ -206,7 +206,22 @@ func (i *idx) Set(v scope.Value) {
 	t := i.arr.link.Complex()
 	switch x := v.(type) {
 	case *idx:
-		i.arr.val[i.idx] = x.arr.val[x.idx]
+		if x.arr.link.Complex().(object.ArrayType).Base() != object.COMPLEX {
+			i.arr.val[i.idx] = x.arr.val[x.idx]
+		} else {
+			switch z := x.arr.val[x.idx].(type) {
+			case *arr:
+				t := z.link.Complex().(object.ArrayType).Base()
+				switch t {
+				case object.CHAR:
+					i.arr.val[i.idx].(*arr).Set(STRING(z.tryString()))
+				default:
+					halt.As(100, t)
+				}
+			default:
+				halt.As(100, reflect.TypeOf(z))
+			}
+		}
 	case *data:
 		i.Set(x.val.(scope.Value))
 	case CHAR:
@@ -1477,6 +1492,14 @@ func (o *ops) Gtr(a, b scope.Value) scope.Value {
 			case INTEGER:
 				switch y := b.(type) {
 				case INTEGER:
+					return BOOLEAN(x > y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			case STRING:
+				switch y := b.(type) {
+				case STRING:
+					//fmt.Println(x, y, x > y)
 					return BOOLEAN(x > y)
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
