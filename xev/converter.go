@@ -243,8 +243,15 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 				ret = object.NewArrayType(object.CHAR, int64(n.Data.Typ.Par), n.Id)
 			case "SHORTCHAR":
 				ret = object.NewArrayType(object.SHORTCHAR, int64(n.Data.Typ.Par), n.Id)
+			case "COMPLEX":
+				ret = object.NewArrayType(object.COMPLEX, int64(n.Data.Typ.Par), n.Id)
+				base := r.findLink(n, "base")
+				if base != nil {
+					ret.(object.ArrayType).Complex(r.doType(base))
+					assert.For(ret.(object.ArrayType).Complex() != nil, 41)
+				}
 			default:
-				panic(fmt.Sprintln("unknown array type", n.Data.Typ.Base))
+				panic(fmt.Sprintln("unknown array type", n.Id, n.Data.Typ.Base))
 			}
 		case "RECORD":
 			switch n.Data.Typ.Base {

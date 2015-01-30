@@ -17,18 +17,21 @@ func caseSeq(f frame.Frame) (frame.Sequence, frame.WAIT) {
 	in := func(in ...IN) (out OUT) {
 		cond := n.Right().(node.ElseNode)
 		if e < cond.Min() || e > cond.Max() { //case?
+			if cond.Right() != nil {
+				rt2.Push(rt2.New(cond.Right()), f)
+			}
 			out.do = Tail(STOP)
-			out.next = NOW
+			out.next = LATER
 		} else {
 			for next := cond.Left(); next != nil && out.do == nil; next = next.Link() {
 				var ok bool
 				for _c := next.Left(); _c != nil && !ok; _c = _c.Right() {
 					c := _c.(node.ConstantNode)
 					if (c.Min() != nil) && (c.Max() != nil) {
-						//	fmt.Println(e, *c.Max(), *c.Min())
+						//fmt.Println(e, *c.Max(), *c.Min())
 						ok = e >= *c.Min() && e <= *c.Max()
 					} else {
-						//	fmt.Println(e, c.Data())
+						//fmt.Println(e, c.Data())
 						ok = int32Of(c.Data()) == int32(e)
 					}
 				}

@@ -30,6 +30,7 @@ type Operations interface {
 	Odd(Value) Value
 	Cap(Value) Value
 	Bits(Value) Value //это не BITS из КП, BITS(x) = {x}
+	Minus(Value) Value
 
 	Is(Value, object.ComplexType) Value
 	Conv(Value, object.Type, ...object.ComplexType) Value

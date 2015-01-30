@@ -1,13 +1,13 @@
 package rules
 
 import (
-	"fmt"
 	"fw/cp/node"
 	"fw/rt2"
 	"fw/rt2/context"
 	"fw/rt2/frame"
 	"fw/rt2/module"
 	"fw/rt2/scope"
+	"fw/utils"
 )
 
 func enterSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
@@ -27,12 +27,12 @@ func enterSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		} else {
 			//Особый случай, вход в модуль, секция BEGIN
 			rt2.Push(rt2.New(body), f)
-			fmt.Println("begin", module.DomainModule(f.Domain()).Name)
+			utils.PrintFrame("begin", module.DomainModule(f.Domain()).Name)
 			//Выход из модуля, секция CLOSE
 			next := n.Link()
 			if next != nil {
 				seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
-					fmt.Println("end", module.DomainModule(f.Domain()).Name)
+					utils.PrintFrame("end", module.DomainModule(f.Domain()).Name)
 					f.Root().PushFor(rt2.New(next), f)
 					return frame.Tail(frame.STOP), frame.END
 				}

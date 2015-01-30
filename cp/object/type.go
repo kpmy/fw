@@ -106,6 +106,7 @@ type ArrayType interface {
 	ComplexType
 	Base() Type
 	Len() int64
+	Complex(...ComplexType) ComplexType
 }
 
 type DynArrayType interface {
@@ -163,10 +164,19 @@ type arr struct {
 	comp
 	base   Type
 	length int64
+	cmp    ComplexType
 }
 
 func (a *arr) Base() Type { return a.base }
 func (a *arr) Len() int64 { return a.length }
+func (a *arr) Complex(t ...ComplexType) ComplexType {
+	if len(t) == 1 {
+		a.cmp = t[0]
+	} else if len(t) > 1 {
+		panic("too many args")
+	}
+	return a.cmp
+}
 
 type rec struct {
 	comp

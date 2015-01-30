@@ -68,7 +68,7 @@ func process(f frame.Frame, par node.Node) (frame.Sequence, frame.WAIT) {
 				case "core":
 					switch msg.Command {
 					case "load":
-						fmt.Println("try to load", msg.Data)
+						//fmt.Println("try to load", msg.Data)
 						glob := f.Domain().Discover(context.UNIVERSE).(context.Domain)
 						modList := glob.Discover(context.MOD).(rtm.List)
 						fl := glob.Discover(context.MT).(*flow)

@@ -5,7 +5,7 @@ import (
 	"fw/cp/node"
 	"fw/rt2"
 	"fw/rt2/frame"
-	//	"fw/rt2/scope"
+	"fw/rt2/scope"
 	"reflect"
 	"ypk/assert"
 )
@@ -31,21 +31,18 @@ func expectExpr(parent frame.Frame, expr node.Node, next Do) OUT {
 		}
 		return OUT{do: wait, next: LATER}
 	case node.IndexNode:
-		/*id := scope.Designator(expr)
-		rt2.Push(rt2.New(expr), parent)
+		rt2.Push(rt2.New(e), parent)
+		rt2.Assert(parent, func(f frame.Frame) (bool, int) {
+			return rt2.ValueOf(f)[e.Adr()] != nil, 64
+		})
 		wait := func(...IN) OUT {
-			if rt2.DataOf(parent)[expr] == nil {
-				panic("no result")
-			} else {
-				id.Index = new(int64)
-				*id.Index = int64(rt2.DataOf(parent)[expr].(int32))
-				rt2.DataOf(parent)[expr] = sm.Select(id)
-			}
+			idx := rt2.ValueOf(parent)[e.Adr()]
+			arr := sm.Select(e.Left().Object().Adr()).(scope.Array)
+			idx = arr.Get(idx)
+			rt2.ValueOf(parent)[e.Adr()] = idx
 			return OUT{do: next, next: NOW}
 		}
-		return OUT{do: wait, next: LATER}*/
-		panic(0)
-		return End()
+		return OUT{do: wait, next: LATER}
 	case node.ProcedureNode:
 		rt2.RegOf(parent)[expr] = e.Object()
 		return OUT{do: next, next: NOW}

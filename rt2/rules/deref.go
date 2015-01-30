@@ -38,7 +38,16 @@ func derefSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		if n.Left().Object() != nil {
 			switch l := n.Left().Object().(type) {
 			case object.ParameterObject, object.VariableObject:
-				rt2.ValueOf(f.Parent())[n.Adr()] = sc.Select(l.Adr())
+				val := sc.Select(l.Adr())
+				_, c := scope.Ops.TypeOf(val)
+				switch cc := c.(type) {
+				case object.ArrayType:
+					rt2.ValueOf(f.Parent())[n.Adr()] = scope.TypeFromGo(scope.GoTypeFrom(val))
+				case object.DynArrayType:
+					rt2.ValueOf(f.Parent())[n.Adr()] = scope.TypeFromGo(scope.GoTypeFrom(val))
+				default:
+					halt.As(100, reflect.TypeOf(cc))
+				}
 				return frame.End()
 			default:
 				halt.As(100, l.Adr(), reflect.TypeOf(l))

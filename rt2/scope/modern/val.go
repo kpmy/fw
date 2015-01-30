@@ -117,15 +117,17 @@ func (a *dynarr) Set(v scope.Value) {
 	case *dynarr:
 		a.val = x.val
 	case STRING:
-		v := make([]interface{}, len(x))
-		for i := 0; i < len(x); i++ {
-			v[i] = CHAR(x[i])
+		z := []rune(string(x))
+		v := make([]interface{}, len(z))
+		for i := 0; i < len(z); i++ {
+			v[i] = CHAR(z[i])
 		}
 		a.val = v
 	case SHORTSTRING:
-		v := make([]interface{}, len(x))
-		for i := 0; i < len(x); i++ {
-			v[i] = SHORTCHAR(x[i])
+		z := []rune(string(x))
+		v := make([]interface{}, len(z))
+		for i := 0; i < len(z); i++ {
+			v[i] = SHORTCHAR(z[i])
 		}
 		a.val = v
 	case INTEGER:
@@ -136,18 +138,19 @@ func (a *dynarr) Set(v scope.Value) {
 }
 
 func (a *arr) tryString() (ret string) {
-	for i := 0; i < len(a.val) && a.val[i] != nil; i++ {
+	stop := false
+	for i := 0; !stop && i < len(a.val) && a.val[i] != nil; i++ {
 		switch x := a.val[i].(type) {
 		case CHAR:
-			if int(x) == 0 {
-				break
+			stop = int(x) == 0
+			if !stop {
+				ret = fmt.Sprint(ret, string([]rune{rune(x)}))
 			}
-			ret = fmt.Sprint(ret, string([]rune{rune(x)}))
 		case SHORTCHAR:
-			if int(x) == 0 {
-				break
+			stop = int(x) == 0
+			if !stop {
+				ret = fmt.Sprint(ret, string([]rune{rune(x)}))
 			}
-			ret = fmt.Sprint(ret, string([]rune{rune(x)}))
 		default:
 			halt.As(100, reflect.TypeOf(x))
 		}
@@ -170,6 +173,7 @@ func (a *arr) String() (ret string) {
 	return ret
 }
 
+//возвращает *idx
 func (a *arr) Get(id scope.Value) scope.Value {
 	switch i := id.(type) {
 	case *data:
@@ -195,7 +199,7 @@ func (i *idx) String() string {
 }
 
 func (i *idx) Set(v scope.Value) {
-	//fmt.Println(i, len(i.arr.val))
+	t := i.arr.link.Complex()
 	switch x := v.(type) {
 	case *idx:
 		i.arr.val[i.idx] = x.arr.val[x.idx]
@@ -203,24 +207,47 @@ func (i *idx) Set(v scope.Value) {
 		i.Set(x.val.(scope.Value))
 	case CHAR:
 		i.arr.val[i.idx] = x
+	case STRING:
+		_ = t.(object.ArrayType)
+		i.arr.val[i.idx].(*arr).Set(x)
 	default:
-		halt.As(100, reflect.TypeOf(x))
+		halt.As(100, reflect.TypeOf(x), x, t)
 	}
 }
 
+func (i *idx) Get() scope.Value {
+	x := i.arr.val[i.idx]
+	switch z := x.(type) {
+	case CHAR:
+		return z
+	case nil:
+		b := i.arr.link.Complex().(object.ArrayType).Base()
+		switch b {
+		case object.CHAR:
+			return CHAR(rune(0))
+		default:
+			halt.As(101, reflect.TypeOf(b))
+		}
+	default:
+		halt.As(100, i.idx, reflect.TypeOf(z))
+	}
+	panic(0)
+}
+
 func (a *dynarr) tryString() (ret string) {
-	for i := 0; i < len(a.val) && a.val[i] != nil; i++ {
+	stop := false
+	for i := 0; !stop && i < len(a.val) && a.val[i] != nil; i++ {
 		switch x := a.val[i].(type) {
 		case CHAR:
-			if int(x) == 0 {
-				break
+			stop = int(x) == 0
+			if !stop {
+				ret = fmt.Sprint(ret, string([]rune{rune(x)}))
 			}
-			ret = fmt.Sprint(ret, string([]rune{rune(x)}))
 		case SHORTCHAR:
-			if int(x) == 0 {
-				break
+			stop = int(x) == 0
+			if !stop {
+				ret = fmt.Sprint(ret, string([]rune{rune(x)}))
 			}
-			ret = fmt.Sprint(ret, string([]rune{rune(x)}))
 		default:
 			halt.As(100, reflect.TypeOf(x))
 		}
@@ -420,6 +447,16 @@ func newData(o object.Object) (ret scope.Variable) {
 			}
 		case object.ArrayType:
 			ret = &arr{link: o, length: t.Len()}
+			if a := ret.(*arr); t.Base() == object.COMPLEX {
+				a.val = make([]interface{}, int(t.Len()))
+				for i := 0; i < int(t.Len()); i++ {
+					fake := object.New(object.VARIABLE, int(cp.SomeAdr()))
+					fake.SetName("[?]")
+					fake.SetType(object.COMPLEX)
+					fake.SetComplex(t.Complex())
+					a.val[i] = newData(fake)
+				}
+			}
 		case object.DynArrayType:
 			ret = &dynarr{link: o}
 		default:
@@ -440,6 +477,8 @@ func fromg(x interface{}) scope.Value {
 		return BOOLEAN(x)
 	case *big.Int:
 		return SET{bits: x}
+	case string:
+		return STRING(x)
 	default:
 		halt.As(100, reflect.TypeOf(x))
 	}
@@ -517,7 +556,7 @@ func vfrom(v scope.Value) scope.Value {
 		default:
 			halt.As(100, n.link.Type())
 		}
-	case INTEGER:
+	case INTEGER, CHAR:
 		return n
 	default:
 		halt.As(100, reflect.TypeOf(n))
@@ -563,8 +602,22 @@ func gfrom(v scope.Value) interface{} {
 			} else {
 				return ""
 			}
+		case object.CHAR:
+			if n.val != nil {
+				return n.tryString()
+			} else {
+				return ""
+			}
 		default:
 			halt.As(100, n.link.Complex().(object.ArrayType).Base())
+		}
+		panic(0)
+	case *idx:
+		switch n.arr.link.Complex().(object.ArrayType).Base() {
+		case object.CHAR:
+			return rune(n.Get().(CHAR))
+		default:
+			halt.As(100, n.arr.link.Complex().(object.ArrayType).Base())
 		}
 		panic(0)
 	case PTR:
@@ -574,6 +627,8 @@ func gfrom(v scope.Value) interface{} {
 		return int32(n)
 	case BOOLEAN:
 		return bool(n)
+	case STRING:
+		return string(n)
 	default:
 		halt.As(100, reflect.TypeOf(n))
 	}
@@ -883,7 +938,7 @@ func (o *ops) Div(a, b scope.Value) scope.Value {
 			case INTEGER:
 				switch y := b.(type) {
 				case INTEGER:
-					return INTEGER(x / y)
+					return INTEGER(math.Floor(float64(x) / float64(y)))
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
@@ -915,7 +970,12 @@ func (o *ops) Mod(a, b scope.Value) scope.Value {
 			case INTEGER:
 				switch y := b.(type) {
 				case INTEGER:
-					return INTEGER(x % y)
+					z := x % y
+					switch {
+					case (x < 0) != (y < 0):
+						z = z + y
+					}
+					return INTEGER(z)
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
@@ -1041,14 +1101,17 @@ func (o *ops) Len(a object.Object, _a, _b scope.Value) (ret scope.Value) {
 		}
 	} else {
 		switch a := _a.(type) {
-		//		case string:
-		//			ret = int64(utf8.RuneCountInString(_a.(string)))
-		//		case []interface{}:
-		//			ret = int64(len(_a.([]interface{})))
 		case *arr:
 			ret = INTEGER(int32(a.length))
 		case *dynarr:
 			ret = INTEGER(int32(len(a.val)))
+		case STRING:
+			rs := []rune(string(a))
+			ln := len(rs)
+			ret = INTEGER(0)
+			for l := 0; l < ln && rs[l] != 0; l++ {
+				ret = INTEGER(l + 1)
+			}
 		default:
 			panic(fmt.Sprintln("unsupported", reflect.TypeOf(a)))
 		}
@@ -1129,6 +1192,17 @@ func (o *ops) Conv(a scope.Value, typ object.Type, comp ...object.ComplexType) s
 		default:
 			halt.As(100, reflect.TypeOf(x))
 		}
+	case object.LONGINT:
+		switch x := a.(type) {
+		case *data:
+			return o.Conv(vfrom(x), typ)
+		case INTEGER:
+			return LONGINT(x)
+		case REAL:
+			return LONGINT(math.Floor(float64(x)))
+		default:
+			halt.As(100, reflect.TypeOf(x))
+		}
 	case object.SET:
 		switch x := a.(type) {
 		case *data:
@@ -1167,6 +1241,8 @@ func (o *ops) Conv(a scope.Value, typ object.Type, comp ...object.ComplexType) s
 					return SHORTSTRING(x.tryString())
 				case *arr:
 					return SHORTSTRING(x.tryString())
+				case STRING:
+					return SHORTSTRING(x)
 				default:
 					halt.As(100, reflect.TypeOf(x))
 				}
@@ -1200,6 +1276,20 @@ func (o *ops) Abs(a scope.Value) scope.Value {
 		return o.Abs(vfrom(x))
 	case INTEGER:
 		return INTEGER(int32(math.Abs(float64(x))))
+	default:
+		halt.As(100, reflect.TypeOf(x))
+	}
+	panic(100)
+}
+
+func (o *ops) Minus(a scope.Value) scope.Value {
+	switch x := a.(type) {
+	case *data:
+		return o.Minus(vfrom(x))
+	case INTEGER:
+		return INTEGER(-x)
+	case LONGINT:
+		return LONGINT(-x)
 	default:
 		halt.As(100, reflect.TypeOf(x))
 	}
@@ -1274,9 +1364,11 @@ func (o *ops) Eq(a, b scope.Value) scope.Value {
 }
 
 func (o *ops) Neq(a, b scope.Value) scope.Value {
-	switch a.(type) {
+	switch i := a.(type) {
 	case *data:
 		return o.Neq(vfrom(a), b)
+	case *idx:
+		return o.Neq(vfrom(i.Get()), b)
 	default:
 		switch b.(type) {
 		case *data:
@@ -1315,6 +1407,13 @@ func (o *ops) Neq(a, b scope.Value) scope.Value {
 			case BOOLEAN:
 				switch y := b.(type) {
 				case BOOLEAN:
+					return BOOLEAN(x != y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			case CHAR:
+				switch y := b.(type) {
+				case CHAR:
 					return BOOLEAN(x != y)
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
@@ -1441,6 +1540,10 @@ func (o *ops) TypeOf(x scope.Value) (object.Type, object.ComplexType) {
 			return v.val.link.Type(), v.val.link.Complex()
 		}
 	case *rec:
+		return v.link.Type(), v.link.Complex()
+	case *dynarr:
+		return v.link.Type(), v.link.Complex()
+	case *arr:
 		return v.link.Type(), v.link.Complex()
 	default:
 		halt.As(100, reflect.TypeOf(v))

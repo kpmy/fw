@@ -55,6 +55,9 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case operation.BITS:
 			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Bits(rt2.ValueOf(f)[n.Left().Adr()])
 			return frame.End()
+		case operation.MINUS:
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Minus(rt2.ValueOf(f)[n.Left().Adr()])
+			return frame.End()
 		default:
 			panic("no such op")
 		}
@@ -128,7 +131,7 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			fmt.Println(reflect.TypeOf(n.Left()))
 			panic("wrong left")
 		}
-	case operation.ABS, operation.ODD, operation.CAP, operation.BITS:
+	case operation.ABS, operation.ODD, operation.CAP, operation.BITS, operation.MINUS:
 		return This(expectExpr(f, n.Left(), Expose(op)))
 	default:
 		panic(fmt.Sprintln("no such operation", n.(node.MonadicNode).Operation()))
@@ -299,6 +302,8 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			}
 			ret = frame.NOW
 			return seq, ret
+		case node.IndexNode:
+			return This(expectExpr(f, n.Left(), Expose(short)))
 		default:
 			fmt.Println(reflect.TypeOf(n.Left()))
 			panic("wrong left")

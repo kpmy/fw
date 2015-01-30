@@ -196,12 +196,12 @@ func (f *flow) Do() (ret frame.WAIT) {
 func (f *flow) OnPush(root frame.Stack, parent frame.Frame) {
 	f.root = root
 	f.parent = parent
-	fmt.Println("flow control pushed")
+	//fmt.Println("flow control pushed")
 	f.this = len(f.fl) - 1
 }
 
 func (f *flow) OnPop() {
-	fmt.Println("flow control poped")
+	//fmt.Println("flow control poped")
 }
 
 func (f *flow) Parent() frame.Frame    { return f.parent }

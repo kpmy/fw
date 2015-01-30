@@ -98,7 +98,11 @@ func (l *level) alloc(mod *cpm.Module, root node.Node, ol []object.Object, skip 
 			switch x := o.(type) {
 			case object.VariableObject, object.FieldObject:
 				switch t := o.Complex().(type) {
-				case nil, object.BasicType, object.ArrayType, object.DynArrayType:
+				case nil, object.BasicType:
+					l.v[l.next] = newData(x)
+					l.k[x.Adr()] = l.next
+					l.next++
+				case object.ArrayType, object.DynArrayType:
 					l.v[l.next] = newData(x)
 					l.k[x.Adr()] = l.next
 					l.next++
@@ -247,7 +251,7 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 					return end, frame.NOW
 				}
 				ret = frame.LATER
-			case node.FieldNode:
+			case node.FieldNode, node.DerefNode:
 				nf := rt2.New(nv)
 				rt2.Push(nf, f)
 				rt2.Assert(f, func(f frame.Frame) (bool, int) {
