@@ -14,6 +14,8 @@ import (
 	rtm "fw/rt2/module"
 	"fw/rt2/scope"
 	"fw/utils"
+	"math"
+	"math/big"
 	"reflect"
 	"ypk/assert"
 	"ypk/halt"
@@ -115,9 +117,28 @@ func go_process(f frame.Frame, par node.Node) (frame.Sequence, frame.WAIT) {
 }
 
 func go_math(f frame.Frame, par node.Node) (frame.Sequence, frame.WAIT) {
+	const (
+		LN   = 1.0
+		MANT = 2.0
+		EXP  = 3.0
+	)
 	assert.For(par != nil, 20)
+	sm := f.Domain().Discover(context.SCOPE).(scope.Manager)
+	res := math.NaN()
 	switch p := par.(type) {
-
+	case node.VariableNode:
+		val := sm.Select(p.Object().Adr())
+		rv, ok := scope.GoTypeFrom(val).([]float64)
+		assert.For(ok && (len(rv) > 1), 100, rv)
+		switch rv[0] {
+		case LN:
+			res = math.Log(rv[1])
+		case MANT:
+			tmp := big.NewRat(1, 1)
+			tmp.SetFloat64(rv[1])
+			panic(0)
+		}
+		fmt.Println(rv)
 	default:
 		halt.As(100, reflect.TypeOf(p))
 	}

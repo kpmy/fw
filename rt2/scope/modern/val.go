@@ -631,6 +631,12 @@ func gfrom(v scope.Value) interface{} {
 			} else {
 				return ""
 			}
+		case object.REAL:
+			ret := make([]float64, 0)
+			for i := 0; i < len(n.val) && n.val[i] != nil; i++ {
+				ret = append(ret, float64(n.val[i].(REAL)))
+			}
+			return ret
 		default:
 			halt.As(100, n.link.Complex().(object.ArrayType).Base())
 		}
