@@ -72,11 +72,15 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case node.OperationNode, node.CallNode, node.DerefNode, node.FieldNode:
 			rt2.Push(rt2.New(a.Right()), f)
 			rt2.Assert(f, func(f frame.Frame) (bool, int) {
-				return rt2.ValueOf(f)[a.Right().Adr()] != nil, 61
+				return rt2.ValueOf(f)[a.Right().Adr()] != nil || rt2.RegOf(f)["RETURN"] != nil, 61
 			})
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				//sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				vleft.Set(rt2.ValueOf(f)[a.Right().Adr()])
+				val := rt2.ValueOf(f)[a.Right().Adr()]
+				if val == nil {
+					val = rt2.RegOf(f)["RETURN"].(scope.Value)
+				}
+				vleft.Set(val)
 				return frame.End()
 			}
 			ret = frame.LATER

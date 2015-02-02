@@ -170,6 +170,8 @@ func (a *arr) String() (ret string) {
 			ret = fmt.Sprint(ret, string([]rune{rune(x)}))
 		case SHORTCHAR:
 			ret = fmt.Sprint(ret, string([]rune{rune(x)}))
+		case REAL:
+			ret = fmt.Sprint(ret, ", ", a.val[i])
 		default:
 			halt.As(100, reflect.TypeOf(x))
 		}
@@ -502,6 +504,8 @@ func fromg(x interface{}) scope.Value {
 		return SET{bits: x}
 	case string:
 		return STRING(x)
+	case float64:
+		return REAL(x)
 	default:
 		halt.As(100, reflect.TypeOf(x))
 	}
@@ -775,6 +779,13 @@ func (o *ops) Sub(a, b scope.Value) scope.Value {
 				switch y := b.(type) {
 				case INTEGER:
 					return INTEGER(int32(x) - int32(y))
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			case LONGINT:
+				switch y := b.(type) {
+				case LONGINT:
+					return INTEGER(int64(x) - int64(y))
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
@@ -1326,6 +1337,8 @@ func (o *ops) Minus(a scope.Value) scope.Value {
 		return INTEGER(-x)
 	case LONGINT:
 		return LONGINT(-x)
+	case REAL:
+		return REAL(-x)
 	default:
 		halt.As(100, reflect.TypeOf(x))
 	}
@@ -1337,7 +1350,9 @@ func (o *ops) Odd(a scope.Value) scope.Value {
 	case *data:
 		return o.Odd(vfrom(x))
 	case INTEGER:
-		return BOOLEAN(int32(math.Abs(float64(x)))%2 == 1)
+		return BOOLEAN(int64(math.Abs(float64(x)))%2 == 1)
+	case LONGINT:
+		return BOOLEAN(int64(math.Abs(float64(x)))%2 == 1)
 	default:
 		halt.As(100, reflect.TypeOf(x))
 	}
@@ -1522,6 +1537,13 @@ func (o *ops) Gtr(a, b scope.Value) scope.Value {
 			case REAL:
 				switch y := b.(type) {
 				case REAL:
+					return BOOLEAN(x > y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			case LONGINT:
+				switch y := b.(type) {
+				case LONGINT:
 					return BOOLEAN(x > y)
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))

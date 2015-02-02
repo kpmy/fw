@@ -120,6 +120,18 @@ func epilogue(n node.Node) frame.Sequence {
 			if next != nil {
 				f.Root().PushFor(rt2.New(next), f.Parent())
 			}
+			if _, ok := n.(node.CallNode); ok {
+				if f.Parent() != nil {
+					par := rt2.RegOf(f.Parent())
+					for k, v := range rt2.RegOf(f) {
+						par[k] = v
+					}
+					val := rt2.ValueOf(f.Parent())
+					for k, v := range rt2.ValueOf(f) {
+						val[k] = v
+					}
+				}
+			}
 			return frame.End()
 		}
 	case node.EnterNode:

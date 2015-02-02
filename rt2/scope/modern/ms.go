@@ -14,7 +14,6 @@ import (
 	"fw/rt2/scope"
 	"fw/utils"
 	"reflect"
-
 	"ypk/assert"
 	"ypk/halt"
 )
@@ -251,15 +250,19 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 					return end, frame.NOW
 				}
 				ret = frame.LATER
-			case node.FieldNode, node.DerefNode:
+			case node.FieldNode, node.DerefNode, node.CallNode:
 				nf := rt2.New(nv)
 				rt2.Push(nf, f)
 				rt2.ReplaceDomain(nf, global)
 				rt2.Assert(f, func(f frame.Frame) (bool, int) {
-					return rt2.ValueOf(f)[nv.Adr()] != nil, 60
+					return rt2.ValueOf(f)[nv.Adr()] != nil || rt2.RegOf(f)["RETURN"] != nil, 60
 				})
 				seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
 					v := rt2.ValueOf(f)[nv.Adr()]
+					if v == nil {
+						v, _ = rt2.RegOf(f)["RETURN"].(scope.Value)
+					}
+					assert.For(v != nil, 40)
 					l.v[l.k[o.Adr()]].Set(v)
 					return end, frame.NOW
 				}
@@ -285,7 +288,7 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 			}
 		case object.ParameterObject:
 			switch nv := val.(type) {
-			case node.VariableNode:
+			case node.VariableNode, node.ParameterNode:
 				old := l.r[l.k[o.Adr()]].(*ref)
 				l.r[l.k[o.Adr()]] = &ref{link: old.link, sc: sm, id: nv.Object().Adr()}
 			case node.ConstantNode: //array :) заменяем ссылку на переменную

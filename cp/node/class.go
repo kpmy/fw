@@ -185,6 +185,10 @@ type callNode struct {
 
 func (v *callNode) self() CallNode { return v }
 
+func (c *callNode) String() string {
+	return fmt.Sprintln(c.Adr(), c.Left().Object().Name())
+}
+
 type procedureNode struct {
 	nodeFields
 	super bool

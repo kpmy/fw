@@ -116,7 +116,11 @@ func go_process(f frame.Frame, par node.Node) (frame.Sequence, frame.WAIT) {
 	panic(0)
 }
 
-func go_math(f frame.Frame, par node.Node) (frame.Sequence, frame.WAIT) {
+func me(f float64) {
+
+}
+
+func go_math(f frame.Frame, par node.Node) (seq frame.Sequence, ret frame.WAIT) {
 	const (
 		LN   = 1.0
 		MANT = 2.0
@@ -134,15 +138,20 @@ func go_math(f frame.Frame, par node.Node) (frame.Sequence, frame.WAIT) {
 		case LN:
 			res = math.Log(rv[1])
 		case MANT:
-			tmp := big.NewRat(1, 1)
-			tmp.SetFloat64(rv[1])
+			_ = big.NewRat(1, 1).SetFloat64(rv[1])
 			panic(0)
+		case EXP:
+			me(rv[1])
+			panic(0)
+		default:
+			halt.As(100, rv[0])
 		}
 		fmt.Println(rv)
 	default:
 		halt.As(100, reflect.TypeOf(p))
 	}
-	panic(126)
+	rt2.RegOf(f.Parent())["RETURN"] = scope.TypeFromGo(res)
+	return frame.End()
 }
 
 func init() {
@@ -173,7 +182,6 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			//fmt.Println("no data for call")
 		}
 		seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-			//			rt2.DataOf(f.Parent())[n] = rt2.DataOf(f)[n.Left().Object()]
 			if f.Parent() != nil {
 				rt2.ValueOf(f.Parent())[n.Adr()] = rt2.ValueOf(f)[n.Left().Object().Adr()]
 			}

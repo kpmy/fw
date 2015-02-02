@@ -219,17 +219,18 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			}
 			ret = frame.NOW
 			return seq, ret
-		case node.OperationNode, node.DerefNode, node.CallNode:
+		case node.OperationNode, node.DerefNode:
 			rt2.Push(rt2.New(n.Right()), f)
 			rt2.Assert(f, func(f frame.Frame) (bool, int) {
-				return rt2.ValueOf(f)[r.Adr()] != nil, 60
+				return rt2.ValueOf(f)[r.Adr()] != nil, 61
 			})
-
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				return op, frame.NOW
 			}
 			ret = frame.LATER
 			return seq, ret
+		case node.CallNode:
+			return This(expectExpr(f, r, Expose(op)))
 		case node.FieldNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				//				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
@@ -282,7 +283,7 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			}
 			ret = frame.NOW
 			return seq, ret
-		case node.OperationNode, node.DerefNode, node.RangeNode, node.CallNode:
+		case node.OperationNode, node.DerefNode, node.RangeNode:
 			rt2.Push(rt2.New(n.Left()), f)
 			rt2.Assert(f, func(f frame.Frame) (bool, int) {
 				return rt2.ValueOf(f)[l.Adr()] != nil, 60
@@ -292,6 +293,8 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			}
 			ret = frame.LATER
 			return seq, ret
+		case node.CallNode:
+			return This(expectExpr(f, l, Expose(short)))
 		case node.FieldNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)

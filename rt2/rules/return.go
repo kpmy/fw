@@ -20,6 +20,7 @@ func returnSeq(f frame.Frame) (frame.Sequence, frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 				//rt2.DataOf(f.Parent())[a.Object()] = a.Left().(node.ConstantNode).Data()
 				rt2.ValueOf(f.Parent())[a.Object().Adr()] = sc.Provide(a.Left())(nil)
+				rt2.RegOf(f.Parent())["RETURN"] = rt2.ValueOf(f.Parent())[a.Object().Adr()]
 				return frame.End()
 			}
 			ret = frame.NOW
@@ -27,6 +28,7 @@ func returnSeq(f frame.Frame) (frame.Sequence, frame.WAIT) {
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 				rt2.ValueOf(f.Parent())[a.Object().Adr()] = sc.Select(a.Left().Object().Adr())
+				rt2.RegOf(f.Parent())["RETURN"] = rt2.ValueOf(f.Parent())[a.Object().Adr()]
 				return frame.End()
 			}
 			ret = frame.NOW
@@ -34,6 +36,10 @@ func returnSeq(f frame.Frame) (frame.Sequence, frame.WAIT) {
 			rt2.Push(rt2.New(a.Left()), f)
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				rt2.ValueOf(f.Parent())[a.Object().Adr()] = rt2.ValueOf(f)[a.Left().Adr()]
+				rt2.RegOf(f.Parent())["RETURN"] = rt2.ValueOf(f)[a.Left().Adr()]
+				if rt2.RegOf(f.Parent())["RETURN"] == nil {
+					rt2.RegOf(f.Parent())["RETURN"] = rt2.RegOf(f)["RETURN"]
+				}
 				return frame.End()
 			}
 			ret = frame.LATER

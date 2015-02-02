@@ -8,6 +8,7 @@ import (
 	"fw/rt2/scope"
 	"reflect"
 	"ypk/assert"
+	"ypk/halt"
 )
 
 //функция вернет в данные родительского фрейма вычисленное значение expr
@@ -25,7 +26,12 @@ func expectExpr(parent frame.Frame, expr node.Node, next Do) OUT {
 		rt2.Push(rt2.New(expr), parent)
 		wait := func(...IN) OUT {
 			if rt2.RegOf(parent)[expr] == nil && rt2.ValueOf(parent)[expr.Adr()] == nil {
-				panic("no result")
+				raw := rt2.RegOf(parent)["RETURN"]
+				if val, ok := raw.(scope.Value); !ok {
+					halt.As(100, "no result from ", expr.Adr(), raw)
+				} else {
+					rt2.ValueOf(parent)[expr.Adr()] = val
+				}
 			}
 			return OUT{do: next, next: NOW}
 		}
