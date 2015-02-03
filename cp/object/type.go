@@ -82,10 +82,10 @@ type comp struct {
 func (c *comp) Link() Object     { return c.link }
 func (c *comp) SetLink(o Object) { c.link = o }
 
-func (c *comp) Adr(a ...int) cp.ID {
+func (c *comp) Adr(a ...cp.ID) cp.ID {
 	assert.For(len(a) <= 1, 20)
 	if len(a) == 1 {
-		c.adr = cp.ID(a[0])
+		c.adr = a[0]
 	}
 	return c.adr
 }
@@ -124,7 +124,7 @@ type RecordType interface {
 
 func NewBasicType(t Type, id int) BasicType {
 	x := &basic{typ: t}
-	x.Adr(id)
+	x.Adr(cp.Next(id))
 	return x
 }
 
@@ -143,7 +143,7 @@ func (b *basic) Base(x ...Type) Type {
 
 func NewDynArrayType(b Type, id int) (ret DynArrayType) {
 	ret = &dyn{base: b}
-	ret.Adr(id)
+	ret.Adr(cp.Next(id))
 	return ret
 }
 
@@ -156,7 +156,7 @@ func (d *dyn) Base() Type { return d.base }
 
 func NewArrayType(b Type, len int64, id int) (ret ArrayType) {
 	ret = &arr{base: b, length: len}
-	ret.Adr(id)
+	ret.Adr(cp.Next(id))
 	return ret
 }
 
@@ -190,10 +190,10 @@ func (r *rec) Base() string { return r.base }
 func NewRecordType(n string, id int, par ...string) (ret RecordType) {
 	if len(par) == 0 {
 		ret = &rec{}
-		ret.Adr(id)
+		ret.Adr(cp.Next(id))
 	} else {
 		ret = &rec{name: n, base: par[0]}
-		ret.Adr(id)
+		ret.Adr(cp.Next(id))
 	}
 	return ret
 }

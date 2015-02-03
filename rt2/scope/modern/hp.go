@@ -40,11 +40,11 @@ func fin(x interface{}) {
 			if fn != nil {
 				global := p.scope.Domain().Discover(context.UNIVERSE).(context.Domain)
 				root := global.Discover(context.STACK).(frame.Stack)
-				cn := node.New(constant.CALL, int(cp.SomeAdr()))
+				cn := node.New(constant.CALL, cp.Some())
 				ol := mod.NodeByObject(fn)
 				assert.For(len(ol) <= 1, 40)
 				cn.SetLeft(ol[0])
-				cc := node.New(constant.CONSTANT, int(cp.SomeAdr())).(node.ConstantNode)
+				cc := node.New(constant.CONSTANT, cp.Some()).(node.ConstantNode)
 				cc.SetData(p)
 				cc.SetType(object.COMPLEX)
 				cn.SetRight(cc)
@@ -74,7 +74,7 @@ func (h *halloc) Allocate(n node.Node, par ...interface{}) scope.ValueFor {
 	talloc = func(t object.PointerType) {
 		switch bt := t.Base().(type) {
 		case object.RecordType:
-			fake := object.New(object.VARIABLE, int(cp.SomeAdr()))
+			fake := object.New(object.VARIABLE, cp.Some())
 			fake.SetComplex(bt)
 			fake.SetType(object.COMPLEX)
 			fake.SetName("{}")
@@ -82,7 +82,7 @@ func (h *halloc) Allocate(n node.Node, par ...interface{}) scope.ValueFor {
 			res = &ptrValue{scope: h.area, id: fake.Adr(), link: n.Object()}
 		case object.DynArrayType:
 			assert.For(len(par) > 0, 20)
-			fake := object.New(object.VARIABLE, int(cp.SomeAdr()))
+			fake := object.New(object.VARIABLE, cp.Some())
 			fake.SetComplex(bt)
 			fake.SetType(object.COMPLEX)
 			fake.SetName("[]")

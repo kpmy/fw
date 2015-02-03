@@ -64,7 +64,7 @@ type Object interface {
 }
 
 type Ref interface {
-	Adr(...int) cp.ID
+	cp.Id
 }
 
 type VariableObject interface {
@@ -128,7 +128,7 @@ func New(mode Mode, id int) (ret Object) {
 		panic("no such object mode")
 	}
 	ret.Mode(mode)
-	ret.Adr(id)
+	ret.Adr(cp.Next(id))
 	return ret
 }
 
@@ -151,10 +151,10 @@ func (of *objectFields) SetLink(o Object)         { of.link = o }
 func (of *objectFields) SetComplex(t ComplexType) { of.comp = t }
 func (of *objectFields) Complex() ComplexType     { return of.comp }
 
-func (of *objectFields) Adr(a ...int) cp.ID {
+func (of *objectFields) Adr(a ...cp.ID) cp.ID {
 	assert.For(len(a) <= 1, 20)
 	if len(a) == 1 {
-		of.adr = cp.ID(a[0])
+		of.adr = a[0]
 	}
 	return of.adr
 }

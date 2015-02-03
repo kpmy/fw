@@ -45,11 +45,11 @@ func callHandler(f frame.Frame, obj object.Object, data interface{}) {
 		return
 	}
 	m := rtm.DomainModule(f.Domain())
-	cn := node.New(constant.CALL, int(cp.SomeAdr()))
+	cn := node.New(constant.CALL, cp.Some())
 	ol := m.NodeByObject(obj)
 	assert.For(len(ol) <= 1, 40)
 	cn.SetLeft(ol[0])
-	cc := node.New(constant.CONSTANT, int(cp.SomeAdr())).(node.ConstantNode)
+	cc := node.New(constant.CONSTANT, cp.Some()).(node.ConstantNode)
 	cc.SetData(data)
 	cc.SetType(object.SHORTSTRING)
 	cn.SetRight(cc)

@@ -296,14 +296,18 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case node.CallNode:
 			return This(expectExpr(f, l, Expose(short)))
 		case node.FieldNode:
+			rt2.Push(rt2.New(l), f)
+			rt2.Assert(f, func(f frame.Frame) (bool, int) {
+				return rt2.ValueOf(f)[l.Adr()] != nil, 60
+			})
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				sc.Select(l.Left().Object().Adr(), func(v scope.Value) {
-					rt2.ValueOf(f)[n.Left().Adr()] = v.(scope.Record).Get(l.Object().Adr())
-				})
+				//sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+				//sc.Select(l.Left().Object().Adr(), func(v scope.Value) {
+				//	rt2.ValueOf(f)[n.Left().Adr()] = v.(scope.Record).Get(l.Object().Adr())
+				//})
 				return short, frame.NOW
 			}
-			ret = frame.NOW
+			ret = frame.LATER
 			return seq, ret
 		case node.IndexNode:
 			return This(expectExpr(f, n.Left(), Expose(short)))

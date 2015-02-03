@@ -475,7 +475,7 @@ func newData(o object.Object) (ret scope.Variable) {
 			if a := ret.(*arr); t.Base() == object.COMPLEX {
 				a.val = make([]interface{}, int(t.Len()))
 				for i := 0; i < int(t.Len()); i++ {
-					fake := object.New(object.VARIABLE, int(cp.SomeAdr()))
+					fake := object.New(object.VARIABLE, cp.Some())
 					fake.SetName("[?]")
 					fake.SetType(object.COMPLEX)
 					fake.SetComplex(t.Complex())
@@ -1401,6 +1401,14 @@ func (o *ops) Eq(a, b scope.Value) scope.Value {
 			return o.Eq(a, vfrom(b))
 		default:
 			switch x := a.(type) {
+			case *ptr:
+				switch y := b.(type) {
+				case PTR:
+					assert.For(y == NIL, 40)
+					return BOOLEAN(x.val == nil || x.val.id == 0)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
 			case INTEGER:
 				switch y := b.(type) {
 				case INTEGER:

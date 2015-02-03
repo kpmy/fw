@@ -10,8 +10,8 @@ import (
 )
 
 func doTrap(f frame.Frame, err traps.TRAP) (frame.Sequence, frame.WAIT) {
-	trap := node.New(constant.TRAP, int(cp.SomeAdr())).(node.TrapNode)
-	code := node.New(constant.CONSTANT, int(cp.SomeAdr())).(node.ConstantNode)
+	trap := node.New(constant.TRAP, cp.Some()).(node.TrapNode)
+	code := node.New(constant.CONSTANT, cp.Some()).(node.ConstantNode)
 	code.SetData(int32(err))
 	trap.SetLeft(code)
 	rt2.Push(rt2.New(trap), f)

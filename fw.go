@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"fw/cp"
 	cpm "fw/cp/module"
 	"fw/rt2/context"
 	"fw/rt2/decision"
@@ -33,9 +34,10 @@ func close() {
 func main() {
 	flag.Parse()
 	if name == "" {
-		name = "Start"
+		name = "Start2"
 		utils.Debug(false)
 	}
+	cp.Init()
 	global := &stdDomain{god: true}
 	global.global = global
 	modList := rtm.New()

@@ -85,7 +85,7 @@ func New(class constant.Class, id int) (ret Node) {
 	default:
 		panic("no such class")
 	}
-	ret.Adr(id)
+	ret.Adr(cp.Next(id))
 	return ret
 }
 
@@ -95,10 +95,10 @@ type nodeFields struct {
 	adr               cp.ID
 }
 
-func (nf *nodeFields) Adr(a ...int) cp.ID {
+func (nf *nodeFields) Adr(a ...cp.ID) cp.ID {
 	assert.For(len(a) <= 1, 20)
 	if len(a) == 1 {
-		nf.adr = cp.ID(a[0])
+		nf.adr = a[0]
 	}
 	return nf.adr
 }
