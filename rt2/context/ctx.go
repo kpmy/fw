@@ -7,6 +7,7 @@ const (
 	UNIVERSE = "fw/rt2/ctx"
 	HEAP     = "fw/rt2/scope,heap"
 	MT       = "fw/rt2/table,flow"
+	DIGEST   = "fw/cp"
 )
 
 type Factory interface {
@@ -24,4 +25,16 @@ type ContextAware interface {
 	Init(d Domain)
 	Domain() Domain
 	Handle(msg interface{})
+}
+
+type data struct {
+	inner interface{}
+}
+
+func (d *data) Init(x Domain)          {}
+func (d *data) Domain() Domain         { return nil }
+func (d *data) Handle(msg interface{}) {}
+
+func Data(x interface{}) ContextAware {
+	return &data{inner: x}
 }

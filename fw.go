@@ -37,11 +37,11 @@ func main() {
 		name = "Start2"
 		utils.Debug(false)
 	}
-	cp.Init()
 	global := &stdDomain{god: true}
 	global.global = global
 	modList := rtm.New()
 	global.Attach(context.MOD, modList)
+	global.Attach(context.DIGEST, context.Data(cp.Init()))
 	heap = scope.New(context.HEAP)
 	global.Attach(context.HEAP, heap)
 	t0 := time.Now()

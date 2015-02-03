@@ -18,28 +18,35 @@ func (i ID) String() string {
 	}
 }
 
-func Init() {
+type Digest interface{}
+
+type dig struct {
+	fake int
+	this int
+	list map[ID]int
+}
+
+func Init() Digest {
 	var (
-		fake int        = 0
-		this int        = 0
-		list map[ID]int = make(map[ID]int)
+		d *dig = &dig{list: make(map[ID]int)}
 	)
 	Next = func(id int) ID {
 		if id >= 0 {
-			this++
-			list[ID(this)] = id
-			return ID(this)
+			d.this++
+			d.list[ID(d.this)] = id
+			return ID(d.this)
 		} else {
 			return ID(id)
 		}
 	}
 	Some = func() int {
-		fake--
-		return fake
+		d.fake--
+		return d.fake
 	}
 	getId = func(id ID) int {
-		return list[id]
+		return d.list[id]
 	}
+	return d
 }
 
 var Next func(id int) ID
