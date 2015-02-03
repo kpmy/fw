@@ -15,10 +15,10 @@ import (
 	"fw/rt2/scope"
 	"fw/utils"
 	"math"
-	"math/big"
 	"reflect"
 	"ypk/assert"
 	"ypk/halt"
+	"ypk/mathe"
 )
 
 /**
@@ -138,15 +138,12 @@ func go_math(f frame.Frame, par node.Node) (seq frame.Sequence, ret frame.WAIT) 
 		case LN:
 			res = math.Log(rv[1])
 		case MANT:
-			_ = big.NewRat(1, 1).SetFloat64(rv[1])
-			panic(0)
+			res, _ = mathe.Me(rv[1])
 		case EXP:
-			me(rv[1])
-			panic(0)
+			_, res = mathe.Me(rv[1])
 		default:
 			halt.As(100, rv[0])
 		}
-		fmt.Println(rv)
 	default:
 		halt.As(100, reflect.TypeOf(p))
 	}

@@ -782,6 +782,13 @@ func (o *ops) Sub(a, b scope.Value) scope.Value {
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
+			case REAL:
+				switch y := b.(type) {
+				case REAL:
+					return REAL(x - y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
 			case LONGINT:
 				switch y := b.(type) {
 				case LONGINT:
@@ -1274,6 +1281,8 @@ func (o *ops) Conv(a scope.Value, typ object.Type, comp ...object.ComplexType) s
 			return o.Conv(vfrom(x), typ)
 		case LONGINT:
 			return CHAR(rune(x))
+		case INTEGER:
+			return CHAR(rune(x))
 		default:
 			halt.As(100, reflect.TypeOf(x))
 		}
@@ -1441,6 +1450,13 @@ func (o *ops) Neq(a, b scope.Value) scope.Value {
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
+			case REAL:
+				switch y := b.(type) {
+				case REAL:
+					return BOOLEAN(x != y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
 			case LONGINT:
 				switch y := b.(type) {
 				case LONGINT:
@@ -1490,6 +1506,13 @@ func (o *ops) Lss(a, b scope.Value) scope.Value {
 			case INTEGER:
 				switch y := b.(type) {
 				case INTEGER:
+					return BOOLEAN(x < y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			case REAL:
+				switch y := b.(type) {
+				case REAL:
 					return BOOLEAN(x < y)
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
@@ -1594,6 +1617,13 @@ func (o *ops) Geq(a, b scope.Value) scope.Value {
 			case INTEGER:
 				switch y := b.(type) {
 				case INTEGER:
+					return BOOLEAN(x >= y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			case REAL:
+				switch y := b.(type) {
+				case REAL:
 					return BOOLEAN(x >= y)
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))

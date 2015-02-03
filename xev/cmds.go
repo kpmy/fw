@@ -2,6 +2,7 @@ package xev
 
 import (
 	"archive/zip"
+	"fmt"
 	"fw/cp/module"
 	"io"
 	"path/filepath"
@@ -11,7 +12,7 @@ import (
 const CODE = "code"
 
 func Load(path, name string) (ret *module.Module) {
-	//fmt.Println(path + ` ` + name)
+	fmt.Println(path + ` ` + name)
 	//var data []byte
 	var rd io.Reader
 	r, err := zip.OpenReader(filepath.Join(path, CODE, name))

@@ -33,7 +33,7 @@ func close() {
 func main() {
 	flag.Parse()
 	if name == "" {
-		name = "XevInit"
+		name = "Start"
 		utils.Debug(false)
 	}
 	global := &stdDomain{god: true}
