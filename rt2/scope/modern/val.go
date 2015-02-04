@@ -48,8 +48,30 @@ type ptr struct {
 }
 
 type idx struct {
-	arr *arr
-	idx int
+	some scope.Array
+	idx  int
+}
+
+func (i *idx) link() object.Object {
+	switch a := i.some.(type) {
+	case *arr:
+		return a.link
+	case *dynarr:
+		return a.link
+	default:
+		panic(0)
+	}
+}
+
+func (i *idx) val() []interface{} {
+	switch a := i.some.(type) {
+	case *arr:
+		return a.val
+	case *dynarr:
+		return a.val
+	default:
+		panic(0)
+	}
 }
 
 func (r *rec) String() string {
@@ -189,7 +211,24 @@ func (a *arr) Get(id scope.Value) scope.Value {
 		if len(a.val) == 0 {
 			a.val = make([]interface{}, int(a.length))
 		}
-		return &idx{arr: a, idx: int(i)}
+		return &idx{some: a, idx: int(i)}
+	default:
+		halt.As(100, reflect.TypeOf(i))
+	}
+	panic(0)
+}
+
+//возвращает *idx
+func (a *dynarr) Get(id scope.Value) scope.Value {
+	switch i := id.(type) {
+	case *data:
+		return a.Get(i.val.(scope.Value))
+	case INTEGER:
+		assert.For(int(i) < len(a.val), 20)
+		if len(a.val) == 0 {
+			panic(0)
+		}
+		return &idx{some: a, idx: int(i)}
 	default:
 		halt.As(100, reflect.TypeOf(i))
 	}
@@ -197,7 +236,7 @@ func (a *arr) Get(id scope.Value) scope.Value {
 }
 
 func (i *idx) Id() cp.ID {
-	return i.arr.Id()
+	return i.some.Id()
 }
 
 func (i *idx) String() string {
@@ -205,18 +244,27 @@ func (i *idx) String() string {
 }
 
 func (i *idx) Set(v scope.Value) {
-	t := i.arr.link.Complex()
+	t := i.link().Complex()
 	switch x := v.(type) {
 	case *idx:
-		if x.arr.link.Complex().(object.ArrayType).Base() != object.COMPLEX {
-			i.arr.val[i.idx] = x.arr.val[x.idx]
+		var comp object.Type = object.NOTYPE
+		switch xt := x.link().Complex().(type) {
+		case object.ArrayType:
+			comp = xt.Base()
+		case object.DynArrayType:
+			comp = xt.Base()
+		default:
+			halt.As(100, xt)
+		}
+		if comp != object.COMPLEX {
+			i.val()[i.idx] = x.val()[x.idx]
 		} else {
-			switch z := x.arr.val[x.idx].(type) {
+			switch z := x.val()[x.idx].(type) {
 			case *arr:
 				t := z.link.Complex().(object.ArrayType).Base()
 				switch t {
 				case object.CHAR:
-					i.arr.val[i.idx].(*arr).Set(STRING(z.tryString()))
+					i.val()[i.idx].(*arr).Set(STRING(z.tryString()))
 				default:
 					halt.As(100, t)
 				}
@@ -227,26 +275,26 @@ func (i *idx) Set(v scope.Value) {
 	case *data:
 		i.Set(x.val.(scope.Value))
 	case CHAR:
-		i.arr.val[i.idx] = x
+		i.val()[i.idx] = x
 	case STRING:
 		_ = t.(object.ArrayType)
-		i.arr.val[i.idx].(*arr).Set(x)
+		i.val()[i.idx].(*arr).Set(x)
 	case REAL:
-		i.arr.val[i.idx] = x
+		i.val()[i.idx] = x
 	default:
 		halt.As(100, reflect.TypeOf(x), x, t)
 	}
 }
 
 func (i *idx) Get() scope.Value {
-	x := i.arr.val[i.idx]
+	x := i.val()[i.idx]
 	switch z := x.(type) {
 	case *arr:
 		return z
 	case CHAR:
 		return z
 	case nil:
-		b := i.arr.link.Complex().(object.ArrayType).Base()
+		b := i.link().Complex().(object.ArrayType).Base()
 		switch b {
 		case object.CHAR:
 			return CHAR(rune(0))
@@ -311,7 +359,7 @@ func (d *data) Set(v scope.Value) {
 		assert.For(t.Type() == object.PROCEDURE, 22)
 		d.val = x
 	case *idx:
-		d.val = x.arr.val[x.idx]
+		d.val = x.val()[x.idx]
 	case INTEGER:
 		switch d.link.Type() {
 		case object.INTEGER:
@@ -646,11 +694,11 @@ func gfrom(v scope.Value) interface{} {
 		}
 		panic(0)
 	case *idx:
-		switch n.arr.link.Complex().(object.ArrayType).Base() {
+		switch n.link().Complex().(object.ArrayType).Base() {
 		case object.CHAR:
 			return rune(n.Get().(CHAR))
 		default:
-			halt.As(100, n.arr.link.Complex().(object.ArrayType).Base())
+			halt.As(100, n.link().Complex().(object.ArrayType).Base())
 		}
 		panic(0)
 	case PTR:

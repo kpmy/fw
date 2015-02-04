@@ -18,9 +18,9 @@ func derefSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 	//fmt.Println("deref from ptr", n.Ptr())
 	if n.Ptr() {
-		switch l := n.Left().Object().(type) {
-		case object.ParameterObject, object.VariableObject:
-			sc.Select(l.Adr(), func(v scope.Value) {
+		switch l := n.Left().(type) {
+		case node.ParameterNode, node.VariableNode:
+			sc.Select(l.Object().Adr(), func(v scope.Value) {
 				ptr, ok := v.(scope.Pointer)
 				assert.For(ok, 60, reflect.TypeOf(v))
 				rt2.ValueOf(f.Parent())[n.Adr()] = ptr.Get()
@@ -30,6 +30,28 @@ func derefSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 					seq, ret = frame.End()
 				}
 			})
+			return seq, ret
+		case node.FieldNode, node.CallNode:
+			rt2.Push(rt2.New(l), f)
+			rt2.Assert(f, func(f frame.Frame) (bool, int) {
+				return rt2.ValueOf(f)[l.Adr()] != nil || rt2.RegOf(f)["RETURN"] != nil, 63
+			})
+			seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+				v := rt2.ValueOf(f)[l.Adr()]
+				if v == nil {
+					v = rt2.RegOf(f)["RETURN"].(scope.Value)
+				}
+				ptr, ok := v.(scope.Pointer)
+				assert.For(ok, 60, reflect.TypeOf(v))
+				rt2.ValueOf(f.Parent())[n.Adr()] = ptr.Get()
+				if scope.GoTypeFrom(ptr.Get()) == nil {
+					seq, ret = doTrap(f, traps.NILderef)
+				} else {
+					seq, ret = frame.End()
+				}
+				return frame.End()
+			}
+			ret = frame.LATER
 			return seq, ret
 		default:
 			halt.As(100, l.Adr(), reflect.TypeOf(l))

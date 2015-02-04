@@ -12,6 +12,7 @@ import (
 	"fw/rt2/frame"
 	"fw/rt2/scope"
 	"reflect"
+	"ypk/halt"
 )
 
 func incSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
@@ -54,7 +55,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 
 	right := func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		vleft := left.(scope.Variable)
-		switch l := a.Right().(type) {
+		switch r := a.Right().(type) {
 		case node.ConstantNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
@@ -85,18 +86,31 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			}
 			ret = frame.LATER
 		case node.IndexNode:
-			rightId = l.Adr()
-			rt2.Push(rt2.New(l), f)
+			rightId = r.Adr()
+			rt2.Push(rt2.New(r), f)
 			rt2.Assert(f, func(f frame.Frame) (bool, int) {
 				return rt2.ValueOf(f)[rightId] != nil, 62
 			})
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				right := rt2.ValueOf(f)[l.Adr()]
-				arr := sc.Select(l.Left().Object().Adr()).(scope.Array)
-				right = arr.Get(right)
-				vleft.Set(right)
-				return frame.End()
+				right := rt2.ValueOf(f)[r.Adr()]
+				switch z := r.Left().(type) {
+				case node.VariableNode, node.ParameterNode:
+					arr := sc.Select(z.Object().Adr()).(scope.Array)
+					right = arr.Get(right)
+					vleft.Set(right)
+					return frame.End()
+				case node.DerefNode:
+					return This(expectExpr(f, z, func(in ...IN) (out OUT) {
+						arr := rt2.ValueOf(f)[z.Adr()].(scope.Array)
+						right = arr.Get(right)
+						vleft.Set(right)
+						return End()
+					}))
+				default:
+					halt.As(100, reflect.TypeOf(z), z)
+				}
+				panic(0)
 			}
 			ret = frame.LATER
 		case node.ProcedureNode:
@@ -135,9 +149,23 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 				left = rt2.ValueOf(f)[l.Adr()]
-				arr := sc.Select(l.Left().Object().Adr()).(scope.Array)
-				left = arr.Get(left)
-				return right(f)
+				switch z := l.Left().(type) {
+				case node.VariableNode, node.ParameterNode:
+					arr := sc.Select(l.Left().Object().Adr()).(scope.Array)
+					left = arr.Get(left)
+					return right(f)
+				case node.DerefNode:
+					return This(expectExpr(f, z, func(in ...IN) (out OUT) {
+						arr := rt2.ValueOf(f)[z.Adr()].(scope.Array)
+						left = arr.Get(left)
+						out.do = Expose(right)
+						out.next = NOW
+						return
+					}))
+				default:
+					halt.As(100, reflect.TypeOf(z), z)
+				}
+				panic(0)
 			}
 			ret = frame.LATER
 		case node.DerefNode:
@@ -174,11 +202,30 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 		heap := f.Domain().Discover(context.HEAP).(scope.Manager).Target().(scope.HeapAllocator)
 		if a.Right() != nil {
-			seq, ret = This(expectExpr(f, a.Right(), func(...IN) OUT {
-				fmt.Println("NEW", rt2.ValueOf(f)[a.Right().Adr()], "here")
-				fn := heap.Allocate(a.Left(), rt2.ValueOf(f)[a.Right().Adr()])
-				sc.Update(a.Left().Object().Adr(), fn)
-				return End()
+			seq, ret = This(expectExpr(f, a.Right(), func(in ...IN) (out OUT) {
+				//fmt.Println("NEW", rt2.ValueOf(f)[a.Right().Adr()], "here")
+				switch z := a.Left().(type) {
+				case node.VariableNode:
+					fn := heap.Allocate(a.Left(), rt2.ValueOf(f)[a.Right().Adr()])
+					sc.Update(a.Left().Object().Adr(), fn)
+					return End()
+				case node.FieldNode:
+					fn := heap.Allocate(a.Left(), rt2.ValueOf(f)[a.Right().Adr()])
+					rt2.Push(rt2.New(z), in[0].frame)
+					rt2.Assert(f, func(f frame.Frame) (bool, int) {
+						return rt2.ValueOf(f)[z.Adr()] != nil, 65
+					})
+					out.do = func(in ...IN) OUT {
+						field := rt2.ValueOf(in[0].frame)[z.Adr()].(scope.Variable)
+						field.Set(fn(nil))
+						return End()
+					}
+					out.next = LATER
+					return
+				default:
+					halt.As(100, reflect.TypeOf(z))
+				}
+				panic(0)
 			}))
 		} else {
 			//fmt.Println("NEW here")

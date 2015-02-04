@@ -98,7 +98,7 @@ func (h *halloc) Allocate(n node.Node, par ...interface{}) scope.ValueFor {
 		}
 	}
 	switch v := n.(type) {
-	case node.VariableNode:
+	case node.VariableNode, node.FieldNode:
 		switch t := v.Object().Complex().(type) {
 		case object.PointerType:
 			talloc(t)
@@ -107,7 +107,7 @@ func (h *halloc) Allocate(n node.Node, par ...interface{}) scope.ValueFor {
 			halt.As(100, reflect.TypeOf(t))
 		}
 	default:
-		halt.As(101, reflect.TypeOf(v))
+		halt.As(101, reflect.TypeOf(v), v)
 	}
 	assert.For(res != nil, 60)
 	runtime.SetFinalizer(res, fin)
