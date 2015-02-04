@@ -31,7 +31,7 @@ func fin(x interface{}) {
 			for _, _po := range ol {
 				switch po := _po.(type) {
 				case object.ProcedureObject:
-					if po.Name() == "FINALIZE" && po.Link().Complex() == p.link.Complex() {
+					if po.Name() == "FINALIZE" && po.Link().Complex().Equals(p.link.Complex()) {
 						fn = po
 						break
 					}

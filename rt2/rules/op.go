@@ -41,7 +41,7 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Not(rt2.ValueOf(f)[n.Left().Adr()])
 			return frame.End()
 		case operation.IS:
-			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Is(sc.Select(n.Left().Object().Adr()), n.Object())
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Is(sc.Select(n.Left().Object().Adr()), n.Object().Complex())
 			return frame.End()
 		case operation.ABS:
 			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Abs(rt2.ValueOf(f)[n.Left().Adr()])

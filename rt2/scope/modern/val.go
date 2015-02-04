@@ -534,10 +534,16 @@ func newData(o object.Object) (ret scope.Variable) {
 			ret = &dynarr{link: o}
 		default:
 			halt.As(100, reflect.TypeOf(t))
-
+		}
+	case object.NOTYPE:
+		switch t := o.Complex().(type) {
+		case nil:
+			ret = &ptr{link: o}
+		default:
+			halt.As(100, reflect.TypeOf(t))
 		}
 	default:
-		panic(fmt.Sprintln("unsupported type", o.Type()))
+		panic(fmt.Sprintln("unsupported type", o, o.Type(), o.Complex()))
 	}
 	return ret
 }
@@ -1290,6 +1296,8 @@ func (o *ops) Conv(a scope.Value, typ object.Type, comp ...object.ComplexType) s
 		case SET:
 			return INTEGER(x.bits.Int64())
 		case REAL:
+			return INTEGER(x)
+		case LONGINT:
 			return INTEGER(x)
 		default:
 			halt.As(100, reflect.TypeOf(x))

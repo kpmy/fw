@@ -218,13 +218,16 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 						for _, _po := range ol {
 							switch po := _po.(type) {
 							case object.ProcedureObject:
-								if po.Name() == p.Object().Name() && po.Link() != nil && po.Link().Complex() == c {
-									fn = po
-								}
+								if po.Name() == p.Object().Name() {
+									if po.Link() != nil && po.Link().Complex().Equals(c) {
+										fn = po
+									} else if po.Link() != nil {
 
+									}
+								}
 							}
 						}
-						assert.For(fn != nil, 40)
+						assert.For(fn != nil, 40, p.Object().Name())
 						proc = mod.NodeByObject(fn)
 						assert.For(proc != nil, 40)
 						call(proc[0], dm)

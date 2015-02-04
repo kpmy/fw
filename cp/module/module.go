@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"fw/cp/node"
 	"fw/cp/object"
+	"reflect"
 	"ypk/assert"
+	"ypk/halt"
 )
 
 type Import struct {
 	Name    string
 	Objects []object.Object
+	Types   []object.ComplexType
 }
 
 type Module struct {
@@ -85,4 +88,28 @@ func (m *Module) NodeByObject(obj object.Object) (ret []node.Node) {
 		}
 	}
 	return ret
+}
+
+func (m *Module) Init() {
+	for k, s := range m.Types {
+		q := ""
+		if m.Enter.Adr() == k.Adr() {
+			q = m.Name
+		} else {
+			switch e := k.(type) {
+			case node.EnterNode:
+				fmt.Println(e.Adr(), e.Enter())
+			default:
+				halt.As(100, reflect.TypeOf(e))
+			}
+		}
+		for _, t := range s {
+			t.Qualident(q)
+		}
+	}
+	for i, s := range m.Imports {
+		for _, t := range s.Types {
+			fmt.Println(i, t)
+		}
+	}
 }

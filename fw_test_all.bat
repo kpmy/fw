@@ -25,3 +25,4 @@ start fw_test XevDemo22
 
 start fw_test TestA0
 start fw_test Start
+start fw_test Start2

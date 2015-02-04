@@ -216,7 +216,7 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 				"SHORTINT", "BOOLEAN", "REAL", "SHORTREAL", "SET", "UNDEF",
 				"NOTYP":
 			case "POINTER":
-				t := object.NewPointerType(n.Data.Typ.Name)
+				t := object.NewPointerType(n.Data.Typ.Name, n.Id)
 				base := r.findLink(n, "base")
 				if base != nil {
 					t.Base(r.doType(base))
@@ -497,6 +497,8 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 			fmt.Println(n.Data.Nod.Class)
 			panic("no such node type")
 		}
+	} else {
+		return ret
 	}
 	if ret != nil {
 		nodeMap[n.Id] = ret
@@ -595,8 +597,7 @@ func buildMod(r *Result) *module.Module {
 	}
 	for k, v := range scopes {
 		if k < 0 {
-			impList[v.mod] = module.Import{Objects: v.scopes[k], Name: v.mod}
-			//fmt.Println("типы не учтены", len(v.types[k]))
+			impList[v.mod] = module.Import{Objects: v.scopes[k], Name: v.mod, Types: v.types[k]}
 		}
 	}
 	return &module.Module{Nodes: nodeList, Objects: scopeList, Types: typeList, Enter: root, Imports: impList}

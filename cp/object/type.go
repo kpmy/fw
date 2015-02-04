@@ -71,12 +71,15 @@ func (t Type) String() string {
 type ComplexType interface {
 	Link() Object
 	SetLink(o Object)
+	Equals(ComplexType) bool
+	Qualident(...string) string
 	cp.Id
 }
 
 type comp struct {
 	link Object
 	adr  cp.ID
+	id   string
 }
 
 func (c *comp) Link() Object     { return c.link }
@@ -88,6 +91,14 @@ func (c *comp) Adr(a ...cp.ID) cp.ID {
 		c.adr = a[0]
 	}
 	return c.adr
+}
+
+func (c *comp) Qualident(a ...string) string {
+	assert.For(len(a) <= 1, 20)
+	if len(a) == 1 {
+		c.id = a[0]
+	}
+	return c.id
 }
 
 type BasicType interface {
@@ -209,9 +220,11 @@ type ptr struct {
 	name    string
 }
 
-func NewPointerType(n string) PointerType {
+func NewPointerType(n string, id int) PointerType {
 	//fmt.Println("new ptr type", n)
-	return &ptr{name: n}
+	p := &ptr{name: n}
+	p.Adr(cp.Next(id))
+	return p
 }
 
 func (p *ptr) Name() string { return p.name }

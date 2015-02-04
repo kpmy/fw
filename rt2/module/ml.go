@@ -70,6 +70,7 @@ func (l *list) Load(name string, ldr ...Loader) (ret *mod.Module, err error) {
 			_, err = l.Load(imp.Name, loader)
 		}
 		if err == nil {
+			ret.Init()
 			l.inner[name] = ret
 			loader(ret)
 			//fmt.Println("loaded", name)

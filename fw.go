@@ -34,7 +34,7 @@ func close() {
 func main() {
 	flag.Parse()
 	if name == "" {
-		name = "Start"
+		name = "Start3"
 		utils.Debug(false)
 	}
 	global := &stdDomain{god: true}
