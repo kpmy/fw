@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"fmt"
 	"reflect"
 )
 
@@ -26,6 +27,7 @@ func fieldSeq(in ...IN) (out OUT) {
 	case node.VariableNode, node.ParameterNode:
 		sc.Select(l.Object().Adr(), func(v scope.Value) {
 			rt2.ValueOf(f.Parent())[n.Adr()] = v.(scope.Record).Get(n.Object().Adr())
+			fmt.Println(n.Object().Adr())
 		})
 		out = End()
 	case node.FieldNode, node.DerefNode:

@@ -2,9 +2,12 @@ package module
 
 import (
 	"fmt"
+	"fw/cp"
+	"fw/cp/constant/enter"
 	"fw/cp/node"
 	"fw/cp/object"
 	"reflect"
+	"strconv"
 	"ypk/assert"
 	"ypk/halt"
 )
@@ -91,25 +94,52 @@ func (m *Module) NodeByObject(obj object.Object) (ret []node.Node) {
 }
 
 func (m *Module) Init() {
-	for k, s := range m.Types {
-		q := ""
-		if m.Enter.Adr() == k.Adr() {
-			q = m.Name
-		} else {
-			switch e := k.(type) {
-			case node.EnterNode:
-				fmt.Println(e.Adr(), e.Enter())
-			default:
-				halt.As(100, reflect.TypeOf(e))
+	typeName := func(id cp.ID) string {
+		for _, s := range m.Objects {
+			for _, o := range s {
+				switch t := o.(type) {
+				case object.TypeObject:
+					if o.Complex().Adr() == id {
+						return t.Name()
+					}
+				}
 			}
 		}
+		for _, i := range m.Imports {
+			for _, o := range i.Objects {
+				switch t := o.(type) {
+				case object.TypeObject:
+					if o.Complex().Adr() == id {
+						return t.Name()
+					}
+				}
+			}
+		}
+		return strconv.Itoa(int(id))
+	}
+
+	//fmt.Println("init", m.Name)
+	for k, s := range m.Types {
+		q := ""
+		switch e := k.(type) {
+		case node.EnterNode:
+			switch e.Enter() {
+			case enter.MODULE:
+				q = m.Name
+			case enter.PROCEDURE:
+				q = m.Name + "..." + e.Object().Name()
+			}
+		default:
+			halt.As(100, reflect.TypeOf(e))
+		}
 		for _, t := range s {
-			t.Qualident(q)
+			t.Qualident(q + "." + typeName(t.Adr()))
 		}
 	}
-	for i, s := range m.Imports {
+	for _, s := range m.Imports {
+		q := s.Name
 		for _, t := range s.Types {
-			fmt.Println(i, t)
+			t.Qualident(q + "." + typeName(t.Adr()))
 		}
 	}
 }

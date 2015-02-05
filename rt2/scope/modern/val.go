@@ -1237,6 +1237,7 @@ func (o *ops) Is(a scope.Value, typ object.ComplexType) scope.Value {
 				switch {
 				case x.Name() == a.Name():
 					//	fmt.Println("eq")
+					//fmt.Println("qid ", _x.Qualident(), _a.Qualident(), "names ", x.Name(), a.Name())
 					return true //опасно сравнивать имена конеш
 				case x.BaseType() != nil:
 					//	fmt.Println("go base")
@@ -1244,6 +1245,8 @@ func (o *ops) Is(a scope.Value, typ object.ComplexType) scope.Value {
 				default:
 					return false
 				}
+			case object.PointerType:
+				return false
 			default:
 				halt.As(100, reflect.TypeOf(a))
 			}

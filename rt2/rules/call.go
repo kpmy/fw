@@ -167,6 +167,8 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	n := rt2.NodeOf(f)
 
 	call := func(proc node.Node, d context.Domain) {
+		_, ok := proc.(node.EnterNode)
+		assert.For(ok, 20, "try call", reflect.TypeOf(proc), proc.Adr(), proc.Object().Adr())
 		nf := rt2.New(proc)
 		rt2.Push(nf, f)
 		if d != nil {
@@ -205,9 +207,9 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 					assert.For(proc != nil, 40)
 					call(proc[0], nil)
 				case object.TYPE_PROC:
-					var proc []node.Node
 					//sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 					return This(expectExpr(f, n.Right(), func(...IN) (out OUT) {
+						var proc []node.Node
 						v := rt2.ValueOf(f)[n.Right().Adr()]
 						var dm context.Domain
 						var fn object.ProcedureObject
@@ -222,7 +224,6 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 									if po.Link() != nil && po.Link().Complex().Equals(c) {
 										fn = po
 									} else if po.Link() != nil {
-
 									}
 								}
 							}

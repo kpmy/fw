@@ -200,7 +200,7 @@ func (r *rec) Base() string { return r.base }
 
 func NewRecordType(n string, id int, par ...string) (ret RecordType) {
 	if len(par) == 0 {
-		ret = &rec{}
+		ret = &rec{name: n}
 		ret.Adr(cp.Next(id))
 	} else {
 		ret = &rec{name: n, base: par[0]}
