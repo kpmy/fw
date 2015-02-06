@@ -1239,9 +1239,9 @@ func (o *ops) Is(a scope.Value, typ object.ComplexType) scope.Value {
 					//	fmt.Println("eq")
 					//fmt.Println("qid ", _x.Qualident(), _a.Qualident(), "names ", x.Name(), a.Name())
 					return true //опасно сравнивать имена конеш
-				case x.BaseType() != nil:
+				case x.Base() != nil:
 					//	fmt.Println("go base")
-					return compare(x.BaseType(), a)
+					return compare(x.Base(), a)
 				default:
 					return false
 				}

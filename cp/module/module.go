@@ -1,7 +1,6 @@
 package module
 
 import (
-	"fmt"
 	"fw/cp"
 	"fw/cp/constant/enter"
 	"fw/cp/node"
@@ -56,7 +55,7 @@ func (m *Module) ObjectByName(scope node.Node, name string) (rl []object.Object)
 func (m *Module) TypeByName(scope node.Node, name string) (ret object.ComplexType) {
 	assert.For(name != "", 20)
 	for _, typ := range m.Types[scope] {
-		fmt.Print(typ)
+		//fmt.Print(typ)
 		if v, ok := typ.(named); ok && v.Name() == name {
 			ret = typ
 			break //стыд какой
@@ -82,6 +81,23 @@ func (m *Module) ImportOf(obj object.Object) string {
 	return ""
 }
 
+func (m *Module) ImportOfType(obj object.ComplexType) string {
+	contains := func(v []object.ComplexType) bool {
+		for _, o := range v {
+			if o.Adr() == obj.Adr() {
+				return true
+			}
+		}
+		return false
+	}
+	for _, v := range m.Imports {
+		if contains(v.Types) {
+			return v.Name
+		}
+	}
+	return ""
+}
+
 func (m *Module) NodeByObject(obj object.Object) (ret []node.Node) {
 	assert.For(obj != nil, 20)
 	for i := 0; (i < len(m.Nodes)) && (ret == nil); i++ {
@@ -93,7 +109,7 @@ func (m *Module) NodeByObject(obj object.Object) (ret []node.Node) {
 	return ret
 }
 
-func (m *Module) Init() {
+func (m *Module) Init(inittd func(t object.ComplexType)) {
 	typeName := func(id cp.ID) string {
 		for _, s := range m.Objects {
 			for _, o := range s {
@@ -110,7 +126,7 @@ func (m *Module) Init() {
 				switch t := o.(type) {
 				case object.TypeObject:
 					if o.Complex().Adr() == id {
-						return t.Name()
+						return ">" + i.Name + "." + t.Name()
 					}
 				}
 			}
@@ -140,6 +156,13 @@ func (m *Module) Init() {
 		q := s.Name
 		for _, t := range s.Types {
 			t.Qualident(q + "." + typeName(t.Adr()))
+		}
+	}
+	if inittd != nil {
+		for _, s := range m.Types {
+			for _, t := range s {
+				inittd(t)
+			}
 		}
 	}
 }

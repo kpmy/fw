@@ -117,7 +117,7 @@ func (l *level) alloc(mod *cpm.Module, root node.Node, ol []object.Object, skip 
 							//fmt.Println(o.Name(), ".", x.Name(), x.Adr())
 							fl = append(fl, x)
 						}
-						rec = rec.BaseType()
+						rec = rec.Base()
 					}
 					//fmt.Println("record")
 					l.v[l.next].(*rec).l = nl

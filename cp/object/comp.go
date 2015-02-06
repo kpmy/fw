@@ -1,7 +1,6 @@
 package object
 
 import (
-	"fmt"
 	"reflect"
 )
 
@@ -12,7 +11,7 @@ import (
 func (a *basic) Equals(x ComplexType) bool {
 	switch b := x.(type) {
 	case *basic:
-		fmt.Println("basic comp", a.Qualident(), ",", b.Qualident())
+		//fmt.Println("basic comp", a.Qualident(), ",", b.Qualident())
 		return a == b
 	default:
 		halt.As(100, reflect.TypeOf(b))
@@ -23,7 +22,7 @@ func (a *basic) Equals(x ComplexType) bool {
 func (a *arr) Equals(x ComplexType) bool {
 	switch b := x.(type) {
 	case *arr:
-		fmt.Println("arr comp", ":", a.Qualident(), ",", b.Qualident())
+		//fmt.Println("arr comp", ":", a.Qualident(), ",", b.Qualident())
 		return a == b
 	default:
 		halt.As(100, reflect.TypeOf(b))
@@ -34,7 +33,7 @@ func (a *arr) Equals(x ComplexType) bool {
 func (a *dyn) Equals(x ComplexType) bool {
 	switch b := x.(type) {
 	case *dyn:
-		fmt.Println("dyn comp", a.Qualident(), ",", b.Qualident())
+		//fmt.Println("dyn comp", a.Qualident(), ",", b.Qualident())
 		return a == b
 	default:
 		halt.As(100, reflect.TypeOf(b))
@@ -45,9 +44,10 @@ func (a *dyn) Equals(x ComplexType) bool {
 func (a *rec) Equals(x ComplexType) bool {
 	switch b := x.(type) {
 	case *rec:
-		fmt.Println("rec comp", a.Name(), ":", a.Qualident(), ",", b.Name(), ":", b.Qualident())
-		return a == b
+		//fmt.Println("rec:rec")
+		return a.Qualident() == b.Qualident()
 	case *ptr:
+		//fmt.Println("rec:ptr")
 		return false
 	default:
 		halt.As(100, reflect.TypeOf(b))
@@ -58,9 +58,13 @@ func (a *rec) Equals(x ComplexType) bool {
 func (a *ptr) Equals(x ComplexType) bool {
 	switch b := x.(type) {
 	case *ptr:
-		fmt.Println("pointer comp", a.Name(), ":", a.Qualident(), ",", b.Name(), ":", b.Qualident())
+		//fmt.Println("ptr:ptr")
+		//fmt.Println("pointer comp", a.Name(), ":", a.Qualident(), ",", b.Name(), ":", b.Qualident())
 		return a.Qualident() == b.Qualident()
 	case *rec:
+		//fmt.Println("ptr:rec")
+		return false
+	case nil:
 		return false
 	default:
 		halt.As(100, reflect.TypeOf(b))

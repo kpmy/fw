@@ -211,9 +211,11 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 					return This(expectExpr(f, n.Right(), func(...IN) (out OUT) {
 						var proc []node.Node
 						v := rt2.ValueOf(f)[n.Right().Adr()]
+						_, c := scope.Ops.TypeOf(v)
+
 						var dm context.Domain
 						var fn object.ProcedureObject
-						_, c := scope.Ops.TypeOf(v)
+						//fmt.Println(c.Qualident())
 						mod := rtm.ModuleOfType(f.Domain(), c)
 						dm = f.Domain().Discover(context.UNIVERSE).(context.Domain).Discover(mod.Name).(context.Domain)
 						ol := mod.Objects[mod.Enter]
@@ -227,6 +229,12 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 									}
 								}
 							}
+						}
+						if fn == nil {
+							x := ml.NewTypeCalc()
+							x.ConnectTo(c)
+							fmt.Println(x)
+							x.MethodList()
 						}
 						assert.For(fn != nil, 40, p.Object().Name())
 						proc = mod.NodeByObject(fn)
