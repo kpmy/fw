@@ -32,11 +32,7 @@ func expectExpr(parent frame.Frame, expr node.Node, next Do) OUT {
 			fm := rtm.Module(parent.Domain(), imp)
 			ol := fm.ObjectByName(fm.Enter, expr.Object().Name())
 			for _, obj := range ol {
-				fmt.Println(obj.Adr())
-			}
-			for _, obj := range ol {
 				if _, ok := obj.(object.VariableObject); ok {
-					fmt.Println(m.Name, sm, imp)
 					rt2.ValueOf(parent)[expr.Adr()] = sm.Select(obj.Adr())
 				}
 			}
