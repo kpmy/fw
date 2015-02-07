@@ -59,6 +59,7 @@ type Object interface {
 	Name() string
 	SetRef(n Ref)
 	Ref() []Ref
+	Imp(...string) string
 	cp.Id
 	Mode(...Mode) Mode
 }
@@ -140,6 +141,7 @@ type objectFields struct {
 	ref  []Ref
 	adr  cp.ID
 	mod  Mode
+	imp  string
 }
 
 func (of *objectFields) SetType(typ Type)         { of.typ = typ }
@@ -152,11 +154,21 @@ func (of *objectFields) SetComplex(t ComplexType) { of.comp = t }
 func (of *objectFields) Complex() ComplexType     { return of.comp }
 
 func (of *objectFields) Adr(a ...cp.ID) cp.ID {
-	assert.For(len(a) <= 1, 20)
+	assert.For(len(a) <= 2, 20)
 	if len(a) == 1 {
 		of.adr = a[0]
+	} else if len(a) == 0 && of.imp != "" {
+		panic(123)
 	}
 	return of.adr
+}
+
+func (of *objectFields) Imp(a ...string) string {
+	assert.For(len(a) <= 1, 20)
+	if len(a) == 1 {
+		of.imp = a[0]
+	}
+	return of.imp
 }
 
 func (of *objectFields) Mode(a ...Mode) Mode {

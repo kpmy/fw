@@ -109,7 +109,7 @@ func (m *Module) NodeByObject(obj object.Object) (ret []node.Node) {
 	return ret
 }
 
-func (m *Module) Init(inittd func(t object.ComplexType)) {
+func (m *Module) Init(inittd ...func(t object.ComplexType)) {
 	typeName := func(id cp.ID) string {
 		for _, s := range m.Objects {
 			for _, o := range s {
@@ -157,11 +157,14 @@ func (m *Module) Init(inittd func(t object.ComplexType)) {
 		for _, t := range s.Types {
 			t.Qualident(q + "." + typeName(t.Adr()))
 		}
+		for _, o := range s.Objects {
+			o.Imp(s.Name)
+		}
 	}
-	if inittd != nil {
+	if len(inittd) > 0 {
 		for _, s := range m.Types {
 			for _, t := range s {
-				inittd(t)
+				inittd[0](t)
 			}
 		}
 	}

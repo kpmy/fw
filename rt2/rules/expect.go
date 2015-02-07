@@ -3,8 +3,11 @@ package rules
 import (
 	"fmt"
 	"fw/cp/node"
+	"fw/cp/object"
 	"fw/rt2"
+	"fw/rt2/context"
 	"fw/rt2/frame"
+	rtm "fw/rt2/module"
 	"fw/rt2/scope"
 	"reflect"
 	"ypk/assert"
@@ -20,9 +23,29 @@ func expectExpr(parent frame.Frame, expr node.Node, next Do) OUT {
 		rt2.ValueOf(parent)[expr.Adr()] = sm.Provide(e)(nil)
 		return OUT{do: next, next: NOW}
 	case node.VariableNode, node.ParameterNode:
-		rt2.ValueOf(parent)[expr.Adr()] = sm.Select(expr.Object().Adr())
+		m := rtm.ModuleOfObject(parent.Domain(), expr.Object())
+		assert.For(m != nil, 40)
+		imp := m.ImportOf(expr.Object())
+		if imp != "" {
+			md := rtm.ModuleDomain(parent.Domain(), imp)
+			sm = md.Discover(context.SCOPE).(scope.Manager)
+			fm := rtm.Module(parent.Domain(), imp)
+			ol := fm.ObjectByName(fm.Enter, expr.Object().Name())
+			for _, obj := range ol {
+				fmt.Println(obj.Adr())
+			}
+			for _, obj := range ol {
+				if _, ok := obj.(object.VariableObject); ok {
+					fmt.Println(m.Name, sm, imp)
+					rt2.ValueOf(parent)[expr.Adr()] = sm.Select(obj.Adr())
+				}
+			}
+		} else {
+			sm = rt2.ScopeOf(parent)
+			rt2.ValueOf(parent)[expr.Adr()] = sm.Select(expr.Object().Adr())
+		}
 		return OUT{do: next, next: NOW}
-	case node.OperationNode, node.CallNode, node.DerefNode:
+	case node.OperationNode, node.CallNode, node.DerefNode, node.FieldNode:
 		rt2.Push(rt2.New(expr), parent)
 		wait := func(...IN) OUT {
 			if rt2.RegOf(parent)[expr] == nil && rt2.ValueOf(parent)[expr.Adr()] == nil {

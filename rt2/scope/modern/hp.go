@@ -78,7 +78,7 @@ func (h *halloc) Allocate(n node.Node, par ...interface{}) scope.ValueFor {
 			fake.SetComplex(bt)
 			fake.SetType(object.COMPLEX)
 			fake.SetName("{}")
-			l.alloc(mod, nil, append(ol, fake), skip)
+			l.alloc(h.area.d, mod, nil, append(ol, fake), skip)
 			res = &ptrValue{scope: h.area, id: fake.Adr(), link: n.Object()}
 		case object.DynArrayType:
 			assert.For(len(par) > 0, 20)
@@ -86,7 +86,7 @@ func (h *halloc) Allocate(n node.Node, par ...interface{}) scope.ValueFor {
 			fake.SetComplex(bt)
 			fake.SetType(object.COMPLEX)
 			fake.SetName("[]")
-			l.alloc(mod, nil, append(ol, fake), skip)
+			l.alloc(h.area.d, mod, nil, append(ol, fake), skip)
 			h.area.Select(fake.Adr(), func(v scope.Value) {
 				arr, ok := v.(*dynarr)
 				assert.For(ok, 60)

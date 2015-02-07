@@ -32,7 +32,7 @@ func returnSeq(f frame.Frame) (frame.Sequence, frame.WAIT) {
 				return frame.End()
 			}
 			ret = frame.NOW
-		case node.OperationNode, node.CallNode:
+		case node.OperationNode, node.CallNode, node.FieldNode:
 			rt2.Push(rt2.New(a.Left()), f)
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				rt2.ValueOf(f.Parent())[a.Object().Adr()] = rt2.ValueOf(f)[a.Left().Adr()]

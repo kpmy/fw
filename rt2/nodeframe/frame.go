@@ -23,7 +23,7 @@ func (fu NodeFrameUtils) New(n node.Node) (f frame.Frame) {
 	f.(*nodeFrame).ir = n
 	f.(*nodeFrame).data = make(map[interface{}]interface{})
 	f.(*nodeFrame).value = make(map[cp.ID]scope.Value)
-	utils.PrintFrame("_", "NEW", reflect.TypeOf(n))
+	utils.PrintFrame("_", "NEW", reflect.TypeOf(n), n.Adr())
 	return f
 }
 

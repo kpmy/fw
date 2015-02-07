@@ -272,8 +272,8 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 			}
 			base := r.findLink(n, "base")
 			if base != nil {
-				ret.(object.RecordType).SetBase(r.doType(base))
-				assert.For(ret.(object.RecordType).Base() != nil, 41)
+				ret.(object.RecordType).Base(r.doType(base))
+				assert.For(ret.(object.RecordType).BaseRec() != nil, 41)
 			}
 		default:
 			panic(fmt.Sprintln("unknown form", n.Data.Typ.Form))

@@ -74,52 +74,7 @@ func (l *list) Load(name string, ldr ...Loader) (ret *mod.Module, err error) {
 			_, err = l.Load(imp.Name, loader)
 		}
 		if err == nil {
-			ret.Init(func(t object.ComplexType) {
-				var base func(t object.ComplexType)
-				base = func(t object.ComplexType) {
-					switch i := t.(type) {
-					case object.PointerType:
-						if i.Base() != nil {
-							fmt.Print(i.Base().Qualident(), "(")
-							base(i.Base())
-							fmt.Print(")")
-						} else {
-							/*for _, n := range ret.Imports {
-								for _, _it := range n.Objects {
-									switch it := _it.(type) {
-									case object.TypeObject:
-										if it.Complex().Adr() == i.Adr() {
-											fmt.Print(it.Complex().Qualident(), "(")
-											fmt.Print(")")
-										}
-									}
-								}
-							}*/
-						}
-					case object.RecordType:
-						if i.Base() != nil {
-							fmt.Print(i.Base().Qualident(), "(")
-							base(i.Base())
-							fmt.Print(")")
-						} else {
-							/*for _, n := range ret.Imports {
-								for _, _it := range n.Objects {
-									switch it := _it.(type) {
-									case object.TypeObject:
-										if it.Complex().Adr() == i.Adr() {
-											fmt.Print(it.Complex().Qualident(), "(")
-											fmt.Print(")")
-										}
-									}
-								}
-							}*/
-						}
-					}
-				}
-				fmt.Print(t.Qualident(), "(")
-				base(t)
-				fmt.Println(")")
-			})
+			ret.Init()
 			l.inner[name] = ret
 			loader(ret)
 			//fmt.Println("loaded", name)
@@ -135,6 +90,16 @@ func (l *list) Loaded(name string) *mod.Module {
 
 func (l *list) NewTypeCalc() TypeCalc {
 	return &tc{ml: l}
+}
+
+func ModuleDomain(d context.Domain, name string) context.Domain {
+	uni := d.Discover(context.UNIVERSE).(context.Domain)
+	return uni.Discover(name).(context.Domain)
+}
+
+func Module(d context.Domain, name string) *mod.Module {
+	uni := d.Discover(context.UNIVERSE).(context.Domain)
+	return uni.Discover(context.MOD).(List).Loaded(name)
 }
 
 func DomainModule(d context.Domain) *mod.Module {
@@ -159,11 +124,19 @@ func ModuleOfNode(d context.Domain, x node.Node) *mod.Module {
 }
 
 func ModuleOfObject(d context.Domain, x object.Object) *mod.Module {
+	assert.For(x != nil, 20)
 	uni := d.Discover(context.UNIVERSE).(context.Domain)
 	ml := uni.Discover(context.MOD).(List)
 	for _, m := range ml.AsList() {
 		for _, v := range m.Objects {
 			for _, o := range v {
+				if o == x {
+					return m
+				}
+			}
+		}
+		for _, i := range m.Imports {
+			for _, o := range i.Objects {
 				if o == x {
 					return m
 				}
@@ -200,9 +173,28 @@ func MapImportType(d context.Domain, imp string, t object.ComplexType) object.Co
 	return nil
 }
 
+func MapImportObject(d context.Domain, t object.Object) object.Object {
+	if t.Imp() == "" {
+		return t
+	}
+	imp := t.Imp()
+	uni := d.Discover(context.UNIVERSE).(context.Domain)
+	ml := uni.Discover(context.MOD).(List)
+	m := ml.Loaded(imp)
+	for _, v := range m.Objects[m.Enter] {
+		if v.Name() == t.Name() {
+			if v.Type() == t.Type() {
+				return v
+			}
+		}
+	}
+	panic(0)
+}
+
 type TypeCalc interface {
 	ConnectTo(interface{})
-	MethodList() map[int]Method
+	MethodList() map[int][]Method
+	ForeignBase() (*mod.Module, object.ComplexType)
 }
 
 type Method struct {
@@ -235,32 +227,42 @@ func (c *tc) ConnectTo(x interface{}) {
 	assert.For(c.m != nil, 60)
 }
 
-func (c *tc) MethodList() (ret map[int]Method) {
-	ret = make(map[int]Method, 0)
-	//depth := 0
+func (c *tc) MethodList() (ret map[int][]Method) {
+	ret = make(map[int][]Method, 0)
+	tmp := make(map[string]object.Object, 0)
+	depth := -1
 	var deep func(*mod.Module, object.ComplexType)
 	list := func(m *mod.Module, t object.ComplexType) {
-		ol := m.Objects[c.m.Enter]
+		ol := m.Objects[m.Enter]
 		for _, _po := range ol {
 			switch po := _po.(type) {
 			case object.ProcedureObject:
+				var et node.EnterNode
 				proc := m.NodeByObject(po)
-				//local := false
+				local := false
 				for i := range proc {
-					if _, ok := proc[i].(node.EnterNode); ok {
-						//local = true
+					if e, ok := proc[i].(node.EnterNode); ok {
+						local = true
+						et = e
 					}
 				}
-				if po.Link() != nil {
-					pt := po.Link().Complex()
-					var pb object.ComplexType
-					if _, ok := pt.(inherited); ok {
-						pb = pt.(inherited).Base()
-					}
-					if t.Equals(pt) || t.Equals(pb) {
-						fmt.Println(po.Name())
+				if local && po.Link() != nil {
+					for pt := po.Link().Complex(); pt != nil; {
+						if t.Equals(pt) && tmp[po.Name()] == nil {
+							//fmt.Println("method", m.Name, po.Name(), local)
+							tmp[po.Name()] = po
+							ret[depth] = append(ret[depth], Method{Enter: et, Obj: po, Mod: m})
+							break
+						}
+						if _, ok := pt.(inherited); ok {
+							pt = pt.(inherited).Base()
+						} else {
+							pt = nil
+						}
+
 					}
 				}
+
 			}
 		}
 	}
@@ -279,31 +281,37 @@ func (c *tc) MethodList() (ret map[int]Method) {
 		}
 	}
 	deep = func(m *mod.Module, x object.ComplexType) {
+		depth++
+		tmp = make(map[string]object.Object, 0)
 		for t := x; t != nil; {
 			list(m, t)
-			switch z := t.(type) {
-			case object.PointerType:
-				if z.Base() != nil {
-					t = z.Base()
-				} else {
-					foreign(t)
-					t = nil
-				}
-			case object.RecordType:
-				if z.Base() != nil {
-					t = z.Base()
-				} else {
-					foreign(t)
-					t = nil
-				}
-			default:
-				halt.As(0, reflect.TypeOf(t))
+			z := t.(inherited).Base()
+			if z != nil {
+				t = z
+			} else {
+				foreign(t)
+				t = nil
 			}
 		}
-		return
 	}
 	deep(c.m, c.typ)
 	return
+}
+
+func (c *tc) ForeignBase() (*mod.Module, object.ComplexType) {
+	for _, n := range c.m.Imports {
+		for _, _it := range n.Objects {
+			switch it := _it.(type) {
+			case object.TypeObject:
+				if it.Complex().Adr() == c.typ.Adr() {
+					nm := c.ml.Loaded(n.Name)
+					nt := nm.TypeByName(nm.Enter, it.Name())
+					return nm, nt
+				}
+			}
+		}
+	}
+	return nil, nil
 }
 
 func (c *tc) String() (ret string) {

@@ -87,7 +87,8 @@ func (a *area) Provide(x interface{}) scope.ValueFor {
 }
 
 //var alloc func(*level, []object.Object, map[cp.ID]interface{})
-func (l *level) alloc(mod *cpm.Module, root node.Node, ol []object.Object, skip map[cp.ID]interface{}) {
+func (l *level) alloc(d context.Domain, mod *cpm.Module, root node.Node, ol []object.Object, skip map[cp.ID]interface{}) {
+	ml := d.Discover(context.UNIVERSE).(context.Domain).Discover(context.MOD).(rtm.List)
 	for _, o := range ol {
 		imp := mod.ImportOf(o)
 		utils.PrintScope(reflect.TypeOf(o), o.Adr())
@@ -117,11 +118,19 @@ func (l *level) alloc(mod *cpm.Module, root node.Node, ol []object.Object, skip 
 							//fmt.Println(o.Name(), ".", x.Name(), x.Adr())
 							fl = append(fl, x)
 						}
-						rec = rec.Base()
+						if rec.BaseRec() == nil {
+							x := ml.NewTypeCalc()
+							x.ConnectTo(rec)
+							_, frec := x.ForeignBase()
+							//fmt.Println(frec)
+							rec, _ = frec.(object.RecordType)
+						} else {
+							rec = rec.BaseRec()
+						}
 					}
 					//fmt.Println("record")
 					l.v[l.next].(*rec).l = nl
-					nl.alloc(mod, root, fl, skip)
+					nl.alloc(d, mod, root, fl, skip)
 					l.next++
 				case object.PointerType:
 					l.v[l.next] = newPtr(x)
@@ -184,7 +193,7 @@ func (a *salloc) Allocate(n node.Node, final bool) {
 	nl := newlvl()
 	nl.ready = final
 	a.area.data = append(a.area.data, nl)
-	nl.alloc(mod, n, ol, skip)
+	nl.alloc(a.area.d, mod, n, ol, skip)
 }
 
 func (a *salloc) Dispose(n node.Node) {
@@ -235,7 +244,11 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 				v := newConst(nv)
 				l.v[l.k[o.Adr()]].Set(v)
 			case node.VariableNode, node.ParameterNode:
-				v := sm.Select(nv.Object().Adr())
+				if nv.Object().Imp() != "" {
+					md := rtm.ModuleDomain(f.Domain(), nv.Object().Imp())
+					sm = md.Discover(context.SCOPE).(scope.Manager)
+				}
+				v := sm.Select(rtm.MapImportObject(f.Domain(), nv.Object()).Adr())
 				l.v[l.k[o.Adr()]].Set(v)
 			case node.OperationNode:
 				nf := rt2.New(nv)
@@ -291,6 +304,22 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 			case node.VariableNode, node.ParameterNode:
 				old := l.r[l.k[o.Adr()]].(*ref)
 				l.r[l.k[o.Adr()]] = &ref{link: old.link, sc: sm, id: nv.Object().Adr()}
+			case node.FieldNode:
+				nf := rt2.New(nv)
+				rt2.Push(nf, f)
+				rt2.ReplaceDomain(nf, global)
+				rt2.Assert(f, func(f frame.Frame) (bool, int) {
+					return rt2.ValueOf(f)[nv.Adr()] != nil, 60
+				})
+				seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+					v := rt2.ValueOf(f)[nv.Adr()]
+					assert.For(v != nil, 40)
+					//old := l.r[l.k[o.Adr()]].(*ref)
+					l.v[l.k[o.Adr()]] = v.(scope.Variable)
+					l.r[l.k[o.Adr()]] = nil
+					return end, frame.NOW
+				}
+				ret = frame.LATER
 			case node.ConstantNode: //array :) заменяем ссылку на переменную
 				old := l.r[l.k[o.Adr()]].(*ref)
 				l.r[l.k[o.Adr()]] = nil

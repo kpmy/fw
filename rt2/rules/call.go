@@ -74,9 +74,13 @@ func go_process(f frame.Frame, par node.Node) (frame.Sequence, frame.WAIT) {
 						glob := f.Domain().Discover(context.UNIVERSE).(context.Domain)
 						modList := glob.Discover(context.MOD).(rtm.List)
 						fl := glob.Discover(context.MT).(*flow)
+						ml := make([]*cpm.Module, 0)
 						_, err := modList.Load(msg.Data, func(m *cpm.Module) {
-							fl.grow(glob, m)
+							ml = append(ml, m)
 						})
+						for i := len(ml) - 1; i >= 0; i-- {
+							fl.grow(glob, ml[i])
+						}
 						assert.For(err == nil, 60)
 					default:
 						halt.As(100, msg.Command)
@@ -182,7 +186,7 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		}
 		seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			if f.Parent() != nil {
-				rt2.ValueOf(f.Parent())[n.Adr()] = rt2.ValueOf(f)[n.Left().Object().Adr()]
+				rt2.ValueOf(f.Parent())[n.Adr()] = rt2.ValueOf(f)[n.Left().Object().Adr(0, 0)]
 			}
 			return frame.End()
 		}
@@ -200,77 +204,59 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			seq = Propose(Tail(STOP))
 			ret = frame.NOW
 		} else {
-			if imp := m.ImportOf(n.Left().Object()); imp == "" || imp == m.Name {
-				switch p.Object().Mode() {
-				case object.LOCAL_PROC, object.EXTERNAL_PROC:
+			switch p.Object().Mode() {
+			case object.LOCAL_PROC, object.EXTERNAL_PROC:
+				if imp := m.ImportOf(n.Left().Object()); imp == "" || imp == m.Name {
 					proc := m.NodeByObject(n.Left().Object())
 					assert.For(proc != nil, 40)
 					call(proc[0], nil)
-				case object.TYPE_PROC:
-					//sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-					return This(expectExpr(f, n.Right(), func(...IN) (out OUT) {
-						var proc []node.Node
-						v := rt2.ValueOf(f)[n.Right().Adr()]
-						_, c := scope.Ops.TypeOf(v)
-
-						var dm context.Domain
-						var fn object.ProcedureObject
-						//fmt.Println(c.Qualident())
-						mod := rtm.ModuleOfType(f.Domain(), c)
-						dm = f.Domain().Discover(context.UNIVERSE).(context.Domain).Discover(mod.Name).(context.Domain)
-						ol := mod.Objects[mod.Enter]
-						for _, _po := range ol {
-							switch po := _po.(type) {
-							case object.ProcedureObject:
-								if po.Name() == p.Object().Name() {
-									if po.Link() != nil && po.Link().Complex().Equals(c) {
-										fn = po
-									} else if po.Link() != nil {
-									}
-								}
-							}
+				} else {
+					m := ml.Loaded(imp)
+					pl := m.ObjectByName(m.Enter, n.Left().Object().Name())
+					var proc object.ProcedureObject
+					var nl []node.Node
+					for _, n := range pl {
+						if n.Mode() == p.Object().Mode() {
+							proc = n.(object.ProcedureObject)
 						}
-						if fn == nil {
-							x := ml.NewTypeCalc()
-							x.ConnectTo(c)
-							fmt.Println(x)
-							x.MethodList()
-						}
-						assert.For(fn != nil, 40, p.Object().Name())
-						proc = mod.NodeByObject(fn)
-						assert.For(proc != nil, 40)
-						call(proc[0], dm)
-						out.do = Tail(STOP)
-						out.next = LATER
-						return out
-					}))
 
-				default:
-					halt.As(100, "wrong proc mode ", p.Object().Mode())
-				}
-
-				//fmt.Println(len(proc), len(n.Left().Object().Ref()))
-				//fmt.Println("proc refs", proc)
-
-			} else {
-				m := ml.Loaded(imp)
-				pl := m.ObjectByName(m.Enter, n.Left().Object().Name())
-				var proc object.ProcedureObject
-				var nl []node.Node
-				for _, n := range pl {
-					if n.Mode() == p.Object().Mode() {
-						proc = n.(object.ProcedureObject)
 					}
-				}
-				//utils.PrintFrame("proc refs", len(proc))
-				switch proc.Mode() {
-				case object.LOCAL_PROC, object.EXTERNAL_PROC:
 					nl = m.NodeByObject(proc)
 					utils.PrintFrame("foreign call", len(nl), "proc refs", proc)
 					call(nl[0], f.Domain().Discover(context.UNIVERSE).(context.Domain).Discover(imp).(context.Domain))
-				default:
-					halt.As(100, "wrong proc mode ", p.Object().Mode())
 				}
+			case object.TYPE_PROC:
+				//sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+				return This(expectExpr(f, n.Right(), func(...IN) (out OUT) {
+					var (
+						proc []node.Node
+						dm   context.Domain
+					)
+					v := rt2.ValueOf(f)[n.Right().Adr()]
+					_, c := scope.Ops.TypeOf(v)
+					x := ml.NewTypeCalc()
+					x.ConnectTo(c)
+					for _, ml := range x.MethodList() {
+						for _, m := range ml {
+							if m.Obj.Name() == p.Object().Name() {
+								proc = append(proc, m.Enter)
+								dm = f.Domain().Discover(context.UNIVERSE).(context.Domain).Discover(m.Mod.Name).(context.Domain)
+								break
+							}
+						}
+						if len(proc) > 0 {
+							break
+						}
+					}
+					assert.For(len(proc) > 0, 40, p.Object().Name())
+					call(proc[0], dm)
+					out.do = Tail(STOP)
+					out.next = LATER
+					return out
+				}))
+
+			default:
+				halt.As(100, "wrong proc mode ", p.Object().Mode(), p.Object().Adr(), p.Object().Name())
 			}
 		}
 	case node.VariableNode:

@@ -89,6 +89,7 @@ func (r *rec) Set(v scope.Value) {
 func (r *rec) Get(id cp.ID) scope.Value {
 	k := r.l.k[id]
 	if r.l.v[k] == nil { //ref
+		assert.For(r.l.r[k] != nil, 20, id, k)
 		return r.l.r[k]
 	} else {
 		return r.l.v[k]
@@ -408,7 +409,11 @@ func (d *data) String() string {
 }
 
 func (p *ptr) String() string {
-	return fmt.Sprint("pointer ", p.link.Complex().(object.PointerType).Name(), "&", p.val)
+	if p.link.Complex() != nil {
+		return fmt.Sprint("pointer ", p.link.Complex().(object.PointerType).Name(), "&", p.val)
+	} else {
+		return fmt.Sprint("pointer simple", p.link.Type())
+	}
 }
 
 func (p *ptr) Id() cp.ID { return p.link.Adr() }
@@ -700,11 +705,23 @@ func gfrom(v scope.Value) interface{} {
 		}
 		panic(0)
 	case *idx:
-		switch n.link().Complex().(object.ArrayType).Base() {
-		case object.CHAR:
-			return rune(n.Get().(CHAR))
+		switch t := n.link().Complex().(type) {
+		case object.ArrayType:
+			switch t.Base() {
+			case object.CHAR:
+				return rune(n.Get().(CHAR))
+			default:
+				halt.As(100, t.Base())
+			}
+		case object.DynArrayType:
+			switch t.Base() {
+			case object.CHAR:
+				return rune(n.Get().(CHAR))
+			default:
+				halt.As(100, t.Base())
+			}
 		default:
-			halt.As(100, n.link().Complex().(object.ArrayType).Base())
+			halt.As(100, reflect.TypeOf(t))
 		}
 		panic(0)
 	case PTR:

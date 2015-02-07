@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"fmt"
 	"fw/cp/node"
 	"fw/rt2"
 	"fw/rt2/context"
@@ -27,7 +28,7 @@ func enterSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		} else {
 			//Особый случай, вход в модуль, секция BEGIN
 			rt2.Push(rt2.New(body), f)
-			utils.PrintFrame("begin", module.DomainModule(f.Domain()).Name)
+			fmt.Println("begin", module.DomainModule(f.Domain()).Name)
 			//Выход из модуля, секция CLOSE
 			next := n.Link()
 			if next != nil {

@@ -46,8 +46,7 @@ func (a *rec) Equals(x ComplexType) bool {
 	case *rec:
 		//fmt.Println("rec:rec")
 		return a.Qualident() == b.Qualident()
-	case *ptr:
-		//fmt.Println("rec:ptr")
+	case *ptr, nil, *dyn:
 		return false
 	default:
 		halt.As(100, reflect.TypeOf(b))
@@ -61,10 +60,7 @@ func (a *ptr) Equals(x ComplexType) bool {
 		//fmt.Println("ptr:ptr")
 		//fmt.Println("pointer comp", a.Name(), ":", a.Qualident(), ",", b.Name(), ":", b.Qualident())
 		return a.Qualident() == b.Qualident()
-	case *rec:
-		//fmt.Println("ptr:rec")
-		return false
-	case nil:
+	case nil, *rec, *dyn:
 		return false
 	default:
 		halt.As(100, reflect.TypeOf(b))

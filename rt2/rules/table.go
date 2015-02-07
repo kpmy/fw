@@ -3,6 +3,7 @@ package rules
 
 import (
 	"fmt"
+	"fw/cp/constant/enter"
 	"fw/cp/module"
 	"fw/cp/node"
 	"fw/cp/traps"
@@ -110,7 +111,7 @@ func prologue(n node.Node) frame.Sequence {
 }
 
 func epilogue(n node.Node) frame.Sequence {
-	switch n.(type) {
+	switch e := n.(type) {
 	case node.AssignNode, node.InitNode, node.CallNode, node.ConditionalNode, node.WhileNode,
 		node.RepeatNode, node.ExitNode, node.WithNode, node.CaseNode, node.CompNode:
 		return func(f frame.Frame) (frame.Sequence, frame.WAIT) {
@@ -138,7 +139,9 @@ func epilogue(n node.Node) frame.Sequence {
 		return func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			//fmt.Println(rt_module.DomainModule(f.Domain()).Name)
 			sm := f.Domain().Discover(context.SCOPE).(scope.Manager)
-			sm.Target().(scope.ScopeAllocator).Dispose(n)
+			if e.Enter() == enter.PROCEDURE {
+				sm.Target().(scope.ScopeAllocator).Dispose(n)
+			}
 			//возвращаем результаты вызова функции
 			if f.Parent() != nil {
 				par := rt2.RegOf(f.Parent())
