@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"fw/cp"
 	cpm "fw/cp/module"
 	"fw/rt2/context"
@@ -12,6 +11,7 @@ import (
 	"fw/rt2/scope"
 	_ "fw/rt2/scope/modern"
 	"fw/utils"
+	"log"
 	"time"
 	"ypk/assert"
 )
@@ -27,7 +27,7 @@ func close() {
 	utils.PrintFrame("____")
 	utils.PrintFrame(heap)
 	utils.PrintFrame("^^^^")
-	fmt.Println("closed")
+	log.Println("closed")
 	//fmt.Println(heap)
 }
 
@@ -50,7 +50,7 @@ func main() {
 		init = append(init, m)
 	})
 	t1 := time.Now()
-	fmt.Println("load", t1.Sub(t0))
+	log.Println("load", t1.Sub(t0))
 	assert.For(err == nil, 40)
 	defer close()
 	decision.Run(global, init)

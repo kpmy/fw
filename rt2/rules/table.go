@@ -14,6 +14,7 @@ import (
 	"fw/rt2/frame/std"
 	"fw/rt2/scope"
 	"fw/utils"
+	"log"
 	"reflect"
 	"time"
 	"ypk/assert"
@@ -257,8 +258,8 @@ func run(global context.Domain, init []*module.Module) {
 			i++
 		}
 		t1 := time.Now()
-		fmt.Println("total steps", i)
-		fmt.Println("spent", t1.Sub(t0))
+		log.Println("total steps", i)
+		log.Println("spent", t1.Sub(t0))
 	}
 }
 

@@ -16,7 +16,7 @@ func caseSeq(f frame.Frame) (frame.Sequence, frame.WAIT) {
 
 	in := func(in ...IN) (out OUT) {
 		cond := n.Right().(node.ElseNode)
-		fmt.Println("case?", e, cond.Min(), cond.Max())
+		//fmt.Println("case?", e, cond.Min(), cond.Max())
 		if e < cond.Min() || e > cond.Max() { //case?
 			if cond.Right() != nil {
 				rt2.Push(rt2.New(cond.Right()), f)
@@ -29,16 +29,16 @@ func caseSeq(f frame.Frame) (frame.Sequence, frame.WAIT) {
 				//				_c := next.Left()
 				for _c := next.Left(); _c != nil && !ok; _c = _c.Link() {
 					c := _c.(node.ConstantNode)
-					fmt.Println("const", c.Data(), c.Min(), c.Max())
+					//fmt.Println("const", c.Data(), c.Min(), c.Max())
 					if (c.Min() != nil) && (c.Max() != nil) {
-						fmt.Println(e, *c.Max(), "..", *c.Min())
+						//fmt.Println(e, *c.Max(), "..", *c.Min())
 						ok = e >= *c.Min() && e <= *c.Max()
 					} else {
-						fmt.Println(e, c.Data())
+						//fmt.Println(e, c.Data())
 						ok = int32Of(c.Data()) == int32(e)
 					}
 				}
-				fmt.Println(ok)
+				//fmt.Println(ok)
 				if ok {
 					rt2.Push(rt2.New(next.Right()), f)
 					out.do = Tail(STOP)
@@ -62,7 +62,7 @@ func caseSeq(f frame.Frame) (frame.Sequence, frame.WAIT) {
 			panic("nil")
 		case int32:
 			e = int(x)
-			fmt.Println("case", e)
+			//fmt.Println("case", e)
 			out.do = in
 			out.next = NOW
 			return out

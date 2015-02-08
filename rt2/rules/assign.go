@@ -15,23 +15,27 @@ import (
 	"ypk/halt"
 )
 
-func incSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+func inc_dec_seq(f frame.Frame, code operation.Operation) (seq frame.Sequence, ret frame.WAIT) {
 	n := rt2.NodeOf(f)
+	a := node.New(constant.ASSIGN, cp.Some()).(node.AssignNode)
+	a.SetStatement(statement.ASSIGN)
+	a.SetLeft(n.Left())
 	op := node.New(constant.DYADIC, cp.Some()).(node.OperationNode)
-	op.SetOperation(operation.PLUS)
+	op.SetOperation(code)
 	op.SetLeft(n.Left())
 	op.SetRight(n.Right())
-	rt2.Push(rt2.New(op), f)
-	seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+	a.SetRight(op)
+	rt2.Push(rt2.New(a), f)
+	/*seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 		sc.Update(n.Left().Object().Adr(), scope.Simple(rt2.ValueOf(f)[op.Adr()]))
 		return frame.End()
 	}
-	ret = frame.LATER
-	return seq, ret
+	ret = frame.LATER */
+	return frame.Tail(frame.STOP), frame.LATER
 }
 
-func decSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+/*func decSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	n := rt2.NodeOf(f)
 	op := node.New(constant.DYADIC, cp.Some()).(node.OperationNode)
 	op.SetOperation(operation.MINUS)
@@ -46,7 +50,7 @@ func decSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	ret = frame.LATER
 	return seq, ret
 }
-
+*/
 func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	a := rt2.NodeOf(f)
 
@@ -186,15 +190,15 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		}
 	case statement.INC, statement.INCL:
 		switch a.Left().(type) {
-		case node.VariableNode, node.ParameterNode:
-			seq, ret = incSeq(f)
+		case node.VariableNode, node.ParameterNode, node.FieldNode:
+			seq, ret = inc_dec_seq(f, operation.PLUS)
 		default:
 			panic(fmt.Sprintln("wrong left", reflect.TypeOf(a.Left())))
 		}
 	case statement.DEC, statement.EXCL:
 		switch a.Left().(type) {
-		case node.VariableNode, node.ParameterNode:
-			seq, ret = decSeq(f)
+		case node.VariableNode, node.ParameterNode, node.FieldNode:
+			seq, ret = inc_dec_seq(f, operation.MINUS)
 		default:
 			panic(fmt.Sprintln("wrong left", reflect.TypeOf(a.Left())))
 		}

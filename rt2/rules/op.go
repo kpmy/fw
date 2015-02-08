@@ -79,7 +79,7 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			assert.For(x != nil, 40)
 			conv(scope.ValueFrom(x))
 			return frame.End()
-		case node.OperationNode, node.DerefNode, node.CallNode:
+		case node.OperationNode, node.DerefNode, node.CallNode, node.IndexNode:
 			return This(expectExpr(f, n.Left(), func(...IN) OUT {
 				conv(rt2.ValueOf(f)[n.Left().Adr()])
 				return End()

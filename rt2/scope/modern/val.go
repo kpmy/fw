@@ -63,6 +63,17 @@ func (i *idx) link() object.Object {
 	}
 }
 
+func (i *idx) base() (object.Type, object.ComplexType) {
+	switch a := i.link().Complex().(type) {
+	case object.ArrayType:
+		return a.Base(), a.Complex()
+	case object.DynArrayType:
+		return a.Base(), nil
+	default:
+		panic(0)
+	}
+}
+
 func (i *idx) val() []interface{} {
 	switch a := i.some.(type) {
 	case *arr:
@@ -145,16 +156,22 @@ func (a *dynarr) Set(v scope.Value) {
 		a.Set(x.Get())
 	case STRING:
 		z := []rune(string(x))
-		v := make([]interface{}, len(z))
+		v := make([]interface{}, len(z)+1)
 		for i := 0; i < len(z); i++ {
 			v[i] = CHAR(z[i])
+		}
+		if len(v) > 1 {
+			v[len(v)-1] = CHAR(0)
 		}
 		a.val = v
 	case SHORTSTRING:
 		z := []rune(string(x))
-		v := make([]interface{}, len(z))
+		v := make([]interface{}, len(z)+1)
 		for i := 0; i < len(z); i++ {
 			v[i] = SHORTCHAR(z[i])
+		}
+		if len(v) > 0 {
+			v[len(v)-1] = SHORTCHAR(0)
 		}
 		a.val = v
 	case INTEGER:
@@ -733,6 +750,8 @@ func gfrom(v scope.Value) interface{} {
 		return bool(n)
 	case STRING:
 		return string(n)
+	case CHAR:
+		return rune(n)
 	default:
 		halt.As(100, reflect.TypeOf(n))
 	}
@@ -1310,7 +1329,10 @@ func (o *ops) Conv(a scope.Value, typ object.Type, comp ...object.ComplexType) s
 	case object.INTEGER:
 		switch x := a.(type) {
 		case *data:
-			return o.Conv(vfrom(x), typ)
+			return o.Conv(vfrom(x), typ, comp...)
+		case *idx:
+			//t, c := x.base()
+			return o.Conv(x.val()[x.idx].(scope.Value), typ, comp...)
 		case BYTE:
 			return INTEGER(x)
 		case SET:
@@ -1319,13 +1341,15 @@ func (o *ops) Conv(a scope.Value, typ object.Type, comp ...object.ComplexType) s
 			return INTEGER(x)
 		case LONGINT:
 			return INTEGER(x)
+		case CHAR:
+			return INTEGER(x)
 		default:
 			halt.As(100, reflect.TypeOf(x))
 		}
 	case object.LONGINT:
 		switch x := a.(type) {
 		case *data:
-			return o.Conv(vfrom(x), typ)
+			return o.Conv(vfrom(x), typ, comp...)
 		case INTEGER:
 			return LONGINT(x)
 		case REAL:
@@ -1336,7 +1360,7 @@ func (o *ops) Conv(a scope.Value, typ object.Type, comp ...object.ComplexType) s
 	case object.SET:
 		switch x := a.(type) {
 		case *data:
-			return o.Conv(vfrom(x), typ)
+			return o.Conv(vfrom(x), typ, comp...)
 		case INTEGER:
 			return SET{bits: big.NewInt(int64(x))}
 		default:
@@ -1345,7 +1369,7 @@ func (o *ops) Conv(a scope.Value, typ object.Type, comp ...object.ComplexType) s
 	case object.REAL:
 		switch x := a.(type) {
 		case *data:
-			return o.Conv(vfrom(x), typ)
+			return o.Conv(vfrom(x), typ, comp...)
 		case INTEGER:
 			return REAL(float64(x))
 		default:
@@ -1354,11 +1378,13 @@ func (o *ops) Conv(a scope.Value, typ object.Type, comp ...object.ComplexType) s
 	case object.CHAR:
 		switch x := a.(type) {
 		case *data:
-			return o.Conv(vfrom(x), typ)
+			return o.Conv(vfrom(x), typ, comp...)
 		case LONGINT:
 			return CHAR(rune(x))
 		case INTEGER:
 			return CHAR(rune(x))
+		case CHAR:
+			return x
 		default:
 			halt.As(100, reflect.TypeOf(x))
 		}
@@ -1605,6 +1631,15 @@ func (o *ops) Lss(a, b scope.Value) scope.Value {
 				switch y := b.(type) {
 				case LONGINT:
 					return BOOLEAN(x < y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			case CHAR:
+				switch y := b.(type) {
+				case CHAR:
+					return BOOLEAN(x < y)
+				case INTEGER:
+					return BOOLEAN(uint(x) < uint(y))
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
