@@ -1,7 +1,6 @@
 package rules
 
 import (
-	"fmt"
 	"fw/cp/node"
 	"fw/rt2"
 	"fw/rt2/context"

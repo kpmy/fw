@@ -229,17 +229,17 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			}
 			ret = frame.LATER
 			return seq, ret
-		case node.CallNode:
+		case node.CallNode, node.FieldNode:
 			return This(expectExpr(f, r, Expose(op)))
-		case node.FieldNode:
-			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				//				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				//				rt2.DataOf(f)[n.Right()] = sc.Select(scope.Designator(n.Right()))
-				panic(0)
-				return op, frame.NOW
-			}
-			ret = frame.NOW
-			return seq, ret
+		/*case node.FieldNode:
+		seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+			//				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+			//				rt2.DataOf(f)[n.Right()] = sc.Select(scope.Designator(n.Right()))
+			panic(0)
+			return op, frame.NOW
+		}
+		ret = frame.NOW
+		return seq, ret*/
 		default:
 			fmt.Println(reflect.TypeOf(n.Right()))
 			panic("wrong right")
