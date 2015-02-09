@@ -24,11 +24,11 @@ func init() {
 }
 
 func close() {
+	utils.Debug(false)
 	utils.PrintFrame("____")
 	utils.PrintFrame(heap)
 	utils.PrintFrame("^^^^")
 	log.Println("closed")
-	//fmt.Println(heap)
 }
 
 func main() {

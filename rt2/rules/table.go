@@ -74,7 +74,7 @@ func prologue(n node.Node) frame.Sequence {
 		return func(f frame.Frame) (frame.Sequence, frame.WAIT) {
 			switch code := next.Left().(type) {
 			case node.ConstantNode:
-				utils.PrintTrap("TRAP:", traps.This(code.Data()))
+				log.Println("TRAP:", traps.This(code.Data()))
 				return frame.Tail(frame.WRONG), frame.NOW
 			default:
 				panic(fmt.Sprintln("unsupported code", reflect.TypeOf(code)))

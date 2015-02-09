@@ -2,10 +2,10 @@ package std
 
 import (
 	"container/list"
-	"fmt"
 	"fw/rt2/context"
 	"fw/rt2/frame"
 	"fw/rt2/scope"
+	"fw/utils"
 	"reflect"
 	"ypk/assert"
 	"ypk/halt"
@@ -110,7 +110,7 @@ func (f *RootFrame) Do() (res frame.WAIT) {
 			} else if wait == frame.NOW {
 			} else if wait == frame.WRONG {
 				trapped = true
-				fmt.Println("it's a trap")
+				utils.PrintTrap("it's a trap")
 				break
 				//panic("something wrong") do nothing, it's a trap
 			} else if wait == frame.STOP {
@@ -137,7 +137,9 @@ func (f *RootFrame) ForEach(run func(x frame.Frame) bool) {
 	e := f.inner.Front()
 	ok := true
 	for (e != nil) && ok {
-		ok = run(e.Value.(frame.Frame))
+		if e.Value != nil {
+			ok = run(e.Value.(frame.Frame))
+		}
 		e = e.Next()
 	}
 }

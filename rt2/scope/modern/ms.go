@@ -19,6 +19,7 @@ import (
 )
 
 type level struct {
+	root   node.Node
 	k      map[cp.ID]int
 	v      map[int]scope.Variable
 	r      map[int]scope.Ref
@@ -88,6 +89,7 @@ func (a *area) Provide(x interface{}) scope.ValueFor {
 
 //var alloc func(*level, []object.Object, map[cp.ID]interface{})
 func (l *level) alloc(d context.Domain, mod *cpm.Module, root node.Node, ol []object.Object, skip map[cp.ID]interface{}) {
+	l.root = root
 	ml := d.Discover(context.UNIVERSE).(context.Domain).Discover(context.MOD).(rtm.List)
 	for _, o := range ol {
 		imp := mod.ImportOf(o)
@@ -113,11 +115,12 @@ func (l *level) alloc(d context.Domain, mod *cpm.Module, root node.Node, ol []ob
 					l.l[l.next] = nl
 					l.k[x.Adr()] = l.next
 					fl := make([]object.Object, 0)
+					//fmt.Println("-------")
 					for rec := t; rec != nil; {
 						for x := rec.Link(); x != nil; x = x.Link() {
-							//fmt.Println(o.Name(), ".", x.Name(), x.Adr())
 							switch x.(type) {
 							case object.FieldObject:
+								//fmt.Println(o.Name(), ".", x.Name(), x.Adr())
 								fl = append(fl, x)
 							case object.ParameterObject, object.ProcedureObject, object.VariableObject:
 								//do nothing
@@ -222,13 +225,13 @@ func (a *salloc) Dispose(n node.Node) {
 	}
 }
 
-func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, ret frame.WAIT) {
+func (a *salloc) Initialize(n node.Node, par scope.PARAM) (frame.Sequence, frame.WAIT) {
 	utils.PrintScope("INITIALIZE")
 	l := a.area.top()
 	assert.For(l != nil && !l.ready, 20)
 	val := par.Values
 	f := par.Frame
-	end := func(frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+	tail := func(frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		l.ready = true
 		if par.Tail != nil {
 			return par.Tail(f)
@@ -236,152 +239,160 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (seq frame.Sequence, r
 			return frame.End()
 		}
 	}
-	seq = end
-	ret = frame.NOW
-	var sm scope.Manager
-	for next := par.Objects; next != nil; next = next.Link() {
-		global := f.Domain().Discover(context.UNIVERSE).(context.Domain)
-		mod := rtm.ModuleOfNode(f.Domain(), val)
-		//mod := rtm.ModuleOfNode(f.Domain(), val.Object())
-		if mod != nil {
-			//fmt.Println(mod.Name)
-			global = global.Discover(mod.Name).(context.Domain)
-			sm = global.Discover(context.SCOPE).(scope.Manager)
-		} else { //для фиктивных узлов, которые созданы рантаймом, типа INC/DEC
-			sm = a.area
-		}
-		switch o := next.(type) {
-		case object.VariableObject:
-			switch nv := val.(type) {
-			case node.ConstantNode:
-				v := newConst(nv)
-				l.v[l.k[o.Adr()]].Set(v)
-			case node.VariableNode, node.ParameterNode:
-				if nv.Object().Imp() != "" {
-					md := rtm.ModuleDomain(f.Domain(), nv.Object().Imp())
-					sm = md.Discover(context.SCOPE).(scope.Manager)
-				}
-				v := sm.Select(rtm.MapImportObject(f.Domain(), nv.Object()).Adr())
-				l.v[l.k[o.Adr()]].Set(v)
-			case node.OperationNode:
-				nf := rt2.New(nv)
-				rt2.Push(nf, f)
-				rt2.Assert(f, func(f frame.Frame) (bool, int) {
-					return rt2.ValueOf(f)[nv.Adr()] != nil, 59
-				})
-				rt2.ReplaceDomain(nf, global)
-				seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
-					v := rt2.ValueOf(f)[nv.Adr()]
-					l.v[l.k[o.Adr()]].Set(v)
-					return end, frame.NOW
-				}
-				ret = frame.LATER
-			case node.FieldNode, node.DerefNode, node.CallNode:
-				nf := rt2.New(nv)
-				rt2.Push(nf, f)
-				rt2.ReplaceDomain(nf, global)
-				rt2.Assert(f, func(f frame.Frame) (bool, int) {
-					return rt2.ValueOf(f)[nv.Adr()] != nil || rt2.RegOf(f)["RETURN"] != nil, 60
-				})
-				seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
-					v := rt2.ValueOf(f)[nv.Adr()]
-					if v == nil {
-						v, _ = rt2.RegOf(f)["RETURN"].(scope.Value)
-					}
-					assert.For(v != nil, 40)
-					l.v[l.k[o.Adr()]].Set(v)
-					return end, frame.NOW
-				}
-				ret = frame.LATER
-			case node.IndexNode:
-				nf := rt2.New(nv)
-				rt2.Push(nf, f)
-				rt2.ReplaceDomain(nf, global)
-				rt2.Assert(f, func(f frame.Frame) (bool, int) {
-					return rt2.ValueOf(f)[nv.Adr()] != nil, 64
-				})
-				seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-					sc := global.Discover(context.SCOPE).(scope.Manager)
-					left := rt2.ValueOf(f)[nv.Adr()]
-					arr := sc.Select(nv.Left().Object().Adr()).(scope.Array)
-					v := arr.Get(left)
-					l.v[l.k[o.Adr()]].Set(v)
-					return end, frame.NOW
-				}
-				ret = frame.LATER
-			default:
-				halt.As(40, reflect.TypeOf(nv))
+	var nxt frame.Sequence
+	var next object.Object = par.Objects
+	nxt = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+		seq = nxt
+		ret = frame.NOW
+		var sm scope.Manager
+		if next == nil {
+			return tail, frame.LATER
+		} else {
+			global := f.Domain().Discover(context.UNIVERSE).(context.Domain)
+			mod := rtm.ModuleOfNode(f.Domain(), val)
+			//mod := rtm.ModuleOfNode(f.Domain(), val.Object())
+			if mod != nil {
+				//fmt.Println(mod.Name)
+				global = global.Discover(mod.Name).(context.Domain)
+				sm = global.Discover(context.SCOPE).(scope.Manager)
+			} else { //для фиктивных узлов, которые созданы рантаймом, типа INC/DEC
+				sm = a.area
 			}
-		case object.ParameterObject:
-			switch nv := val.(type) {
-			case node.VariableNode, node.ParameterNode:
-				old := l.r[l.k[o.Adr()]].(*ref)
-				l.r[l.k[o.Adr()]] = &ref{link: old.link, sc: sm, id: nv.Object().Adr()}
-			case node.FieldNode:
-				nf := rt2.New(nv)
-				rt2.Push(nf, f)
-				rt2.ReplaceDomain(nf, global)
-				rt2.Assert(f, func(f frame.Frame) (bool, int) {
-					return rt2.ValueOf(f)[nv.Adr()] != nil, 60
-				})
-				seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
-					v := rt2.ValueOf(f)[nv.Adr()]
-					assert.For(v != nil, 40)
-					//old := l.r[l.k[o.Adr()]].(*ref)
-					l.v[l.k[o.Adr()]] = v.(scope.Variable)
-					l.r[l.k[o.Adr()]] = nil
-					return end, frame.NOW
-				}
-				ret = frame.LATER
-			case node.ConstantNode: //array :) заменяем ссылку на переменную
-				old := l.r[l.k[o.Adr()]].(*ref)
-				l.r[l.k[o.Adr()]] = nil
-				data := newConst(nv)
-				switch data.(type) {
-				case STRING, SHORTSTRING:
-					val := &dynarr{link: old.link}
-					val.Set(data)
-					l.v[l.k[o.Adr()]] = val
-				default:
-					halt.As(100, reflect.TypeOf(data))
-				}
-			case node.DerefNode:
-				rt2.Push(rt2.New(nv), f)
-				rt2.Assert(f, func(f frame.Frame) (bool, int) {
-					return rt2.ValueOf(f)[nv.Adr()] != nil, 61
-				})
-				dn := next
-				old := l.r[l.k[dn.Adr()]].(*ref)
-				seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
-					switch dn.(type) {
-					case object.VariableObject, object.ParameterObject:
-						l.r[l.k[dn.Adr()]] = nil
-						data := rt2.ValueOf(f)[nv.Adr()]
-						switch deref := data.(type) {
-						case STRING, SHORTSTRING:
-							val := &dynarr{link: old.link}
-							val.Set(deref)
-							l.v[l.k[dn.Adr()]] = val
-						case *rec:
-							l.v[l.k[dn.Adr()]] = deref
-						default:
-							halt.As(100, reflect.TypeOf(data))
+			switch o := next.(type) {
+			case object.VariableObject:
+				switch nv := val.(type) {
+				case node.ConstantNode:
+					v := newConst(nv)
+					l.v[l.k[o.Adr()]].Set(v)
+				case node.VariableNode, node.ParameterNode:
+					if nv.Object().Imp() != "" {
+						md := rtm.ModuleDomain(f.Domain(), nv.Object().Imp())
+						sm = md.Discover(context.SCOPE).(scope.Manager)
+					}
+					v := sm.Select(rtm.MapImportObject(f.Domain(), nv.Object()).Adr())
+					l.v[l.k[o.Adr()]].Set(v)
+				case node.OperationNode:
+					nf := rt2.New(nv)
+					rt2.Push(nf, f)
+					rt2.Assert(f, func(f frame.Frame) (bool, int) {
+						return rt2.ValueOf(f)[nv.Adr()] != nil, 59
+					})
+					rt2.ReplaceDomain(nf, global)
+					seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+						v := rt2.ValueOf(f)[nv.Adr()]
+						l.v[l.k[o.Adr()]].Set(v)
+						return nxt, frame.NOW
+					}
+					ret = frame.LATER
+				case node.FieldNode, node.DerefNode, node.CallNode:
+					nf := rt2.New(nv)
+					rt2.Push(nf, f)
+					rt2.ReplaceDomain(nf, global)
+					rt2.Assert(f, func(f frame.Frame) (bool, int) {
+						return rt2.ValueOf(f)[nv.Adr()] != nil || rt2.RegOf(f)["RETURN"] != nil, 60
+					})
+					seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+						v := rt2.ValueOf(f)[nv.Adr()]
+						if v == nil {
+							v, _ = rt2.RegOf(f)["RETURN"].(scope.Value)
 						}
-					default:
-						panic(fmt.Sprintln("unknown value", reflect.TypeOf(next)))
+						assert.For(v != nil, 40)
+						l.v[l.k[o.Adr()]].Set(v)
+						return nxt, frame.NOW
 					}
-					return end, frame.NOW
+					ret = frame.LATER
+				case node.IndexNode:
+					nf := rt2.New(nv)
+					rt2.Push(nf, f)
+					rt2.ReplaceDomain(nf, global)
+					rt2.Assert(f, func(f frame.Frame) (bool, int) {
+						return rt2.ValueOf(f)[nv.Adr()] != nil, 64
+					})
+					seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+						sc := global.Discover(context.SCOPE).(scope.Manager)
+						left := rt2.ValueOf(f)[nv.Adr()]
+						arr := sc.Select(nv.Left().Object().Adr()).(scope.Array)
+						v := arr.Get(left)
+						l.v[l.k[o.Adr()]].Set(v)
+						return nxt, frame.NOW
+					}
+					ret = frame.LATER
+				default:
+					halt.As(40, reflect.TypeOf(nv))
 				}
-				ret = frame.LATER
+			case object.ParameterObject:
+				switch nv := val.(type) {
+				case node.VariableNode, node.ParameterNode:
+					old := l.r[l.k[o.Adr()]].(*ref)
+					l.r[l.k[o.Adr()]] = &ref{link: old.link, sc: sm, id: nv.Object().Adr()}
+				case node.FieldNode:
+					nf := rt2.New(nv)
+					rt2.Push(nf, f)
+					rt2.ReplaceDomain(nf, global)
+					rt2.Assert(f, func(f frame.Frame) (bool, int) {
+						return rt2.ValueOf(f)[nv.Adr()] != nil, 60
+					})
+					seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+						v := rt2.ValueOf(f)[nv.Adr()]
+						assert.For(v != nil, 40)
+						//old := l.r[l.k[o.Adr()]].(*ref)
+						l.v[l.k[o.Adr()]] = v.(scope.Variable)
+						l.r[l.k[o.Adr()]] = nil
+						return nxt, frame.NOW
+					}
+					ret = frame.LATER
+				case node.ConstantNode: //array :) заменяем ссылку на переменную
+					old := l.r[l.k[o.Adr()]].(*ref)
+					l.r[l.k[o.Adr()]] = nil
+					data := newConst(nv)
+					switch data.(type) {
+					case STRING, SHORTSTRING:
+						val := &dynarr{link: old.link}
+						val.Set(data)
+						l.v[l.k[o.Adr()]] = val
+					default:
+						halt.As(100, reflect.TypeOf(data))
+					}
+				case node.DerefNode:
+					rt2.Push(rt2.New(nv), f)
+					rt2.Assert(f, func(f frame.Frame) (bool, int) {
+						return rt2.ValueOf(f)[nv.Adr()] != nil, 61
+					})
+					dn := next
+					old := l.r[l.k[dn.Adr()]].(*ref)
+					seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+						switch dn.(type) {
+						case object.VariableObject, object.ParameterObject:
+							l.r[l.k[dn.Adr()]] = nil
+							data := rt2.ValueOf(f)[nv.Adr()]
+							switch deref := data.(type) {
+							case STRING, SHORTSTRING:
+								val := &dynarr{link: old.link}
+								val.Set(deref)
+								l.v[l.k[dn.Adr()]] = val
+							case *rec:
+								l.v[l.k[dn.Adr()]] = deref
+							default:
+								halt.As(100, reflect.TypeOf(data))
+							}
+						default:
+							panic(fmt.Sprintln("unknown value", reflect.TypeOf(next)))
+						}
+						return nxt, frame.NOW
+					}
+					ret = frame.LATER
+				default:
+					halt.As(40, reflect.TypeOf(nv))
+				}
 			default:
-				halt.As(40, reflect.TypeOf(nv))
+				halt.As(40, reflect.TypeOf(o))
 			}
-		default:
-			halt.As(40, reflect.TypeOf(o))
+			val = val.Link()
+			next = next.Link()
 		}
-		val = val.Link()
+		return
 	}
-	return seq, ret
+	return nxt, frame.NOW
 }
 
 func (a *salloc) Join(m scope.Manager) { a.area = m.(*area) }
@@ -480,6 +491,9 @@ func (a *area) String() (ret string) {
 }
 
 func (l *level) String() (ret string) {
+	if l.root != nil {
+		ret = fmt.Sprintln(ret, "scope of node", l.root.Adr())
+	}
 	for k, v := range l.k {
 		ret = fmt.Sprint(ret, "@", k, v, l.v[v])
 		if l.v[v] == nil {

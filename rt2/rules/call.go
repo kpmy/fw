@@ -8,6 +8,7 @@ import (
 	cpm "fw/cp/module"
 	"fw/cp/node"
 	"fw/cp/object"
+	"fw/cp/traps"
 	"fw/rt2"
 	"fw/rt2/context"
 	"fw/rt2/frame"
@@ -233,7 +234,11 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 						dm   context.Domain
 					)
 					v := rt2.ValueOf(f)[n.Right().Adr()]
-					_, c := scope.Ops.TypeOf(v)
+					t, c := scope.Ops.TypeOf(v)
+					if c == nil {
+						return thisTrap(f, traps.Default)
+					}
+					assert.For(c != nil, 40, n.Right().Adr(), v, t)
 					x := ml.NewTypeCalc()
 					x.ConnectTo(c)
 					for _, ml := range x.MethodList() {

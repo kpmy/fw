@@ -77,7 +77,7 @@ func (h *halloc) Allocate(n node.Node, par ...interface{}) scope.ValueFor {
 			fake := object.New(object.VARIABLE, cp.Some())
 			fake.SetComplex(bt)
 			fake.SetType(object.COMPLEX)
-			fake.SetName("{}")
+			fake.SetName("{" + n.Object().Name() + "}")
 			l.alloc(h.area.d, mod, nil, append(ol, fake), skip)
 			res = &ptrValue{scope: h.area, id: fake.Adr(), link: n.Object()}
 		case object.DynArrayType:

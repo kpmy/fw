@@ -17,3 +17,11 @@ func doTrap(f frame.Frame, err traps.TRAP) (frame.Sequence, frame.WAIT) {
 	rt2.Push(rt2.New(trap), f)
 	return frame.Tail(frame.STOP), frame.LATER
 }
+
+func thisTrap(f frame.Frame, err traps.TRAP) (out OUT) {
+	out.do = Expose(func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+		return doTrap(f, err)
+	})
+	out.next = LATER
+	return
+}

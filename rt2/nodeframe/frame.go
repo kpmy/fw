@@ -34,9 +34,13 @@ func (fu NodeFrameUtils) Push(f, p frame.Frame) {
 }
 
 func (fu NodeFrameUtils) NodeOf(f frame.Frame) node.Node {
-	ff, _ := f.(*nodeFrame)
-	assert.For(ff.ir != nil, 40)
-	return ff.ir
+	ff, ok := f.(*nodeFrame)
+	if ok {
+		assert.For(ff.ir != nil, 40)
+		return ff.ir
+	} else {
+		return nil
+	}
 }
 
 func (fu NodeFrameUtils) DataOf(f frame.Frame) map[interface{}]interface{} {
@@ -88,7 +92,23 @@ func (f *nodeFrame) Do() frame.WAIT {
 	} else {
 		assert.For(ret == frame.STOP || ret == frame.WRONG, 41)
 		if ret == frame.WRONG {
-			fmt.Println("stopped by signal")
+			var fu NodeFrameUtils
+			utils.PrintTrap()
+			utils.PrintTrap("something WRONG")
+			utils.PrintTrap(f.Domain().Discover(context.SCOPE))
+			depth := 10
+			f.root.ForEach(func(old frame.Frame) bool {
+				n := fu.NodeOf(old)
+				if n != nil {
+					utils.PrintTrap(reflect.TypeOf(n), n.Adr())
+					utils.PrintTrap("data: ", fu.DataOf(old), "value: ", fu.ValueOf(old))
+				} else {
+					utils.PrintTrap(reflect.TypeOf(old))
+				}
+				depth--
+				return depth != 0
+			})
+			utils.PrintTrap(f.Domain().Discover(context.HEAP))
 		}
 
 	}

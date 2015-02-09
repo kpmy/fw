@@ -5,6 +5,7 @@ import (
 	"fw/cp"
 	"fw/cp/node"
 	"fw/cp/object"
+	//	rtm "fw/rt2/module"
 	"fw/rt2/scope"
 	"fw/utils"
 	"math"
@@ -100,6 +101,7 @@ func (r *rec) Set(v scope.Value) {
 func (r *rec) Get(id cp.ID) scope.Value {
 	k := r.l.k[id]
 	if r.l.v[k] == nil { //ref
+		fmt.Println(r.Id(), id)
 		assert.For(r.l.r[k] != nil, 20, id, k)
 		return r.l.r[k]
 	} else {
@@ -1282,7 +1284,12 @@ func (o *ops) Is(a scope.Value, typ object.ComplexType) scope.Value {
 					return false
 				}
 			case object.PointerType:
-				return false
+				if a.Base() != nil {
+					return compare(x, a.Base())
+				} else {
+					fmt.Println("here")
+					return false
+				}
 			default:
 				halt.As(100, reflect.TypeOf(a))
 			}
@@ -1311,12 +1318,17 @@ func (o *ops) Is(a scope.Value, typ object.ComplexType) scope.Value {
 	case *rec:
 		z, a := x.link.Complex().(object.RecordType)
 		y, b := typ.(object.RecordType)
-		//fmt.Println("compare", x.link.Complex(), typ, a, b, a && b && compare(z, y))
+		//fmt.Println("compare rec", x.link.Complex(), typ, a, b, a && b && compare(z, y))
 		return BOOLEAN(a && b && compare(z, y))
 	case *ptr:
 		z, a := x.link.Complex().(object.PointerType)
+		if val := x.Get(); z.Name() == "ANYPTR" && val != NIL {
+			t, c := o.TypeOf(val)
+			assert.For(t == object.COMPLEX, 40)
+			z, a = c.(object.RecordType)
+		}
 		y, b := typ.(object.PointerType)
-		//fmt.Println("compare", x.link.Complex(), typ, a, b, a && b && compare(z, y))
+		//fmt.Println("compare ptr", z, typ, a, b, a && b && compare(z, y))
 		return BOOLEAN(a && b && compare(z, y))
 	default:
 		halt.As(100, reflect.TypeOf(x))
@@ -1758,8 +1770,11 @@ func (o *ops) Geq(a, b scope.Value) scope.Value {
 func (o *ops) TypeOf(x scope.Value) (object.Type, object.ComplexType) {
 	switch v := x.(type) {
 	case *ptr:
+		//assert.For(v.val != nil, 20, v.Id())
 		if v.val != nil {
 			return v.val.link.Type(), v.val.link.Complex()
+		} else {
+			//return v.link.Type(), v.link.Complex()
 		}
 	case *rec:
 		return v.link.Type(), v.link.Complex()

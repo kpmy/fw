@@ -106,15 +106,8 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			}
 			ret = frame.LATER
 			return seq, ret
-		case node.FieldNode:
-			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				//				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-				//				rt2.DataOf(f)[n.Left()] = sc.Select(scope.Designator(n.Left()))
-				panic(0)
-				return op, frame.NOW
-			}
-			ret = frame.NOW
-			return seq, ret
+		case node.CallNode, node.FieldNode:
+			return This(expectExpr(f, n.Left(), Expose(op)))
 		default:
 			fmt.Println(reflect.TypeOf(n.Left()))
 			panic("wrong left")
