@@ -60,12 +60,14 @@ func expectExpr(parent frame.Frame, expr node.Node, next Do) OUT {
 		rt2.Assert(parent, func(f frame.Frame) (bool, int) {
 			return rt2.ValueOf(f)[e.Adr()] != nil, 64
 		})
-		wait := func(...IN) OUT {
+		wait := func(in ...IN) OUT {
 			idx := rt2.ValueOf(parent)[e.Adr()]
-			arr := sm.Select(e.Left().Object().Adr()).(scope.Array)
-			idx = arr.Get(idx)
-			rt2.ValueOf(parent)[e.Adr()] = idx
-			return OUT{do: next, next: NOW}
+			return expectExpr(in[0].frame, e.Left(), func(...IN) OUT {
+				arr := rt2.ValueOf(in[0].frame)[e.Left().Adr()].(scope.Array)
+				idx = arr.Get(idx)
+				rt2.ValueOf(parent)[e.Adr()] = idx
+				return OUT{do: next, next: NOW}
+			})
 		}
 		return OUT{do: wait, next: LATER}
 	case node.ProcedureNode:

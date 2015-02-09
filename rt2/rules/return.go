@@ -43,9 +43,18 @@ func returnSeq(f frame.Frame) (frame.Sequence, frame.WAIT) {
 				return frame.End()
 			}
 			ret = frame.LATER
+		case node.IndexNode:
+			return This(expectExpr(f, a.Left(), func(...IN) OUT {
+				rt2.ValueOf(f.Parent())[a.Object().Adr()] = rt2.ValueOf(f)[a.Left().Adr()]
+				rt2.RegOf(f.Parent())["RETURN"] = rt2.ValueOf(f)[a.Left().Adr()]
+				if rt2.RegOf(f.Parent())["RETURN"] == nil {
+					rt2.RegOf(f.Parent())["RETURN"] = rt2.RegOf(f)["RETURN"]
+				}
+				return End()
+			}))
 		default:
 			fmt.Println(reflect.TypeOf(a.Left()))
-			panic("wrong right")
+			panic("wrong left")
 		}
 		return seq, ret
 	}

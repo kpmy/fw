@@ -107,7 +107,7 @@ func prologue(n node.Node) frame.Sequence {
 			return left, frame.NOW
 		}
 	default:
-		panic(fmt.Sprintln("unknown node", reflect.TypeOf(n)))
+		panic(fmt.Sprintln("unknown node", reflect.TypeOf(n), n.Adr()))
 	}
 }
 

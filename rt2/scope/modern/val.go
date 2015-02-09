@@ -1537,6 +1537,13 @@ func (o *ops) Eq(a, b scope.Value) scope.Value {
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
+			case CHAR:
+				switch y := b.(type) {
+				case CHAR:
+					return BOOLEAN(x == y)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
 			default:
 				panic(fmt.Sprintln(reflect.TypeOf(x)))
 			}
