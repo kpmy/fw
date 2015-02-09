@@ -116,7 +116,14 @@ func (l *level) alloc(d context.Domain, mod *cpm.Module, root node.Node, ol []ob
 					for rec := t; rec != nil; {
 						for x := rec.Link(); x != nil; x = x.Link() {
 							//fmt.Println(o.Name(), ".", x.Name(), x.Adr())
-							fl = append(fl, x)
+							switch x.(type) {
+							case object.FieldObject:
+								fl = append(fl, x)
+							case object.ParameterObject, object.ProcedureObject, object.VariableObject:
+								//do nothing
+							default:
+								halt.As(100, reflect.TypeOf(x))
+							}
 						}
 						if rec.BaseRec() == nil {
 							x := ml.NewTypeCalc()
@@ -142,11 +149,17 @@ func (l *level) alloc(d context.Domain, mod *cpm.Module, root node.Node, ol []ob
 			case object.TypeObject, object.ConstantObject, object.ProcedureObject, object.Module:
 				//do nothing
 			case object.ParameterObject:
-				if root.(node.EnterNode).Enter() == enter.PROCEDURE {
-					l.r[l.next] = newRef(x)
-					l.k[x.Adr()] = l.next
-					l.next++
+				switch r := root.(type) {
+				case node.EnterNode:
+					if r.Enter() == enter.PROCEDURE {
+						l.r[l.next] = newRef(x)
+						l.k[x.Adr()] = l.next
+						l.next++
+					}
+				default:
+					halt.As(100, reflect.TypeOf(r), x.Adr())
 				}
+
 			default:
 				halt.As(20, reflect.TypeOf(x))
 			}

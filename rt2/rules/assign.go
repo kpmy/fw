@@ -232,7 +232,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				panic(0)
 			}))
 		} else {
-			//fmt.Println("NEW here")
+			//fmt.Println("NEW here", a.Left().Adr())
 			fn := heap.Allocate(a.Left())
 			sc.Update(a.Left().Object().Adr(), fn)
 			return frame.End()
