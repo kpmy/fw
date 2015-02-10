@@ -5,7 +5,6 @@ import (
 	"fw/cp/object"
 	"fw/cp/traps"
 	"fw/rt2"
-	"fw/rt2/context"
 	"fw/rt2/frame"
 	"fw/rt2/scope"
 	"reflect"
@@ -15,11 +14,12 @@ import (
 
 func derefSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	n := rt2.NodeOf(f).(node.DerefNode)
-	sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+
 	//fmt.Println("deref from ptr", n.Ptr())
 	if n.Ptr() {
 		switch l := n.Left().(type) {
 		case node.ParameterNode, node.VariableNode:
+			sc := rt2.ScopeFor(f, l.Object().Adr())
 			sc.Select(l.Object().Adr(), func(v scope.Value) {
 				ptr, ok := v.(scope.Pointer)
 				assert.For(ok, 60, reflect.TypeOf(v))
@@ -73,6 +73,7 @@ func derefSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		if n.Left().Object() != nil {
 			switch l := n.Left().Object().(type) {
 			case object.ParameterObject, object.VariableObject:
+				sc := rt2.ScopeFor(f, l.Adr())
 				val := sc.Select(l.Adr())
 				deref(val)
 				return frame.End()
@@ -98,6 +99,7 @@ func derefSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				})
 				seq = Propose(func(...IN) OUT {
 					val := rt2.ValueOf(f)[left.Adr()]
+					sc := rt2.ScopeFor(f, left.Left().Object().Adr())
 					arr := sc.Select(left.Left().Object().Adr()).(scope.Array)
 					deref(arr.Get(val).(scope.Pointer).Get())
 					//rt2.ValueOf(f.Parent())[n.Adr()] = rt2.ValueOf(f)[left.Adr()]

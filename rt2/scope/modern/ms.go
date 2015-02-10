@@ -73,6 +73,42 @@ func (a *area) top() *level {
 	return nil
 }
 
+func (a *area) Exists(id cp.ID) bool {
+	var ret scope.Value
+	var sel func(x int, id cp.ID)
+	sel = func(x int, id cp.ID) {
+		utils.PrintScope("SELECT", id)
+		for i := x - 1; i >= 0 && ret == nil; i-- {
+			l := a.data[i]
+			k := 0
+			if l.ready {
+				k = l.k[id]
+				if k != 0 {
+					ret = l.v[k]
+					if ret == nil { //ref?
+						r := l.r[k]
+						if r != nil {
+							if l.l[k] != nil { //rec
+								panic(0)
+							} else {
+								utils.PrintScope("ref")
+								if r.(*ref).sc == a {
+									sel(i, r.(*ref).id)
+								} else {
+									ret = r.(*ref).sc.Select(r.(*ref).id)
+								}
+							}
+							break
+						}
+					}
+				}
+			}
+		}
+	}
+	sel(len(a.data), id)
+	return ret != nil
+}
+
 func (a *area) Provide(x interface{}) scope.ValueFor {
 	return func(scope.Value) scope.Value {
 		switch z := x.(type) {
@@ -254,7 +290,7 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (frame.Sequence, frame
 			if mod != nil {
 				//fmt.Println(mod.Name)
 				global = global.Discover(mod.Name).(context.Domain)
-				sm = global.Discover(context.SCOPE).(scope.Manager)
+				sm = global.Discover(context.VSCOPE, 0).(scope.Manager)
 			} else { //для фиктивных узлов, которые созданы рантаймом, типа INC/DEC
 				sm = a.area
 			}
@@ -265,11 +301,13 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (frame.Sequence, frame
 					v := newConst(nv)
 					l.v[l.k[o.Adr()]].Set(v)
 				case node.VariableNode, node.ParameterNode:
-					if nv.Object().Imp() != "" {
+					/*if nv.Object().Imp() != "" {
 						md := rtm.ModuleDomain(f.Domain(), nv.Object().Imp())
-						sm = md.Discover(context.SCOPE).(scope.Manager)
-					}
-					v := sm.Select(rtm.MapImportObject(f.Domain(), nv.Object()).Adr())
+						sm = md.Discover(context.VSCOPE).(scope.Manager)
+					}*/
+					adr := rtm.MapImportObject(f.Domain(), nv.Object()).Adr()
+					sm = rt2.ScopeFor(f, adr)
+					v := sm.Select(adr)
 					l.v[l.k[o.Adr()]].Set(v)
 				case node.OperationNode:
 					nf := rt2.New(nv)
@@ -309,7 +347,7 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (frame.Sequence, frame
 						return rt2.ValueOf(f)[nv.Adr()] != nil, 64
 					})
 					seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-						sc := global.Discover(context.SCOPE).(scope.Manager)
+						sc := rt2.ScopeFor(f, nv.Left().Object().Adr())
 						left := rt2.ValueOf(f)[nv.Adr()]
 						arr := sc.Select(nv.Left().Object().Adr()).(scope.Array)
 						v := arr.Get(left)
@@ -537,7 +575,7 @@ func fn(mgr scope.Manager, name string) (ret object.Object) {
 }
 
 func nn(role string) scope.Manager {
-	if role == context.SCOPE {
+	if role == context.VSCOPE {
 		return &area{all: &salloc{}}
 	} else if role == context.HEAP {
 		return &area{all: &halloc{}}

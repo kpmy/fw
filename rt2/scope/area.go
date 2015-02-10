@@ -22,6 +22,7 @@ type Manager interface {
 	Update(id cp.ID, val ValueFor)
 	Select(cp.ID, ...ValueOf) Value
 	Target(...Allocator) Allocator
+	Exists(cp.ID) bool
 	Provide(interface{}) ValueFor
 	String() string
 }

@@ -58,7 +58,7 @@ func (f *RootFrame) PushFor(fr, parent frame.Frame) {
 	if fr.Domain() == nil {
 		if parent == nil {
 			domain := f.Domain().(context.Factory).New()
-			domain.Attach(context.SCOPE, scope.New(context.SCOPE))
+			domain.Attach(context.VSCOPE, scope.New(context.VSCOPE))
 			fr.Init(domain)
 		} else {
 			fr.Init(parent.Domain())

@@ -62,14 +62,14 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		switch r := a.Right().(type) {
 		case node.ConstantNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+				sc := rt2.ThisScope(f)
 				vleft.Set(sc.Provide(a.Right())(nil)) //scope.Simple(a.Right().(node.ConstantNode).Data()))
 				return frame.End()
 			}
 			ret = frame.NOW
 		case node.VariableNode, node.ParameterNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+				sc := rt2.ScopeFor(f, a.Right().Object().Adr())
 				vleft.Set(sc.Select(a.Right().Object().Adr()))
 				return frame.End()
 			}
@@ -96,10 +96,11 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				return rt2.ValueOf(f)[rightId] != nil, 62
 			})
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+
 				right := rt2.ValueOf(f)[r.Adr()]
 				switch z := r.Left().(type) {
 				case node.VariableNode, node.ParameterNode:
+					sc := rt2.ScopeFor(f, z.Object().Adr())
 					arr := sc.Select(z.Object().Adr()).(scope.Array)
 					right = arr.Get(right)
 					vleft.Set(right)
@@ -118,7 +119,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			}
 			ret = frame.LATER
 		case node.ProcedureNode:
-			sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+			sc := rt2.ThisScope(f)
 			vleft.Set(sc.Provide(a.Right().Object())(nil))
 			return frame.End()
 		default:
@@ -132,7 +133,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	case statement.ASSIGN:
 		switch l := a.Left().(type) {
 		case node.VariableNode, node.ParameterNode:
-			sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+			sc := rt2.ScopeFor(f, a.Left().Object().Adr())
 			left = sc.Select(a.Left().Object().Adr())
 			seq, ret = right(f)
 		case node.FieldNode:
@@ -151,10 +152,10 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				return rt2.ValueOf(f)[l.Adr()] != nil, 64
 			})
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 				left = rt2.ValueOf(f)[l.Adr()]
 				switch z := l.Left().(type) {
 				case node.VariableNode, node.ParameterNode:
+					sc := rt2.ScopeFor(f, l.Left().Object().Adr())
 					arr := sc.Select(l.Left().Object().Adr()).(scope.Array)
 					left = arr.Get(left)
 					return right(f)
@@ -203,13 +204,13 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			panic(fmt.Sprintln("wrong left", reflect.TypeOf(a.Left())))
 		}
 	case statement.NEW:
-		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 		heap := f.Domain().Discover(context.HEAP).(scope.Manager).Target().(scope.HeapAllocator)
 		if a.Right() != nil {
 			seq, ret = This(expectExpr(f, a.Right(), func(in ...IN) (out OUT) {
 				//fmt.Println("NEW", rt2.ValueOf(f)[a.Right().Adr()], "here")
 				switch z := a.Left().(type) {
 				case node.VariableNode:
+					sc := rt2.ScopeFor(f, a.Left().Object().Adr())
 					fn := heap.Allocate(a.Left(), rt2.ValueOf(f)[a.Right().Adr()])
 					sc.Update(a.Left().Object().Adr(), fn)
 					return End()
@@ -234,6 +235,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		} else {
 			//fmt.Println("NEW here", a.Left().Adr())
 			fn := heap.Allocate(a.Left())
+			sc := rt2.ScopeFor(f, a.Left().Object().Adr())
 			sc.Update(a.Left().Object().Adr(), fn)
 			return frame.End()
 		}

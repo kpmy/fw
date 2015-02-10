@@ -20,6 +20,16 @@ import (
 	"ypk/assert"
 )
 
+func test(n node.Node) (bool, int) {
+	switch n.(type) {
+	case node.ConstantNode:
+		return false, -1
+	default:
+		return true, 0
+	}
+	panic(0)
+}
+
 func prologue(n node.Node) frame.Sequence {
 	//fmt.Println(reflect.TypeOf(n))
 	switch next := n.(type) {
@@ -120,7 +130,10 @@ func epilogue(n node.Node) frame.Sequence {
 			//fmt.Println("from", reflect.TypeOf(n))
 			//fmt.Println("next", reflect.TypeOf(next))
 			if next != nil {
-				f.Root().PushFor(rt2.New(next), f.Parent())
+				nf := rt2.New(next)
+				if nf != nil {
+					f.Root().PushFor(nf, f.Parent())
+				}
 			}
 			if _, ok := n.(node.CallNode); ok {
 				if f.Parent() != nil {
@@ -139,9 +152,8 @@ func epilogue(n node.Node) frame.Sequence {
 	case node.EnterNode:
 		return func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			//fmt.Println(rt_module.DomainModule(f.Domain()).Name)
-			sm := f.Domain().Discover(context.SCOPE).(scope.Manager)
 			if e.Enter() == enter.PROCEDURE {
-				sm.Target().(scope.ScopeAllocator).Dispose(n)
+				rt2.ThisScope(f).Target().(scope.ScopeAllocator).Dispose(n)
 			}
 			//возвращаем результаты вызова функции
 			if f.Parent() != nil {
@@ -267,4 +279,5 @@ func init() {
 	decision.PrologueFor = prologue
 	decision.EpilogueFor = epilogue
 	decision.Run = run
+	decision.AssertFor = test
 }

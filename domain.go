@@ -25,8 +25,11 @@ func (d *stdDomain) Attach(name string, x context.ContextAware) {
 	d.list[name] = x
 }
 
-func (d *stdDomain) Discover(name string) (ret context.ContextAware) {
+func (d *stdDomain) Discover(name string, opts ...interface{}) (ret context.ContextAware) {
 	assert.For(name != "", 20)
+	if name == context.VSCOPE {
+		assert.For(len(opts) != 0, 20)
+	}
 	if d.list != nil {
 		ret = d.list[name]
 	}

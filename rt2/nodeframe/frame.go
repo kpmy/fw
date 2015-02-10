@@ -19,11 +19,15 @@ type NodeFrameUtils struct{}
 
 func (fu NodeFrameUtils) New(n node.Node) (f frame.Frame) {
 	assert.For(n != nil, 20)
-	f = new(nodeFrame)
-	f.(*nodeFrame).ir = n
-	f.(*nodeFrame).data = make(map[interface{}]interface{})
-	f.(*nodeFrame).value = make(map[cp.ID]scope.Value)
-	utils.PrintFrame("_", "NEW", reflect.TypeOf(n), n.Adr())
+	ok, _ := decision.AssertFor(n)
+	//assert.For(ok, 21, "wrong node", reflect.TypeOf(n), code)
+	if ok {
+		f = new(nodeFrame)
+		f.(*nodeFrame).ir = n
+		f.(*nodeFrame).data = make(map[interface{}]interface{})
+		f.(*nodeFrame).value = make(map[cp.ID]scope.Value)
+		utils.PrintFrame("_", "NEW", reflect.TypeOf(n), n.Adr())
+	}
 	return f
 }
 
@@ -74,11 +78,11 @@ type nodeFrame struct {
 }
 
 func done(f frame.Frame) {
-	utils.PrintFrame("____")
-	utils.PrintFrame(f.Domain().Discover(context.SCOPE))
+	//utils.PrintFrame("____")
+	//utils.PrintFrame(f.Domain().Discover(context.SCOPE))
 	//	utils.PrintFrame("--")
 	//	utils.PrintFrame(f.Domain().Discover(context.HEAP))
-	utils.PrintFrame("^^^^")
+	//utils.PrintFrame("^^^^")
 }
 
 func (f *nodeFrame) Do() frame.WAIT {
@@ -95,7 +99,7 @@ func (f *nodeFrame) Do() frame.WAIT {
 			var fu NodeFrameUtils
 			utils.PrintTrap()
 			utils.PrintTrap("something WRONG")
-			utils.PrintTrap(f.Domain().Discover(context.SCOPE))
+			utils.PrintTrap(f.Domain().Discover(context.VSCOPE, 0))
 			depth := 10
 			f.root.ForEach(func(old frame.Frame) bool {
 				n := fu.NodeOf(old)

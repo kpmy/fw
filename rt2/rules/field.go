@@ -7,7 +7,6 @@ import (
 import (
 	"fw/cp/node"
 	"fw/rt2"
-	"fw/rt2/context"
 	"fw/rt2/frame"
 	"fw/rt2/scope"
 	"ypk/halt"
@@ -16,7 +15,6 @@ import (
 func fieldSeq(in ...IN) (out OUT) {
 	f := in[0].frame
 	n := rt2.NodeOf(f)
-	sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 	var left node.Node
 	left, _ = rt2.RegOf(f)[n.Left()].(node.Node)
 	if left == nil {
@@ -24,6 +22,7 @@ func fieldSeq(in ...IN) (out OUT) {
 	}
 	switch l := left.(type) {
 	case node.VariableNode, node.ParameterNode:
+		sc := rt2.ScopeFor(f, l.Object().Adr())
 		sc.Select(l.Object().Adr(), func(v scope.Value) {
 			rt2.ValueOf(f.Parent())[n.Adr()] = v.(scope.Record).Get(n.Object().Adr())
 			//fmt.Println(n.Object().Adr())

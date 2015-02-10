@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"fw/cp/node"
 	"fw/rt2"
-	"fw/rt2/context"
 	"fw/rt2/frame"
-	"fw/rt2/scope"
 	"reflect"
 )
 
@@ -17,16 +15,15 @@ func returnSeq(f frame.Frame) (frame.Sequence, frame.WAIT) {
 		switch a.Left().(type) {
 		case node.ConstantNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 				//rt2.DataOf(f.Parent())[a.Object()] = a.Left().(node.ConstantNode).Data()
-				rt2.ValueOf(f.Parent())[a.Object().Adr()] = sc.Provide(a.Left())(nil)
+				rt2.ValueOf(f.Parent())[a.Object().Adr()] = rt2.ThisScope(f).Provide(a.Left())(nil)
 				rt2.RegOf(f.Parent())["RETURN"] = rt2.ValueOf(f.Parent())[a.Object().Adr()]
 				return frame.End()
 			}
 			ret = frame.NOW
 		case node.VariableNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-				sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+				sc := rt2.ScopeFor(f, a.Left().Object().Adr())
 				rt2.ValueOf(f.Parent())[a.Object().Adr()] = sc.Select(a.Left().Object().Adr())
 				rt2.RegOf(f.Parent())["RETURN"] = rt2.ValueOf(f.Parent())[a.Object().Adr()]
 				return frame.End()

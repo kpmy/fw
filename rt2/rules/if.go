@@ -1,12 +1,12 @@
 package rules
 
 import (
-	"fmt"
 	"fw/cp/node"
 	"fw/rt2"
 	"fw/rt2/frame"
 	"fw/rt2/scope"
 	"reflect"
+	"ypk/halt"
 )
 
 func ifExpr(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
@@ -20,13 +20,13 @@ func ifExpr(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			return frame.End()
 		}
 		ret = frame.LATER
-	case node.ConstantNode, node.VariableNode, node.ParameterNode:
+	case node.ConstantNode, node.VariableNode, node.ParameterNode, node.FieldNode:
 		return This(expectExpr(f, l, func(...IN) OUT {
 			rt2.ValueOf(f.Parent())[n.Adr()] = rt2.ValueOf(f)[l.Adr()]
 			return End()
 		}))
 	default:
-		panic(fmt.Sprintf("unknown condition expression", reflect.TypeOf(n.Left())))
+		halt.As(100, reflect.TypeOf(l))
 	}
 	return seq, ret
 }

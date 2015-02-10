@@ -3,7 +3,6 @@ package rules
 import (
 	"fw/cp/node"
 	"fw/rt2"
-	"fw/rt2/context"
 	"fw/rt2/frame"
 	"fw/rt2/module"
 	"fw/rt2/scope"
@@ -43,7 +42,7 @@ func enterSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 
 		}
 	}
-	sm := f.Domain().Discover(context.SCOPE).(scope.Manager)
+	sm := rt2.ThisScope(f)
 	//fmt.Println(n.Object())
 	if n.Object() != nil {
 		par, ok := rt2.RegOf(f)[n.Object()].(node.Node)

@@ -59,7 +59,7 @@ func callHandler(f frame.Frame, obj object.Object, data interface{}) {
 
 func go_process(f frame.Frame, par node.Node) (frame.Sequence, frame.WAIT) {
 	assert.For(par != nil, 20)
-	sm := f.Domain().Discover(context.SCOPE).(scope.Manager)
+	sm := rt2.ThisScope(f)
 	do := func(val string) {
 		if val != "" {
 			msg := &Msg{}
@@ -132,7 +132,7 @@ func go_math(f frame.Frame, par node.Node) (seq frame.Sequence, ret frame.WAIT) 
 		EXP  = 3.0
 	)
 	assert.For(par != nil, 20)
-	sm := f.Domain().Discover(context.SCOPE).(scope.Manager)
+	sm := rt2.ThisScope(f)
 	res := math.NaN()
 	switch p := par.(type) {
 	case node.VariableNode:
@@ -266,7 +266,7 @@ func callSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		}
 	case node.VariableNode:
 		m := rtm.DomainModule(f.Domain())
-		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+		sc := rt2.ScopeFor(f, n.Left().Object().Adr())
 		obj := scope.GoTypeFrom(sc.Select(n.Left().Object().Adr()))
 
 		if obj, ok := obj.(object.Object); ok {

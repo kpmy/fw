@@ -6,7 +6,6 @@ import (
 	"fw/cp/node"
 	"fw/cp/object"
 	"fw/rt2"
-	"fw/rt2/context"
 	"fw/rt2/frame"
 	"fw/rt2/scope"
 	"math/big"
@@ -31,7 +30,6 @@ func int32Of(x interface{}) (a int32) {
 }
 
 func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-	sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 	n := rt2.NodeOf(f).(node.MonadicNode)
 
 	op := func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
@@ -41,6 +39,7 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Not(rt2.ValueOf(f)[n.Left().Adr()])
 			return frame.End()
 		case operation.IS:
+			sc := rt2.ScopeFor(f, n.Left().Object().Adr())
 			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Is(sc.Select(n.Left().Object().Adr()), n.Object().Complex())
 			return frame.End()
 		case operation.ABS:
@@ -75,6 +74,7 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		}
 		switch n.Left().(type) {
 		case node.VariableNode, node.ParameterNode:
+			sc := rt2.ScopeFor(f, n.Left().Object().Adr())
 			x := sc.Select(n.Left().Object().Adr())
 			assert.For(x != nil, 40)
 			conv(scope.ValueFrom(x))
@@ -90,10 +90,11 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 	case operation.NOT:
 		switch n.Left().(type) {
 		case node.ConstantNode:
-			rt2.ValueOf(f)[n.Left().Adr()] = sc.Provide(n.Left())(nil)
+			rt2.ValueOf(f)[n.Left().Adr()] = rt2.ThisScope(f).Provide(n.Left())(nil)
 			return op, frame.NOW
 		case node.VariableNode, node.ParameterNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+				sc := rt2.ScopeFor(f, n.Left().Object().Adr())
 				rt2.ValueOf(f)[n.Left().Adr()] = sc.Select(n.Left().Object().Adr())
 				return op, frame.NOW
 			}
@@ -132,8 +133,6 @@ func mopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 }
 
 func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
-	sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-
 	op := func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		n := rt2.NodeOf(f).(node.OperationNode)
 		switch n.Operation() {
@@ -203,10 +202,11 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		n := rt2.NodeOf(f)
 		switch r := n.Right().(type) {
 		case node.ConstantNode:
-			rt2.ValueOf(f)[n.Right().Adr()] = sc.Provide(n.Right())(nil)
+			rt2.ValueOf(f)[n.Right().Adr()] = rt2.ThisScope(f).Provide(n.Right())(nil)
 			return op, frame.NOW
 		case node.VariableNode, node.ParameterNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+				sc := rt2.ScopeFor(f, n.Right().Object().Adr())
 				rt2.ValueOf(f)[n.Right().Adr()] = sc.Select(n.Right().Object().Adr())
 				return op, frame.NOW
 			}
@@ -267,10 +267,11 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		n := rt2.NodeOf(f)
 		switch l := n.Left().(type) {
 		case node.ConstantNode:
-			rt2.ValueOf(f)[n.Left().Adr()] = sc.Provide(n.Left())(nil)
+			rt2.ValueOf(f)[n.Left().Adr()] = rt2.ThisScope(f).Provide(n.Left())(nil)
 			return short, frame.NOW
 		case node.VariableNode, node.ParameterNode:
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+				sc := rt2.ScopeFor(f, n.Left().Object().Adr())
 				rt2.ValueOf(f)[n.Left().Adr()] = sc.Select(n.Left().Object().Adr())
 				return short, frame.NOW
 			}

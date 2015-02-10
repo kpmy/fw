@@ -2,7 +2,7 @@ package context
 
 const (
 	STACK    = "fw/rt2/frame"
-	SCOPE    = "fw/rt2/scope"
+	VSCOPE   = "fw/rt2/scope"
 	MOD      = "fw/rt2/module"
 	UNIVERSE = "fw/rt2/ctx"
 	HEAP     = "fw/rt2/scope,heap"
@@ -16,7 +16,7 @@ type Factory interface {
 
 type Domain interface {
 	Attach(name string, c ContextAware)
-	Discover(name string) ContextAware
+	Discover(name string, opts ...interface{}) ContextAware
 	Id(c ContextAware) string
 	ContextAware
 }
