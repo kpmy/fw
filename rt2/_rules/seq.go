@@ -15,7 +15,7 @@ const (
 	END
 )
 
-type Do func(...IN) OUT
+type Do func(IN) OUT
 
 type IN struct {
 	frame frame.Frame
@@ -69,7 +69,7 @@ func End() OUT {
 }
 
 func Tail(x WAIT) Do {
-	return func(...IN) OUT { return OUT{next: x} }
+	return func(IN) OUT { return OUT{next: x} }
 }
 
 func This(o OUT) (seq frame.Sequence, ret frame.WAIT) {

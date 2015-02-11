@@ -7,7 +7,7 @@ import (
 	"fw/rt2/context"
 	"fw/rt2/decision"
 	rtm "fw/rt2/module"
-	_ "fw/rt2/rules"
+	_ "fw/rt2/rules2"
 	"fw/rt2/scope"
 	_ "fw/rt2/scope/modern"
 	"fw/utils"
@@ -37,6 +37,7 @@ func main() {
 	flag.Parse()
 	if name == "" {
 		name = "Start3"
+		utils.Debug(true)
 	}
 	utils.Debug(debug)
 	global := &stdDomain{god: true}
