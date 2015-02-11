@@ -40,7 +40,7 @@ type ScopeAllocator interface {
 
 type HeapAllocator interface {
 	Allocator
-	Allocate(n node.Node, par ...interface{}) ValueFor //указатель лежит в скоупе процедуры/модуля, а рекорд - в куче, поэтому нужно после создания экземпляра обновить указатель
+	Allocate(object.Object, object.PointerType, ...interface{}) ValueFor //указатель лежит в скоупе процедуры/модуля, а рекорд - в куче, поэтому нужно после создания экземпляра обновить указатель
 	Dispose(id cp.ID)
 }
 

@@ -213,7 +213,9 @@ func (a *arr) String() (ret string) {
 		case SHORTCHAR:
 			ret = fmt.Sprint(ret, string([]rune{rune(x)}))
 		case REAL:
-			ret = fmt.Sprint(ret, ", ", a.val[i])
+			ret = fmt.Sprint(ret, ", ", x)
+		case *ptr:
+			ret = fmt.Sprintln(ret, ", ", x)
 		default:
 			halt.As(100, reflect.TypeOf(x))
 		}
@@ -301,6 +303,15 @@ func (i *idx) Set(v scope.Value) {
 		i.val()[i.idx].(*arr).Set(x)
 	case REAL:
 		i.val()[i.idx] = x
+	case *ptrValue:
+		switch tt := t.(type) {
+		case object.DynArrayType:
+			_, ok := tt.Complex().(object.PointerType)
+			assert.For(ok, 20)
+			i.val()[i.idx] = &ptr{link: x.link, val: x}
+		default:
+			halt.As(100, reflect.TypeOf(tt))
+		}
 	default:
 		halt.As(100, reflect.TypeOf(x), x, t)
 	}
@@ -310,6 +321,8 @@ func (i *idx) Get() scope.Value {
 	x := i.val()[i.idx]
 	switch z := x.(type) {
 	case *arr:
+		return z
+	case *ptr:
 		return z
 	case CHAR:
 		return z
@@ -356,6 +369,8 @@ func (a *dynarr) String() (ret string) {
 			ret = fmt.Sprint(ret, string([]rune{rune(x)}))
 		case SHORTCHAR:
 			ret = fmt.Sprint(ret, string([]rune{rune(x)}))
+		case *ptr:
+			ret = fmt.Sprint(ret, ", ", x)
 		default:
 			halt.As(100, reflect.TypeOf(x))
 		}
@@ -679,6 +694,8 @@ func gfrom(v scope.Value) interface{} {
 		}
 	case *rec:
 		return n
+	case *ptr:
+		return n
 	case *proc:
 		return n.link
 	case *dynarr:
@@ -695,6 +712,8 @@ func gfrom(v scope.Value) interface{} {
 			} else {
 				return ""
 			}
+		case object.COMPLEX:
+			return n.val
 		default:
 			halt.As(100, n.link.Complex().(object.DynArrayType).Base())
 		}
@@ -1121,7 +1140,56 @@ func (o *ops) Mod(a, b scope.Value) scope.Value {
 			case LONGINT:
 				switch y := b.(type) {
 				case LONGINT:
-					return LONGINT(x % y)
+					z := x % y
+					switch {
+					case (x < 0) != (y < 0):
+						z = z + y
+					}
+					return LONGINT(z)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			default:
+				panic(fmt.Sprintln(reflect.TypeOf(x)))
+			}
+		}
+	}
+	panic(0)
+}
+
+func (o *ops) Msk(a, b scope.Value) scope.Value {
+	switch a.(type) {
+	case *data:
+		return o.Msk(vfrom(a), b)
+	default:
+		switch b.(type) {
+		case *data:
+			return o.Msk(a, vfrom(b))
+		default:
+			switch x := a.(type) {
+			case INTEGER:
+				switch y := b.(type) {
+				case INTEGER:
+					y = -y
+					z := x % y
+					switch {
+					case (x < 0) != (y < 0):
+						z = z + y
+					}
+					return INTEGER(z)
+				default:
+					panic(fmt.Sprintln(reflect.TypeOf(y)))
+				}
+			case LONGINT:
+				switch y := b.(type) {
+				case LONGINT:
+					y = -y
+					z := x % y
+					switch {
+					case (x < 0) != (y < 0):
+						z = z + y
+					}
+					return LONGINT(z)
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
@@ -1277,15 +1345,15 @@ func (o *ops) Is(a scope.Value, typ object.ComplexType) scope.Value {
 					//	fmt.Println("eq")
 					//fmt.Println("qid ", _x.Qualident(), _a.Qualident(), "names ", x.Name(), a.Name())
 					return true //опасно сравнивать имена конеш
-				case x.Base() != nil:
+				case x.Complex() != nil:
 					//	fmt.Println("go base")
-					return compare(x.Base(), a)
+					return compare(x.Complex(), a)
 				default:
 					return false
 				}
 			case object.PointerType:
-				if a.Base() != nil {
-					return compare(x, a.Base())
+				if a.Complex() != nil {
+					return compare(x, a.Complex())
 				} else {
 					fmt.Println("here")
 					return false
@@ -1300,9 +1368,9 @@ func (o *ops) Is(a scope.Value, typ object.ComplexType) scope.Value {
 				case x.Name() == a.Name():
 					//	fmt.Println("eq")
 					return true //опасно сравнивать имена конеш
-				case x.Base() != nil:
+				case x.Complex() != nil:
 					//	fmt.Println("go base")
-					return compare(x.Base(), a)
+					return compare(x.Complex(), a)
 				default:
 					return false
 				}

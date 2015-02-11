@@ -219,8 +219,8 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 				t := object.NewPointerType(n.Data.Typ.Name, n.Id)
 				base := r.findLink(n, "base")
 				if base != nil {
-					t.Base(r.doType(base))
-					assert.For(t.Base() != nil, 41)
+					t.Complex(r.doType(base))
+					assert.For(t.Complex() != nil, 41)
 				}
 				ret = t
 			default:
@@ -236,8 +236,15 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 				ret = object.NewDynArrayType(object.SHORTCHAR, n.Id)
 			case "REAL":
 				ret = object.NewDynArrayType(object.REAL, n.Id)
+			case "POINTER":
+				ret = object.NewDynArrayType(object.COMPLEX, n.Id)
+				base := r.findLink(n, "base")
+				if base != nil {
+					ret.(object.DynArrayType).Complex(r.doType(base))
+					assert.For(ret.(object.DynArrayType).Complex() != nil, 41)
+				}
 			default:
-				panic(fmt.Sprintln("unknown dyn type", n.Data.Typ.Base, n.Data.Typ.Typ))
+				panic(fmt.Sprintln("unknown dyn type", n.Id, n.Data.Typ.Base, n.Data.Typ.Typ))
 			}
 		case "ARRAY":
 			switch n.Data.Typ.Base {
@@ -272,7 +279,7 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 			}
 			base := r.findLink(n, "base")
 			if base != nil {
-				ret.(object.RecordType).Base(r.doType(base))
+				ret.(object.RecordType).Complex(r.doType(base))
 				assert.For(ret.(object.RecordType).BaseRec() != nil, 41)
 			}
 		default:

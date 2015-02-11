@@ -172,6 +172,9 @@ func dopSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case operation.MOD:
 			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Mod(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()
+		case operation.ALIEN_MSK:
+			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Msk(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
+			return frame.End()
 		case operation.TIMES:
 			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Mult(rt2.ValueOf(f)[n.Left().Adr()], rt2.ValueOf(f)[n.Right().Adr()])
 			return frame.End()

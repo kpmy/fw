@@ -17,6 +17,7 @@ type Operations interface {
 	Min(Value, Value) Value
 	Div(Value, Value) Value
 	Mod(Value, Value) Value
+	Msk(Value, Value) Value
 	Mult(Value, Value) Value
 	Divide(Value, Value) Value
 	In(Value, Value) Value

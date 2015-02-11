@@ -8,6 +8,9 @@ const (
 	HEAP     = "fw/rt2/scope,heap"
 	MT       = "fw/rt2/table,flow"
 	DIGEST   = "fw/cp"
+
+	RETURN = "RETURN"
+	META   = "META"
 )
 
 type Factory interface {

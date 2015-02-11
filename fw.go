@@ -17,10 +17,12 @@ import (
 )
 
 var name string
+var debug bool = false
 var heap scope.Manager
 
 func init() {
 	flag.StringVar(&name, "i", "", "-i name.ext")
+	flag.BoolVar(&debug, "d", false, "-d true/false")
 }
 
 func close() {
@@ -35,8 +37,8 @@ func main() {
 	flag.Parse()
 	if name == "" {
 		name = "Start3"
-		utils.Debug(false)
 	}
+	utils.Debug(debug)
 	global := &stdDomain{god: true}
 	global.global = global
 	modList := rtm.New()

@@ -5,6 +5,7 @@ import (
 	"fw/cp/node"
 	"fw/cp/object"
 	"fw/rt2"
+	"fw/rt2/context"
 	"fw/rt2/frame"
 	rtm "fw/rt2/module"
 	"fw/rt2/scope"
@@ -44,7 +45,7 @@ func expectExpr(parent frame.Frame, expr node.Node, next Do) OUT {
 		rt2.Push(rt2.New(expr), parent)
 		wait := func(...IN) OUT {
 			if rt2.RegOf(parent)[expr] == nil && rt2.ValueOf(parent)[expr.Adr()] == nil {
-				raw := rt2.RegOf(parent)["RETURN"]
+				raw := rt2.RegOf(parent)[context.RETURN]
 				if val, ok := raw.(scope.Value); !ok {
 					halt.As(100, "no result from ", expr.Adr(), raw)
 				} else {
@@ -62,9 +63,14 @@ func expectExpr(parent frame.Frame, expr node.Node, next Do) OUT {
 		wait := func(in ...IN) OUT {
 			idx := rt2.ValueOf(parent)[e.Adr()]
 			return expectExpr(in[0].frame, e.Left(), func(...IN) OUT {
-				arr := rt2.ValueOf(in[0].frame)[e.Left().Adr()].(scope.Array)
-				idx = arr.Get(idx)
-				rt2.ValueOf(parent)[e.Adr()] = idx
+				v := rt2.ValueOf(in[0].frame)[e.Left().Adr()]
+				switch vv := v.(type) {
+				case scope.Array:
+					idx = vv.Get(idx)
+					rt2.ValueOf(parent)[e.Adr()] = idx
+				default:
+					halt.As(100, reflect.TypeOf(vv), vv, rt2.ValueOf(in[0].frame))
+				}
 				return OUT{do: next, next: NOW}
 			})
 		}

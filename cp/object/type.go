@@ -109,7 +109,7 @@ type BasicType interface {
 
 type PointerType interface {
 	ComplexType
-	Base(...ComplexType) ComplexType
+	Complex(...ComplexType) ComplexType
 	Name() string
 }
 
@@ -123,13 +123,14 @@ type ArrayType interface {
 type DynArrayType interface {
 	ComplexType
 	Base() Type
+	Complex(...ComplexType) ComplexType
 }
 
 type RecordType interface {
 	ComplexType
 	BaseName() string
 	BaseRec() RecordType
-	Base(t ...ComplexType) ComplexType
+	Complex(t ...ComplexType) ComplexType
 	Name() string
 }
 
@@ -161,6 +162,16 @@ func NewDynArrayType(b Type, id int) (ret DynArrayType) {
 type dyn struct {
 	comp
 	base Type
+	cmp  ComplexType
+}
+
+func (a *dyn) Complex(t ...ComplexType) ComplexType {
+	if len(t) == 1 {
+		a.cmp = t[0]
+	} else if len(t) > 1 {
+		panic("too many args")
+	}
+	return a.cmp
 }
 
 func (d *dyn) Base() Type { return d.base }
@@ -210,7 +221,8 @@ func NewRecordType(n string, id int, par ...string) (ret RecordType) {
 }
 
 func (r *rec) BaseRec() RecordType { return r.basetyp }
-func (r *rec) Base(t ...ComplexType) ComplexType {
+
+func (r *rec) Complex(t ...ComplexType) ComplexType {
 	if len(t) == 1 {
 		r.basetyp = t[0].(RecordType)
 	}
@@ -231,7 +243,8 @@ func NewPointerType(n string, id int) PointerType {
 }
 
 func (p *ptr) Name() string { return p.name }
-func (p *ptr) Base(x ...ComplexType) ComplexType {
+
+func (p *ptr) Complex(x ...ComplexType) ComplexType {
 	if len(x) == 1 {
 		p.basetyp = x[0]
 		//fmt.Println("pbasetyp", p.basetyp, reflect.TypeOf(p.basetyp))

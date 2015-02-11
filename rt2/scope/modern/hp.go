@@ -57,9 +57,11 @@ func fin(x interface{}) {
 	}
 }
 
-func (h *halloc) Allocate(n node.Node, par ...interface{}) scope.ValueFor {
+func (h *halloc) Allocate(o object.Object, t object.PointerType, par ...interface{}) scope.ValueFor {
 	//fmt.Println("HEAP ALLOCATE")
-	mod := rtm.ModuleOfNode(h.area.d, n)
+	mod := rtm.ModuleOfType(h.area.d, t)
+	assert.For(t != nil, 20)
+	assert.For(o != nil, 21)
 	if h.area.data == nil {
 		h.area.data = append(h.area.data, newlvl())
 	}
@@ -72,14 +74,14 @@ func (h *halloc) Allocate(n node.Node, par ...interface{}) scope.ValueFor {
 	}
 	var talloc func(t object.PointerType)
 	talloc = func(t object.PointerType) {
-		switch bt := t.Base().(type) {
+		switch bt := t.Complex().(type) {
 		case object.RecordType:
 			fake := object.New(object.VARIABLE, cp.Some())
 			fake.SetComplex(bt)
 			fake.SetType(object.COMPLEX)
-			fake.SetName("{" + n.Object().Name() + "}")
+			fake.SetName("{" + o.Name() + "}")
 			l.alloc(h.area.d, mod, nil, append(ol, fake), skip)
-			res = &ptrValue{scope: h.area, id: fake.Adr(), link: n.Object()}
+			res = &ptrValue{scope: h.area, id: fake.Adr(), link: o}
 		case object.DynArrayType:
 			assert.For(len(par) > 0, 20)
 			fake := object.New(object.VARIABLE, cp.Some())
@@ -92,23 +94,12 @@ func (h *halloc) Allocate(n node.Node, par ...interface{}) scope.ValueFor {
 				assert.For(ok, 60)
 				arr.Set(par[0].(scope.Value))
 			})
-			res = &ptrValue{scope: h.area, id: fake.Adr(), link: n.Object()}
+			res = &ptrValue{scope: h.area, id: fake.Adr(), link: o}
 		default:
 			halt.As(100, fmt.Sprintln("cannot allocate", reflect.TypeOf(bt)))
 		}
 	}
-	switch v := n.(type) {
-	case node.VariableNode, node.FieldNode:
-		switch t := v.Object().Complex().(type) {
-		case object.PointerType:
-			talloc(t)
-			//h.area.data[0].alloc(mod, nil, )
-		default:
-			halt.As(100, reflect.TypeOf(t))
-		}
-	default:
-		halt.As(101, reflect.TypeOf(v), v)
-	}
+	talloc(t)
 	assert.For(res != nil, 60)
 	runtime.SetFinalizer(res, fin)
 	return f_res

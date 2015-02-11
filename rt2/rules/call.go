@@ -152,7 +152,7 @@ func go_math(f frame.Frame, par node.Node) (seq frame.Sequence, ret frame.WAIT) 
 	default:
 		halt.As(100, reflect.TypeOf(p))
 	}
-	rt2.RegOf(f.Parent())["RETURN"] = scope.TypeFromGo(res)
+	rt2.RegOf(f.Parent())[context.RETURN] = scope.TypeFromGo(res)
 	return frame.End()
 }
 

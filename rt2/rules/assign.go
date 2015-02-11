@@ -7,11 +7,13 @@ import (
 	"fw/cp/constant/operation"
 	"fw/cp/constant/statement"
 	"fw/cp/node"
+	"fw/cp/object"
 	"fw/rt2"
 	"fw/rt2/context"
 	"fw/rt2/frame"
 	"fw/rt2/scope"
 	"reflect"
+	"ypk/assert"
 	"ypk/halt"
 )
 
@@ -77,13 +79,13 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		case node.OperationNode, node.CallNode, node.DerefNode, node.FieldNode:
 			rt2.Push(rt2.New(a.Right()), f)
 			rt2.Assert(f, func(f frame.Frame) (bool, int) {
-				return rt2.ValueOf(f)[a.Right().Adr()] != nil || rt2.RegOf(f)["RETURN"] != nil, 61
+				return rt2.ValueOf(f)[a.Right().Adr()] != nil || rt2.RegOf(f)[context.RETURN] != nil, 61
 			})
 			seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 				//sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
 				val := rt2.ValueOf(f)[a.Right().Adr()]
 				if val == nil {
-					val = rt2.RegOf(f)["RETURN"].(scope.Value)
+					val = rt2.RegOf(f)[context.RETURN].(scope.Value)
 				}
 				vleft.Set(val)
 				return frame.End()
@@ -147,7 +149,14 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			}
 			ret = frame.LATER
 		case node.IndexNode:
-			rt2.Push(rt2.New(a.Left()), f)
+			return This(expectExpr(f, l, func(in ...IN) (out OUT) {
+				v := rt2.ValueOf(f)[l.Adr()]
+				left = v
+				out.do = Expose(right)
+				out.next = NOW
+				return
+			}))
+			/*rt2.Push(rt2.New(a.Left()), f)
 			rt2.Assert(f, func(f frame.Frame) (bool, int) {
 				return rt2.ValueOf(f)[l.Adr()] != nil, 64
 			})
@@ -161,7 +170,9 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 					return right(f)
 				case node.DerefNode:
 					return This(expectExpr(f, z, func(in ...IN) (out OUT) {
-						arr := rt2.ValueOf(f)[z.Adr()].(scope.Array)
+						v := rt2.ValueOf(f)[z.Adr()]
+						arr, ok := v.(scope.Array)
+						assert.For(ok, 40, v)
 						left = arr.Get(left)
 						out.do = Expose(right)
 						out.next = NOW
@@ -171,8 +182,8 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 					halt.As(100, reflect.TypeOf(z), z)
 				}
 				panic(0)
-			}
-			ret = frame.LATER
+			}*/
+
 		case node.DerefNode:
 			//			rt2.DataOf(f)[a.Left()] = scope.ID{}
 			rt2.Push(rt2.New(a.Left()), f)
@@ -205,17 +216,17 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 		}
 	case statement.NEW:
 		heap := f.Domain().Discover(context.HEAP).(scope.Manager).Target().(scope.HeapAllocator)
-		if a.Right() != nil {
+		if a.Right() != nil { //размер массива справа, если его нет, значит это NEW для рекорда
 			seq, ret = This(expectExpr(f, a.Right(), func(in ...IN) (out OUT) {
 				//fmt.Println("NEW", rt2.ValueOf(f)[a.Right().Adr()], "here")
 				switch z := a.Left().(type) {
 				case node.VariableNode:
 					sc := rt2.ScopeFor(f, a.Left().Object().Adr())
-					fn := heap.Allocate(a.Left(), rt2.ValueOf(f)[a.Right().Adr()])
+					fn := heap.Allocate(z.Object(), z.Object().Complex().(object.PointerType), rt2.ValueOf(f)[a.Right().Adr()])
 					sc.Update(a.Left().Object().Adr(), fn)
 					return End()
 				case node.FieldNode:
-					fn := heap.Allocate(a.Left(), rt2.ValueOf(f)[a.Right().Adr()])
+					fn := heap.Allocate(z.Object(), z.Object().Complex().(object.PointerType), rt2.ValueOf(f)[a.Right().Adr()])
 					rt2.Push(rt2.New(z), in[0].frame)
 					rt2.Assert(f, func(f frame.Frame) (bool, int) {
 						return rt2.ValueOf(f)[z.Adr()] != nil, 65
@@ -227,6 +238,15 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 					}
 					out.next = LATER
 					return
+				case node.IndexNode:
+					return expectExpr(in[0].frame, z, func(...IN) OUT {
+						obj, ok := rt2.RegOf(in[0].frame)[context.META].(object.Object)
+						assert.For(ok, 40, rt2.RegOf(in[0].frame))
+						fn := heap.Allocate(obj, obj.Complex().(object.PointerType), rt2.ValueOf(f)[a.Right().Adr()])
+						idx := rt2.ValueOf(in[0].frame)[z.Adr()].(scope.Variable)
+						idx.Set(fn(nil))
+						return End()
+					})
 				default:
 					halt.As(100, reflect.TypeOf(z))
 				}
@@ -234,7 +254,7 @@ func assignSeq(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 			}))
 		} else {
 			//fmt.Println("NEW here", a.Left().Adr())
-			fn := heap.Allocate(a.Left())
+			fn := heap.Allocate(a.Left().Object(), a.Left().Object().Complex().(object.PointerType))
 			sc := rt2.ScopeFor(f, a.Left().Object().Adr())
 			sc.Update(a.Left().Object().Adr(), fn)
 			return frame.End()

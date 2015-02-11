@@ -211,7 +211,7 @@ type tc struct {
 }
 
 type inherited interface {
-	Base(...object.ComplexType) object.ComplexType
+	Complex(...object.ComplexType) object.ComplexType
 }
 
 func (c *tc) ConnectTo(x interface{}) {
@@ -255,7 +255,7 @@ func (c *tc) MethodList() (ret map[int][]Method) {
 							break
 						}
 						if _, ok := pt.(inherited); ok {
-							pt = pt.(inherited).Base()
+							pt = pt.(inherited).Complex()
 						} else {
 							pt = nil
 						}
@@ -285,7 +285,7 @@ func (c *tc) MethodList() (ret map[int][]Method) {
 		tmp = make(map[string]object.Object, 0)
 		for t := x; t != nil; {
 			list(m, t)
-			z := t.(inherited).Base()
+			z := t.(inherited).Complex()
 			if z != nil {
 				t = z
 			} else {
@@ -348,7 +348,7 @@ func (c *tc) String() (ret string) {
 					pt := po.Link().Complex()
 					var pb object.ComplexType
 					if _, ok := pt.(inherited); ok {
-						pb = pt.(inherited).Base()
+						pb = pt.(inherited).Complex()
 					}
 					if t.Equals(pt) || t.Equals(pb) {
 						ret = fmt.Sprintln(ret, po.Name(), local)
@@ -358,15 +358,15 @@ func (c *tc) String() (ret string) {
 		}
 		switch z := t.(type) {
 		case object.PointerType:
-			if z.Base() != nil {
-				t = z.Base()
+			if z.Complex() != nil {
+				t = z.Complex()
 			} else {
 				foreign(t)
 				t = nil
 			}
 		case object.RecordType:
-			if z.Base() != nil {
-				t = z.Base()
+			if z.Complex() != nil {
+				t = z.Complex()
 			} else {
 				foreign(t)
 				t = nil

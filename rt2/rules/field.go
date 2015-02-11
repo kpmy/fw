@@ -7,6 +7,7 @@ import (
 import (
 	"fw/cp/node"
 	"fw/rt2"
+	"fw/rt2/context"
 	"fw/rt2/frame"
 	"fw/rt2/scope"
 	"ypk/halt"
@@ -25,7 +26,7 @@ func fieldSeq(in ...IN) (out OUT) {
 		sc := rt2.ScopeFor(f, l.Object().Adr())
 		sc.Select(l.Object().Adr(), func(v scope.Value) {
 			rt2.ValueOf(f.Parent())[n.Adr()] = v.(scope.Record).Get(n.Object().Adr())
-			//fmt.Println(n.Object().Adr())
+			rt2.RegOf(f.Parent())[context.META] = n.Object()
 		})
 		out = End()
 	case node.FieldNode, node.DerefNode:
@@ -37,6 +38,7 @@ func fieldSeq(in ...IN) (out OUT) {
 		out.do = func(in ...IN) OUT {
 			v := rt2.ValueOf(in[0].frame)[l.Adr()].(scope.Record)
 			rt2.ValueOf(f.Parent())[n.Adr()] = v.Get(n.Object().Adr())
+			rt2.RegOf(f.Parent())[context.META] = rt2.RegOf(in[0].frame)[context.META]
 			return End()
 		}
 		out.next = LATER
