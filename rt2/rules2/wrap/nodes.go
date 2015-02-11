@@ -39,7 +39,7 @@ func test(n node.Node) (bool, int) {
 	panic(0)
 }
 
-func prologue(_n node.Node) frame.Sequence {
+func prologue(n node.Node) frame.Sequence {
 	/*	//fmt.Println(reflect.TypeOf(n))
 		switch next := n.(type) {
 		case node.EnterNode:
@@ -128,15 +128,16 @@ func prologue(_n node.Node) frame.Sequence {
 		default:
 			panic(fmt.Sprintln("unknown node", reflect.TypeOf(n), n.Adr()))
 		}*/
-	switch n := _n.(type) {
-
+	switch n.(type) {
+	case node.Statement:
+		return Propose(eval.BeginStatement)
 	default:
 		halt.As(100, reflect.TypeOf(n))
 	}
 	panic(0)
 }
 
-func epilogue(_n node.Node) frame.Sequence {
+func epilogue(n node.Node) frame.Sequence {
 	/*	switch e := n.(type) {
 		case node.AssignNode, node.InitNode, node.CallNode, node.ConditionalNode, node.WhileNode,
 			node.RepeatNode, node.ExitNode, node.WithNode, node.CaseNode, node.CompNode:
@@ -190,8 +191,9 @@ func epilogue(_n node.Node) frame.Sequence {
 			fmt.Println(reflect.TypeOf(n))
 			panic("unhandled epilogue")
 		}*/
-	switch n := _n.(type) {
-
+	switch n.(type) {
+	case node.Statement:
+		return Propose(eval.EndStatement)
 	default:
 		halt.As(100, reflect.TypeOf(n))
 	}

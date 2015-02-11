@@ -22,10 +22,15 @@ type Node interface {
 	cp.Id
 }
 
+type Statement interface {
+	this() Statement
+}
+
 type EnterNode interface {
 	Enter() enter.Enter
 	SetEnter(enter enter.Enter)
 	Node
+	Statement
 }
 
 type OperationNode interface {
@@ -52,6 +57,7 @@ type AssignNode interface {
 	SetStatement(statement.Statement)
 	Statement() statement.Statement
 	Node
+	Statement
 }
 
 type VariableNode interface {
@@ -62,6 +68,7 @@ type VariableNode interface {
 type CallNode interface {
 	self() CallNode
 	Node
+	Statement
 }
 
 type ProcedureNode interface {
@@ -78,6 +85,7 @@ type ParameterNode interface {
 type ReturnNode interface {
 	Node
 	self() ReturnNode
+	Statement
 }
 
 type DyadicNode interface {
@@ -96,6 +104,7 @@ type MonadicNode interface {
 type ConditionalNode interface {
 	self() ConditionalNode
 	Node
+	Statement
 }
 
 type IfNode interface {
@@ -106,21 +115,25 @@ type IfNode interface {
 type WhileNode interface {
 	self() WhileNode
 	Node
+	Statement
 }
 
 type RepeatNode interface {
 	self() RepeatNode
 	Node
+	Statement
 }
 
 type ExitNode interface {
 	self() ExitNode
 	Node
+	Statement
 }
 
 type LoopNode interface {
 	self() LoopNode
 	Node
+	Statement
 }
 
 type DerefNode interface {
@@ -142,11 +155,13 @@ type IndexNode interface {
 type TrapNode interface {
 	self() TrapNode
 	Node
+	Statement
 }
 
 type WithNode interface {
 	self() WithNode
 	Node
+	Statement
 }
 
 type GuardNode interface {
@@ -159,6 +174,7 @@ type GuardNode interface {
 type CaseNode interface {
 	self() CaseNode
 	Node
+	Statement
 }
 
 type ElseNode interface {

@@ -16,11 +16,13 @@ const COMPOUND constant.Class = -2
 
 type InitNode interface {
 	Node
+	Statement
 	self() InitNode
 }
 
 type CompNode interface {
 	Node
+	Statement
 	self() CompNode
 }
 
@@ -95,6 +97,10 @@ type nodeFields struct {
 	adr               cp.ID
 }
 
+type stmt struct{}
+
+func (s *stmt) this() Statement { return s }
+
 func (nf *nodeFields) Adr(a ...cp.ID) cp.ID {
 	assert.For(len(a) <= 1, 20)
 	if len(a) == 1 {
@@ -122,6 +128,7 @@ func (nf *nodeFields) Object() object.Object { return nf.obj }
 type enterNode struct {
 	nodeFields
 	enter enter.Enter
+	stmt
 }
 
 func (e *enterNode) SetEnter(enter enter.Enter) { e.enter = enter }
@@ -165,6 +172,7 @@ func (d *dyadicNode) String() string {
 type assignNode struct {
 	nodeFields
 	stat statement.Statement
+	stmt
 }
 
 func (a *assignNode) self() AssignNode { return a }
@@ -181,6 +189,7 @@ func (v *variableNode) self() VariableNode { return v }
 
 type callNode struct {
 	nodeFields
+	stmt
 }
 
 func (v *callNode) self() CallNode { return v }
@@ -210,6 +219,7 @@ func (v *parameterNode) self() ParameterNode { return v }
 
 type returnNode struct {
 	nodeFields
+	stmt
 }
 
 func (v *returnNode) self() ReturnNode { return v }
@@ -243,6 +253,7 @@ func (v *monadicNode) String() string {
 
 type conditionalNode struct {
 	nodeFields
+	stmt
 }
 
 func (v *conditionalNode) self() ConditionalNode { return v }
@@ -255,24 +266,28 @@ func (v *ifNode) self() IfNode { return v }
 
 type whileNode struct {
 	nodeFields
+	stmt
 }
 
 func (v *whileNode) self() WhileNode { return v }
 
 type repeatNode struct {
 	nodeFields
+	stmt
 }
 
 func (v *repeatNode) self() RepeatNode { return v }
 
 type exitNode struct {
 	nodeFields
+	stmt
 }
 
 func (v *exitNode) self() ExitNode { return v }
 
 type loopNode struct {
 	nodeFields
+	stmt
 }
 
 func (v *loopNode) self() LoopNode { return v }
@@ -299,12 +314,14 @@ func (v *fieldNode) self() FieldNode { return v }
 
 type initNode struct {
 	nodeFields
+	stmt
 }
 
 func (v *initNode) self() InitNode { return v }
 
 type compNode struct {
 	nodeFields
+	stmt
 }
 
 func (v *compNode) self() CompNode { return v }
@@ -317,12 +334,14 @@ func (v *indexNode) self() IndexNode { return v }
 
 type trapNode struct {
 	nodeFields
+	stmt
 }
 
 func (v *trapNode) self() TrapNode { return v }
 
 type withNode struct {
 	nodeFields
+	stmt
 }
 
 func (v *withNode) self() WithNode { return v }
@@ -338,6 +357,7 @@ func (v *guardNode) Type() object.ComplexType     { return v.typ }
 
 type caseNode struct {
 	nodeFields
+	stmt
 }
 
 func (v *caseNode) self() CaseNode { return v }
