@@ -78,6 +78,8 @@ func prologue(n node.Node) frame.Sequence {
 		return Propose(eval.BeginExpression)
 	case node.Designator:
 		return Propose(eval.BeginDesignator)
+	case node.IfNode:
+		return Propose(eval.BeginStrange)
 	default:
 		halt.As(100, reflect.TypeOf(n))
 	}
@@ -88,7 +90,7 @@ func epilogue(n node.Node) frame.Sequence {
 	switch n.(type) {
 	case node.Statement:
 		return Propose(eval.EndStatement)
-	case node.ConstantNode, node.VariableNode, node.ParameterNode, node.DyadicNode, node.MonadicNode: //do nothing
+	case node.ConstantNode, node.VariableNode, node.ParameterNode, node.DyadicNode, node.MonadicNode, node.IfNode: //do nothing
 	default:
 		halt.As(100, reflect.TypeOf(n))
 	}

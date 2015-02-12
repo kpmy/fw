@@ -92,6 +92,54 @@ func doAssign(in IN) (out OUT) {
 	return
 }
 
+func doIf(in IN) OUT {
+	const left = "if:left:if"
+	i := in.IR.(node.IfNode)
+	return GetExpression(in, left, i.Left(), func(in IN) OUT {
+		val := rt2.ValueOf(in.Frame)[KeyOf(in, left)]
+		assert.For(val != nil, 20)
+		rt2.ValueOf(in.Parent)[i.Adr()] = val
+		rt2.RegOf(in.Parent)[in.Key] = i.Adr()
+		return End()
+	})
+}
+
+func doCondition(in IN) OUT {
+	const left = "if:left"
+	i := in.IR.(node.ConditionalNode)
+	rt2.RegOf(in.Frame)[0] = i.Left() // if
+	var next Do
+	next = func(in IN) OUT {
+		last := rt2.RegOf(in.Frame)[0].(node.Node)
+		fi := rt2.ValueOf(in.Frame)[KeyOf(in, left)]
+		done := scope.GoTypeFrom(fi).(bool)
+		rt2.RegOf(in.Frame)[0] = nil
+		rt2.ValueOf(in.Frame)[KeyOf(in, left)] = nil
+
+		if done && last.Right() != nil {
+			rt2.Push(rt2.New(last.Right()), in.Frame)
+			return Later(Tail(STOP))
+		} else if last.Right() == nil {
+			return End()
+		} else if last.Link() != nil { //elsif
+			rt2.RegOf(in.Frame)[0] = last.Link()
+			return GetStrange(in, left, i.Left(), next)
+		} else if i.Right() != nil { //else
+			rt2.Push(rt2.New(i.Right()), in.Frame)
+			return Later(Tail(STOP))
+		} else if i.Right() == nil {
+			return End()
+		} else if i.Right() == last {
+			return End()
+		} else {
+			halt.As(100, "wrong if then else")
+			panic(100)
+		}
+	}
+
+	return GetStrange(in, left, i.Left(), next)
+}
+
 func doReturn(in IN) OUT {
 	const left = "return:left"
 	r := in.IR.(node.ReturnNode)

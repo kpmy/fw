@@ -43,6 +43,27 @@ func BeginDesignator(in IN) (out OUT) {
 	return
 }
 
+func GetStrange(in IN, key interface{}, ss node.Node, next Do) (out OUT) {
+	assert.For(ss != nil, 20)
+	assert.For(key != nil, 21)
+	switch ss.(type) {
+	case node.IfNode:
+		nf := rt2.New(ss)
+		rt2.Push(nf, in.Frame)
+		rt2.RegOf(in.Frame)[context.KEY] = key
+		rt2.Assert(in.Frame, func(f frame.Frame) (bool, int) {
+			v := rt2.RegOf(f)[key]
+			return v != nil, 1980
+		})
+		return Later(func(IN) OUT {
+			return Now(next)
+		})
+	default:
+		halt.As(100, reflect.TypeOf(ss))
+	}
+	return
+}
+
 func GetExpression(in IN, key interface{}, expr node.Node, next Do) OUT {
 	assert.For(expr != nil, 20)
 	_, e_ok := expr.(node.Expression)
@@ -77,6 +98,15 @@ func GetDesignator(in IN, key interface{}, design node.Node, next Do) OUT {
 		return Now(next)
 	})
 }
+func BeginStrange(in IN) OUT {
+	switch s := in.IR.(type) {
+	case node.IfNode:
+		return Now(doIf)
+	default:
+		halt.As(100, reflect.TypeOf(s))
+	}
+	panic(0)
+}
 
 func BeginStatement(in IN) (out OUT) {
 	switch n := in.IR.(type) {
@@ -98,6 +128,8 @@ func BeginStatement(in IN) (out OUT) {
 		out = Now(doCall)
 	case node.ReturnNode:
 		out = Now(doReturn)
+	case node.ConditionalNode:
+		out = Now(doCondition)
 	default:
 		halt.As(100, reflect.TypeOf(n))
 	}
@@ -123,7 +155,7 @@ func EndStatement(in IN) (out OUT) {
 			}
 			return End()
 		})
-	case node.AssignNode, node.CallNode:
+	case node.AssignNode, node.CallNode, node.ConditionalNode:
 		out = Now(func(in IN) OUT {
 			next := n.Link()
 			if next != nil {
