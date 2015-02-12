@@ -133,7 +133,8 @@ func (f *nodeFrame) OnPop() {
 	utils.PrintFrame("_", "POP", reflect.TypeOf(f.ir))
 	f.seq = decision.EpilogueFor(f.ir)
 	if f.seq != nil {
-		_, _ = f.seq(f)
+		_, end := f.seq(f)
+		assert.For(end == frame.END || end == frame.STOP, 60, end)
 	}
 	if f.parent != nil {
 		ff, ok := f.parent.(*nodeFrame)

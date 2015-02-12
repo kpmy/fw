@@ -11,6 +11,7 @@ const (
 
 	RETURN = "RETURN"
 	META   = "META"
+	KEY    = "eval:key"
 )
 
 type Factory interface {

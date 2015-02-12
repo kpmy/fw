@@ -97,9 +97,23 @@ type nodeFields struct {
 	adr               cp.ID
 }
 
-type stmt struct{}
+type stmt struct {
+	Statement
+}
 
-func (s *stmt) this() Statement { return s }
+func (s *stmt) s() Statement { return s }
+
+type expr struct {
+	Expression
+}
+
+func (e *expr) e() Expression { return e }
+
+type design struct {
+	Designator
+}
+
+func (x *design) d() Designator { return x }
 
 func (nf *nodeFields) Adr(a ...cp.ID) cp.ID {
 	assert.For(len(a) <= 1, 20)
@@ -127,8 +141,8 @@ func (nf *nodeFields) Object() object.Object { return nf.obj }
 
 type enterNode struct {
 	nodeFields
-	enter enter.Enter
 	stmt
+	enter enter.Enter
 }
 
 func (e *enterNode) SetEnter(enter enter.Enter) { e.enter = enter }
@@ -136,6 +150,7 @@ func (e *enterNode) Enter() enter.Enter         { return e.enter }
 
 type constantNode struct {
 	nodeFields
+	expr
 	typ      object.Type
 	data     interface{}
 	min, max *int
@@ -157,6 +172,7 @@ func (c *constantNode) Min() *int    { return c.min }
 type dyadicNode struct {
 	nodeFields
 	operation operation.Operation
+	expr
 }
 
 func (d *dyadicNode) SetOperation(op operation.Operation) { d.operation = op }
@@ -183,6 +199,8 @@ func (a *assignNode) Statement() statement.Statement { return a.stat }
 
 type variableNode struct {
 	nodeFields
+	design
+	expr
 }
 
 func (v *variableNode) self() VariableNode { return v }
@@ -190,6 +208,7 @@ func (v *variableNode) self() VariableNode { return v }
 type callNode struct {
 	nodeFields
 	stmt
+	expr
 }
 
 func (v *callNode) self() CallNode { return v }
@@ -201,6 +220,7 @@ func (c *callNode) String() string {
 type procedureNode struct {
 	nodeFields
 	super bool
+	design
 }
 
 func (v *procedureNode) self() ProcedureNode { return v }
@@ -213,6 +233,7 @@ func (v *procedureNode) Super(x ...string) bool {
 
 type parameterNode struct {
 	nodeFields
+	design
 }
 
 func (v *parameterNode) self() ParameterNode { return v }
@@ -229,6 +250,7 @@ type monadicNode struct {
 	operation operation.Operation
 	typ       object.Type
 	comp      object.ComplexType
+	expr
 }
 
 func (v *monadicNode) self() MonadicNode { return v }
@@ -295,6 +317,7 @@ func (v *loopNode) self() LoopNode { return v }
 type derefNode struct {
 	nodeFields
 	ptr bool
+	design
 }
 
 func (v *derefNode) self() DerefNode { return v }
@@ -308,6 +331,7 @@ func (c *derefNode) Ptr(x ...string) bool {
 
 type fieldNode struct {
 	nodeFields
+	design
 }
 
 func (v *fieldNode) self() FieldNode { return v }
@@ -328,6 +352,7 @@ func (v *compNode) self() CompNode { return v }
 
 type indexNode struct {
 	nodeFields
+	design
 }
 
 func (v *indexNode) self() IndexNode { return v }
@@ -349,6 +374,7 @@ func (v *withNode) self() WithNode { return v }
 type guardNode struct {
 	nodeFields
 	typ object.ComplexType
+	design
 }
 
 func (v *guardNode) self() GuardNode              { return v }

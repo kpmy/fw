@@ -23,7 +23,16 @@ type Node interface {
 }
 
 type Statement interface {
-	this() Statement
+	s() Statement
+}
+
+type Expression interface {
+	e() Expression
+	Designator
+}
+
+type Designator interface {
+	d() Designator
 }
 
 type EnterNode interface {
@@ -49,6 +58,7 @@ type ConstantNode interface {
 	SetMin(int)
 	SetMax(int)
 	Node
+	Expression
 }
 
 // Self-designator for empty interfaces
@@ -63,23 +73,27 @@ type AssignNode interface {
 type VariableNode interface {
 	self() VariableNode
 	Node
+	Designator
 }
 
 type CallNode interface {
 	self() CallNode
 	Node
 	Statement
+	Expression
 }
 
 type ProcedureNode interface {
 	self() ProcedureNode
 	Super(...string) bool
 	Node
+	Designator
 }
 
 type ParameterNode interface {
 	Node
 	self() ParameterNode
+	Designator
 }
 
 type ReturnNode interface {
@@ -91,10 +105,12 @@ type ReturnNode interface {
 type DyadicNode interface {
 	OperationNode
 	self() DyadicNode
+	Expression
 }
 
 type MonadicNode interface {
 	OperationNode
+	Expression
 	SetType(typ object.Type)
 	Type() object.Type
 	self() MonadicNode
@@ -140,16 +156,19 @@ type DerefNode interface {
 	self() DerefNode
 	Node
 	Ptr(...string) bool
+	Designator
 }
 
 type FieldNode interface {
 	self() FieldNode
 	Node
+	Designator
 }
 
 type IndexNode interface {
 	self() IndexNode
 	Node
+	Designator
 }
 
 type TrapNode interface {
@@ -169,6 +188,7 @@ type GuardNode interface {
 	Node
 	Type() object.ComplexType
 	SetType(object.ComplexType)
+	Designator
 }
 
 type CaseNode interface {

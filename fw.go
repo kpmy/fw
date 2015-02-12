@@ -35,11 +35,11 @@ func close() {
 
 func main() {
 	flag.Parse()
+	utils.Debug(debug)
 	if name == "" {
-		name = "Start3"
+		name = "XevDemo1"
 		utils.Debug(true)
 	}
-	utils.Debug(debug)
 	global := &stdDomain{god: true}
 	global.global = global
 	modList := rtm.New()

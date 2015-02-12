@@ -24,7 +24,7 @@ func ThisScope(f frame.Frame) scope.Manager {
 	return f.Domain().Discover(context.VSCOPE, 0).(scope.Manager)
 }
 
-func ScopeFor(f frame.Frame, id cp.ID) (ret scope.Manager) {
+func ScopeFor(f frame.Frame, id cp.ID, fn ...scope.ValueOf) (ret scope.Manager) {
 	glob := f.Domain().Discover(context.UNIVERSE).(context.Domain)
 	ml := glob.Discover(context.MOD).(rtm.List)
 	for _, m := range ml.AsList() {
@@ -37,6 +37,9 @@ func ScopeFor(f frame.Frame, id cp.ID) (ret scope.Manager) {
 		}
 	}
 	assert.For(ret != nil, 60)
+	if len(fn) == 1 {
+		ret.Select(id, fn...)
+	}
 	return
 }
 

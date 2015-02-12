@@ -1,6 +1,7 @@
 package eval
 
 import (
+	"fw/cp/node"
 	"fw/rt2/frame"
 )
 
@@ -11,6 +12,8 @@ const (
 	STOP
 	LATER
 	NOW
+	BEGIN
+	END
 )
 
 func (n WAIT) Wait() frame.WAIT {
@@ -23,6 +26,10 @@ func (n WAIT) Wait() frame.WAIT {
 		return frame.LATER
 	case NOW:
 		return frame.NOW
+	case BEGIN:
+		return frame.BEGIN
+	case END:
+		return frame.END
 	default:
 		panic(n)
 	}
@@ -31,6 +38,10 @@ func (n WAIT) Wait() frame.WAIT {
 type Do func(IN) OUT
 
 type IN struct {
+	IR     node.Node
+	Frame  frame.Frame
+	Parent frame.Frame
+	Key    interface{}
 }
 
 type OUT struct {
