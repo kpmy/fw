@@ -23,6 +23,7 @@ type Domain interface {
 	Discover(name string, opts ...interface{}) ContextAware
 	Id(c ContextAware) string
 	ContextAware
+	Global() Domain
 }
 
 type ContextAware interface {

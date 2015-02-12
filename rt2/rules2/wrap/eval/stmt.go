@@ -3,14 +3,19 @@ package eval
 import (
 	"fw/cp/constant/statement"
 	"fw/cp/node"
+	"fw/cp/object"
 	"fw/rt2"
+	"fw/rt2/context"
+	rtm "fw/rt2/module"
 	"fw/rt2/scope"
+	"fw/utils"
 	"reflect"
 	"ypk/assert"
 	"ypk/halt"
 )
 
 func doEnter(in IN) OUT {
+	e := in.IR.(node.EnterNode)
 	var next Do
 	tail := func(IN) (out OUT) {
 		body := in.IR.Right()
@@ -18,7 +23,8 @@ func doEnter(in IN) OUT {
 		case body == nil:
 			return End()
 		case body != nil && in.Parent != nil:
-			panic(0)
+			rt2.Push(rt2.New(body), in.Frame)
+			return Later(Tail(STOP))
 		case body != nil && in.Parent == nil: //секция BEGIN
 			rt2.Push(rt2.New(body), in.Frame)
 			end := in.IR.Link()
@@ -35,8 +41,24 @@ func doEnter(in IN) OUT {
 		return
 	}
 	sm := rt2.ThisScope(in.Frame)
-	if in.IR.Object() != nil { //параметры процедуры
-		panic(0)
+	if e.Object() != nil { //параметры процедуры
+		par, ok := rt2.RegOf(in.Frame)[e.Object()].(node.Node)
+		//fmt.Println(rt2.DataOf(f)[n.Object()])
+		//fmt.Println(ok)
+		if ok {
+			sm.Target().(scope.ScopeAllocator).Allocate(e, false)
+			next = func(in IN) OUT {
+				seq, _ := sm.Target().(scope.ScopeAllocator).Initialize(e,
+					scope.PARAM{Objects: e.Object().Link(),
+						Values: par,
+						Frame:  in.Frame,
+						Tail:   Propose(tail)})
+				return Later(Expose(seq))
+			}
+		} else {
+			sm.Target().(scope.ScopeAllocator).Allocate(e, true)
+			next = tail
+		}
 	} else {
 		sm.Target().(scope.ScopeAllocator).Allocate(in.IR, true)
 		next = tail
@@ -70,6 +92,118 @@ func doAssign(in IN) (out OUT) {
 	return
 }
 
-func doCall(in IN) OUT {
-	panic(0)
+func doReturn(in IN) OUT {
+	const left = "return:left"
+	r := in.IR.(node.ReturnNode)
+	return GetExpression(in, left, r.Left(), func(IN) OUT {
+		val := rt2.ValueOf(in.Frame)[KeyOf(in, left)]
+		if val == nil {
+			val, _ = rt2.RegOf(in.Frame)[context.RETURN].(scope.Value)
+		}
+		assert.For(val != nil, 40)
+		rt2.ValueOf(in.Parent)[r.Object().Adr()] = val
+		rt2.RegOf(in.Parent)[context.RETURN] = val
+		return End()
+	})
+}
+
+func doCall(in IN) (out OUT) {
+	const (
+		right = "call:right"
+	)
+	c := in.IR.(node.CallNode)
+
+	call := func(proc node.Node, d context.Domain) {
+		_, ok := proc.(node.EnterNode)
+		assert.For(ok, 20, "try call", reflect.TypeOf(proc), proc.Adr(), proc.Object().Adr())
+		nf := rt2.New(proc)
+		rt2.Push(nf, in.Frame)
+		if d != nil {
+			rt2.ReplaceDomain(nf, d)
+		}
+		//передаем ссылку на цепочку значений параметров в данные фрейма входа в процедуру
+		if (c.Right() != nil) && (proc.Object() != nil) {
+			rt2.RegOf(nf)[proc.Object()] = c.Right()
+		} else {
+			//fmt.Println("no data for call")
+		}
+		out = Later(func(in IN) OUT {
+			if in.Key != nil {
+				val := rt2.ValueOf(in.Frame)[c.Left().Object().Adr(0, 0)]
+				assert.For(val != nil, 40, rt2.ValueOf(in.Frame))
+				rt2.ValueOf(in.Parent)[c.Adr()] = val
+				rt2.RegOf(in.Parent)[in.Key] = c.Adr()
+				rt2.ValueOf(in.Parent)[c.Adr()] = val
+			}
+			return End()
+		})
+	}
+
+	switch p := c.Left().(type) {
+	case node.ProcedureNode:
+		m := rtm.DomainModule(in.Frame.Domain())
+		ml := in.Frame.Domain().Global().Discover(context.MOD).(rtm.List)
+		switch p.Object().Mode() {
+		case object.LOCAL_PROC, object.EXTERNAL_PROC:
+			if imp := m.ImportOf(p.Object()); imp == "" || imp == m.Name {
+				proc := m.NodeByObject(p.Object())
+				assert.For(proc != nil, 40)
+				call(proc[0], nil)
+			} else {
+				m := ml.Loaded(imp)
+				pl := m.ObjectByName(m.Enter, c.Left().Object().Name())
+				var proc object.ProcedureObject
+				var nl []node.Node
+				for _, n := range pl {
+					if n.Mode() == p.Object().Mode() {
+						proc = n.(object.ProcedureObject)
+					}
+
+				}
+				nl = m.NodeByObject(proc)
+				utils.PrintFrame("foreign call", len(nl), "proc refs", proc)
+				call(nl[0], in.Frame.Domain().Global().Discover(imp).(context.Domain))
+			}
+		case object.TYPE_PROC:
+			//sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+			assert.For(!p.Super(), 20)
+			out = GetExpression(in, right, c.Right(), func(IN) (out OUT) {
+				var (
+					proc []node.Node
+					dm   context.Domain
+				)
+				id := KeyOf(in, right)
+				v := rt2.ValueOf(in.Frame)[id]
+				t, ct := scope.Ops.TypeOf(v)
+				if ct == nil {
+					panic(0)
+					//return thisTrap(f, traps.Default)
+				}
+				assert.For(ct != nil, 40, id, v, t)
+				x := ml.NewTypeCalc()
+				x.ConnectTo(c)
+				for _, ml := range x.MethodList() {
+					for _, m := range ml {
+						if m.Obj.Name() == p.Object().Name() {
+							proc = append(proc, m.Enter)
+							dm = in.Frame.Domain().Global().Discover(m.Mod.Name).(context.Domain)
+							break
+						}
+					}
+					if len(proc) > 0 {
+						break
+					}
+				}
+				assert.For(len(proc) > 0, 40, p.Object().Name())
+				call(proc[0], dm)
+				out = Later(Tail(STOP))
+				return
+			})
+		default:
+			halt.As(100, "wrong proc mode ", p.Object().Mode(), p.Object().Adr(), p.Object().Name())
+		}
+	default:
+		halt.As(100, reflect.TypeOf(p))
+	}
+	return
 }

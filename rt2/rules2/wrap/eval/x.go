@@ -16,6 +16,9 @@ const (
 	END
 )
 
+var Propose func(Do) frame.Sequence
+var Expose func(frame.Sequence) Do
+
 func (n WAIT) Wait() frame.WAIT {
 	switch n {
 	case WRONG:

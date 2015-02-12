@@ -28,7 +28,6 @@ type Statement interface {
 
 type Expression interface {
 	e() Expression
-	Designator
 }
 
 type Designator interface {

@@ -15,6 +15,8 @@ func init() {
 	decision.PrologueFor = prologue
 	decision.EpilogueFor = epilogue
 	decision.AssertFor = test
+	eval.Propose = Propose
+	eval.Expose = Expose
 }
 
 func This(o eval.OUT) (seq frame.Sequence, ret frame.WAIT) {
@@ -33,6 +35,31 @@ func Propose(a eval.Do) frame.Sequence {
 		}
 		in := eval.IN{IR: rt2.NodeOf(fr), Frame: fr, Parent: fr.Parent(), Key: key}
 		return This(a(in))
+	}
+}
+func waiting(n frame.WAIT) eval.WAIT {
+	switch n {
+	case frame.WRONG:
+		return eval.WRONG
+	case frame.STOP:
+		return eval.STOP
+	case frame.LATER:
+		return eval.LATER
+	case frame.NOW:
+		return eval.NOW
+	case frame.BEGIN:
+		return eval.BEGIN
+	case frame.END:
+		return eval.END
+	default:
+		panic(n)
+	}
+}
+
+func Expose(f frame.Sequence) eval.Do {
+	return func(in eval.IN) (out eval.OUT) {
+		s, w := f(in.Frame)
+		return eval.OUT{Do: Expose(s), Next: waiting(w)}
 	}
 }
 
@@ -61,7 +88,7 @@ func epilogue(n node.Node) frame.Sequence {
 	switch n.(type) {
 	case node.Statement:
 		return Propose(eval.EndStatement)
-	case node.ConstantNode, node.VariableNode, node.DyadicNode: //do nothing
+	case node.ConstantNode, node.VariableNode, node.ParameterNode, node.DyadicNode, node.MonadicNode: //do nothing
 	default:
 		halt.As(100, reflect.TypeOf(n))
 	}

@@ -3,6 +3,7 @@ package eval
 import (
 	"fw/cp/constant/operation"
 	"fw/cp/node"
+	"fw/cp/object"
 	"fw/rt2"
 	"fw/rt2/scope"
 	"ypk/assert"
@@ -21,6 +22,15 @@ func getConst(in IN) OUT {
 
 func getVar(in IN) OUT {
 	v := in.IR.(node.VariableNode)
+	rt2.ScopeFor(in.Frame, v.Object().Adr(), func(val scope.Value) {
+		rt2.ValueOf(in.Parent)[v.Adr()] = val
+		rt2.RegOf(in.Parent)[in.Key] = v.Adr()
+	})
+	return End()
+}
+
+func getVarPar(in IN) OUT {
+	v := in.IR.(node.ParameterNode)
 	rt2.ScopeFor(in.Frame, v.Object().Adr(), func(val scope.Value) {
 		rt2.ValueOf(in.Parent)[v.Adr()] = val
 		rt2.RegOf(in.Parent)[in.Key] = v.Adr()
@@ -121,6 +131,32 @@ func getDop(in IN) OUT {
 			return Now(next)
 		}
 	}
-
 	return GetExpression(in, left, op.Left(), short)
+}
+
+func getMop(in IN) OUT {
+	const left = "mop:left"
+	op := in.IR.(node.MonadicNode)
+
+	do := func(in IN) OUT {
+		lv := rt2.ValueOf(in.Frame)[KeyOf(in, left)]
+		var res scope.Value
+		switch op.Operation() {
+		case operation.ALIEN_CONV:
+			if op.Type() != object.NOTYPE {
+				res = scope.Ops.Conv(lv, op.Type())
+			} else {
+				res = scope.Ops.Conv(lv, op.Type(), op.Complex())
+			}
+
+		default:
+			halt.As(100, "unknown op", op.Operation())
+		}
+		assert.For(res != nil, 60)
+		rt2.ValueOf(in.Parent)[op.Adr()] = res
+		rt2.RegOf(in.Parent)[in.Key] = op.Adr()
+		return End()
+	}
+
+	return GetExpression(in, left, op.Left(), do)
 }

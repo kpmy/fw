@@ -14,6 +14,7 @@ type stdDomain struct {
 
 func (d *stdDomain) New() context.Domain { return &stdDomain{global: d.global} }
 
+func (d *stdDomain) Global() context.Domain { return d.global }
 func (d *stdDomain) Attach(name string, x context.ContextAware) {
 	assert.For(x != nil, 20)
 	assert.For(name != context.UNIVERSE, 21)
