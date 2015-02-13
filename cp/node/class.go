@@ -418,6 +418,7 @@ func (v *doNode) self() DoNode { return v }
 
 type rangeNode struct {
 	nodeFields
+	expr
 }
 
 func (v *rangeNode) self() RangeNode { return v }

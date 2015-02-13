@@ -23,6 +23,8 @@ func BeginExpression(in IN) (out OUT) {
 		out = Now(getDop)
 	case node.MonadicNode:
 		out = Now(getMop)
+	case node.RangeNode:
+		out = Now(getRange)
 	case node.Designator:
 		out = Now(BeginDesignator)
 	default:
@@ -45,6 +47,8 @@ func BeginDesignator(in IN) (out OUT) {
 		out = Now(getField)
 	case node.IndexNode:
 		out = Now(getIndex)
+	case node.GuardNode:
+		out = Now(getGuard)
 	default:
 		halt.As(100, reflect.TypeOf(e))
 	}
@@ -130,6 +134,25 @@ func BeginStatement(in IN) (out OUT) {
 			}
 		}
 		out = Now(tail)
+	case node.CompNode:
+		next := n
+		return Now(func(IN) OUT {
+			right := func(in IN) OUT {
+				if next.Right() != nil {
+					rt2.Push(rt2.New(next.Right()), in.Frame)
+					return Later(Tail(STOP))
+				}
+				return End()
+			}
+			left := func(in IN) OUT {
+				if next.Left() != nil {
+					rt2.Push(rt2.New(next.Left()), in.Frame)
+					return Later(right)
+				}
+				return Now(right)
+			}
+			return Now(left)
+		})
 	case node.AssignNode:
 		out = Now(doAssign)
 	case node.CallNode:
@@ -152,6 +175,8 @@ func BeginStatement(in IN) (out OUT) {
 		out = Now(doTrap)
 	case node.WithNode:
 		out = Now(doWith)
+	case node.CaseNode:
+		out = Now(doCase)
 	default:
 		halt.As(100, reflect.TypeOf(n))
 	}
@@ -200,7 +225,7 @@ func EndStatement(in IN) (out OUT) {
 			}
 			return End()
 		})
-	case node.AssignNode, node.ConditionalNode, node.WhileNode, node.RepeatNode, node.ExitNode, node.InitNode, node.WithNode:
+	case node.AssignNode, node.ConditionalNode, node.WhileNode, node.RepeatNode, node.ExitNode, node.InitNode, node.WithNode, node.CaseNode, node.CompNode:
 		out = Now(func(in IN) OUT {
 			next := n.Link()
 			if next != nil {
@@ -213,7 +238,7 @@ func EndStatement(in IN) (out OUT) {
 		})
 	case node.ReturnNode, node.LoopNode: //do nothing
 	default:
-		halt.As(100, reflect.TypeOf(n))
+		halt.As(100, "statement with no end", reflect.TypeOf(n))
 	}
 	if out.Next != WRONG {
 		return out.Do(in)

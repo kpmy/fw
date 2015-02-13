@@ -248,11 +248,13 @@ func (c *tc) MethodList() (ret map[int][]Method) {
 				}
 				if local && po.Link() != nil {
 					for pt := po.Link().Complex(); pt != nil; {
-						if t.Equals(pt) && tmp[po.Name()] == nil {
-							//fmt.Println("method", m.Name, po.Name(), local)
-							tmp[po.Name()] = po
+						if t.Equals(pt) && tmp[pt.Qualident()+"."+po.Name()] == nil {
+							fmt.Println("method", m.Name, pt.Qualident(), po.Name(), local)
+							tmp[pt.Qualident()+"."+po.Name()] = po
 							ret[depth] = append(ret[depth], Method{Enter: et, Obj: po, Mod: m})
 							break
+						} else if t.Equals(pt) {
+							//fmt.Println("double ", pt.Qualident(), po.Name())
 						}
 						if _, ok := pt.(inherited); ok {
 							pt = pt.(inherited).Complex()

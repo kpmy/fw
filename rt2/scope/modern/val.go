@@ -229,6 +229,7 @@ func (a *arr) Get(id scope.Value) scope.Value {
 	case *data:
 		return a.Get(i.val.(scope.Value))
 	case INTEGER:
+		assert.For(int64(i) < a.length, 20)
 		if len(a.val) == 0 {
 			a.val = make([]interface{}, int(a.length))
 		}

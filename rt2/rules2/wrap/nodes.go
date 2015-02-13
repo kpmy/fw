@@ -90,7 +90,7 @@ func epilogue(n node.Node) frame.Sequence {
 	switch n.(type) {
 	case node.Statement:
 		return Propose(eval.EndStatement)
-	case node.ConstantNode, node.VariableNode, node.ParameterNode, node.DyadicNode, node.MonadicNode, node.IfNode, node.ProcedureNode, node.DerefNode, node.FieldNode, node.IndexNode: //do nothing
+	case node.ConstantNode, node.VariableNode, node.ParameterNode, node.DyadicNode, node.MonadicNode, node.IfNode, node.ProcedureNode, node.DerefNode, node.FieldNode, node.IndexNode, node.GuardNode, node.RangeNode: //do nothing
 	default:
 		halt.As(100, "no epilogue for", reflect.TypeOf(n))
 	}

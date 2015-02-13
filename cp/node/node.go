@@ -213,4 +213,5 @@ type DoNode interface {
 type RangeNode interface {
 	self() RangeNode
 	Node
+	Expression
 }

@@ -1,6 +1,7 @@
 package eval
 
 import (
+	"fmt"
 	"fw/cp"
 	"fw/cp/constant"
 	"fw/cp/constant/operation"
@@ -15,10 +16,20 @@ import (
 	"fw/rt2/scope"
 	"fw/utils"
 	"log"
+	"math/big"
 	"reflect"
 	"ypk/assert"
 	"ypk/halt"
 )
+
+func makeTrap(f frame.Frame, err traps.TRAP) (out OUT) {
+	trap := node.New(constant.TRAP, cp.Some()).(node.TrapNode)
+	code := node.New(constant.CONSTANT, cp.Some()).(node.ConstantNode)
+	code.SetData(int32(err))
+	trap.SetLeft(code)
+	rt2.Push(rt2.New(trap), f)
+	return Later(Tail(STOP))
+}
 
 func doEnter(in IN) OUT {
 	e := in.IR.(node.EnterNode)
@@ -125,6 +136,28 @@ func doAssign(in IN) (out OUT) {
 			out = inc_dec_seq(in, operation.MINUS)
 		default:
 			halt.As(100, "wrong left", reflect.TypeOf(a.Left()))
+		}
+	case statement.NEW:
+		obj := a.Left().Object()
+		assert.For(obj != nil, 20)
+		heap := in.Frame.Domain().Discover(context.HEAP).(scope.Manager).Target().(scope.HeapAllocator)
+		if a.Right() != nil {
+			out = GetExpression(in, right, a.Right(), func(in IN) OUT {
+				size := rt2.ValueOf(in.Frame)[KeyOf(in, right)]
+				return GetDesignator(in, left, a.Left(), func(in IN) OUT {
+					v := rt2.ValueOf(in.Frame)[KeyOf(in, left)].(scope.Variable)
+					fn := heap.Allocate(obj, obj.Complex().(object.PointerType), size)
+					v.Set(fn(nil))
+					return End()
+				})
+			})
+		} else {
+			out = GetDesignator(in, left, a.Left(), func(IN) OUT {
+				v := rt2.ValueOf(in.Frame)[KeyOf(in, left)].(scope.Variable)
+				fn := heap.Allocate(obj, obj.Complex().(object.PointerType))
+				v.Set(fn(nil))
+				return End()
+			})
 		}
 	default:
 		halt.As(100, "unsupported assign statement", a.Statement())
@@ -343,7 +376,6 @@ func doCall(in IN) (out OUT) {
 			}
 		case object.TYPE_PROC:
 			//sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
-			assert.For(!p.Super(), 20)
 			out = GetExpression(in, right, c.Right(), func(IN) (out OUT) {
 				var (
 					proc []node.Node
@@ -358,13 +390,19 @@ func doCall(in IN) (out OUT) {
 				}
 				assert.For(ct != nil, 40, id, v, t)
 				x := ml.NewTypeCalc()
-				x.ConnectTo(c)
-				for _, ml := range x.MethodList() {
+				x.ConnectTo(ct)
+				sup := p.Super()
+				for level, ml := range x.MethodList() {
 					for _, m := range ml {
+						fmt.Println(m.Obj.Name(), level)
 						if m.Obj.Name() == p.Object().Name() {
-							proc = append(proc, m.Enter)
+							if !sup {
+								proc = append(proc, m.Enter)
+								break
+							} else {
+								sup = false //супервызов должен быть вторым методом с тем же именем
+							}
 							dm = in.Frame.Domain().Global().Discover(m.Mod.Name).(context.Domain)
-							break
 						}
 					}
 					if len(proc) > 0 {
@@ -402,38 +440,121 @@ func doCall(in IN) (out OUT) {
 	return
 }
 
+const isFlag = 1700
+
 func doWith(in IN) OUT {
-	const left = "return:left"
+	const left = "with:left"
 	w := in.IR.(node.WithNode)
 	f := in.Frame
-	rt2.RegOf(f)[0] = w.Left() //if
-
-	seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
-		last := rt2.RegOf(f)[0].(node.Node)
-		done := scope.GoTypeFrom(rt2.ValueOf(f)[last.Adr()]).(bool)
-		rt2.ValueOf(f)[last.Adr()] = nil
+	rt2.RegOf(f)[isFlag] = w.Left() //if
+	var seq Do
+	seq = func(in IN) OUT {
+		last := rt2.RegOf(f)[isFlag].(node.Node)
+		id := KeyOf(in, left)
+		v := rt2.ValueOf(f)[id]
+		assert.For(v != nil, 40)
+		done := scope.GoTypeFrom(v).(bool)
+		rt2.ValueOf(f)[id] = nil
 		if done && last.Right() != nil {
 			rt2.Push(rt2.New(last.Right()), f)
-			return frame.Tail(frame.STOP), frame.LATER
+			return Later(Tail(STOP))
 		} else if last.Right() == nil {
-			return frame.End()
+			return End()
 		} else if last.Link() != nil { //elsif
-			rt2.RegOf(f)[0] = last.Link()
-			rt2.Push(rt2.New(last.Link()), f)
-			rt2.Assert(f, func(f frame.Frame) (bool, int) {
-				return rt2.ValueOf(f)[last.Link().Adr()] != nil, 61
-			})
-			return seq, frame.LATER
-		} else if n.Right() != nil { //else
-			rt2.Push(rt2.New(n.Right()), f)
-			return frame.Tail(frame.STOP), frame.LATER
-		} else if n.Right() == nil {
-			return frame.End()
-		} else if last == n.Right() {
-			return frame.End()
+			rt2.RegOf(f)[isFlag] = last.Link()
+			return Later(func(IN) OUT { return GetStrange(in, left, last.Link(), seq) })
+		} else if w.Right() != nil { //else
+			rt2.Push(rt2.New(w.Right()), f)
+			return Later(Tail(STOP))
+		} else if w.Right() == nil {
+			return End()
+		} else if last == w.Right() {
+			return End()
 		} else {
 			panic("conditional sequence wrong")
 		}
 	}
-	return seq, frame.LATER
+	return GetStrange(in, left, w.Left(), seq)
+}
+
+func int32Of(x interface{}) (a int32) {
+	//fmt.Println(reflect.TypeOf(x))
+	switch v := x.(type) {
+	case *int32:
+		z := *x.(*int32)
+		a = z
+	case int32:
+		a = x.(int32)
+	case *big.Int:
+		a = int32(v.Int64())
+	default:
+		//panic(fmt.Sprintln("unsupported type", reflect.TypeOf(x)))
+	}
+	return a
+}
+
+func doCase(in IN) OUT {
+	const left = "case:left"
+	c := in.IR.(node.CaseNode)
+
+	var e int
+
+	do := func(in IN) (out OUT) {
+		cond := c.Right().(node.ElseNode)
+		//fmt.Println("case?", e, cond.Min(), cond.Max())
+		if e < cond.Min() || e > cond.Max() { //case?
+			if cond.Right() != nil {
+				rt2.Push(rt2.New(cond.Right()), in.Frame)
+			}
+			out.Do = Tail(STOP)
+			out.Next = LATER
+		} else {
+			for next := cond.Left(); next != nil && out.Do == nil; next = next.Link() {
+				var ok bool
+				//				_c := next.Left()
+				for _c := next.Left(); _c != nil && !ok; _c = _c.Link() {
+					c := _c.(node.ConstantNode)
+					//fmt.Println("const", c.Data(), c.Min(), c.Max())
+					if (c.Min() != nil) && (c.Max() != nil) {
+						//fmt.Println(e, *c.Max(), "..", *c.Min())
+						ok = e >= *c.Min() && e <= *c.Max()
+					} else {
+						//fmt.Println(e, c.Data())
+						ok = int32Of(c.Data()) == int32(e)
+					}
+				}
+				//fmt.Println(ok)
+				if ok {
+					rt2.Push(rt2.New(next.Right()), in.Frame)
+					out.Do = Tail(STOP)
+					out.Next = LATER
+				}
+			}
+			if out.Do == nil && cond.Right() != nil {
+				rt2.Push(rt2.New(cond.Right()), in.Frame)
+				out.Do = Tail(STOP)
+				out.Next = LATER
+			}
+		}
+		assert.For(out.Do != nil, 60)
+		return out
+	}
+
+	return GetExpression(in, left, c.Left(), func(IN) (out OUT) {
+		v := rt2.ValueOf(in.Frame)[KeyOf(in, left)]
+		_x := scope.GoTypeFrom(v)
+		switch x := _x.(type) {
+		case nil:
+			panic("nil")
+		case int32:
+			e = int(x)
+			//fmt.Println("case", e)
+			out.Do = do
+			out.Next = NOW
+			return out
+		default:
+			halt.As(100, "unsupported case expr", reflect.TypeOf(_x))
+		}
+		panic(0)
+	})
 }

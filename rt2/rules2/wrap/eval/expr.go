@@ -5,8 +5,10 @@ import (
 	"fw/cp/constant/operation"
 	"fw/cp/node"
 	"fw/cp/object"
+	"fw/cp/traps"
 	"fw/rt2"
 	"fw/rt2/scope"
+	"math/big"
 	"reflect"
 	"ypk/assert"
 	"ypk/halt"
@@ -96,7 +98,7 @@ func getProc(in IN) OUT {
 func getDeref(in IN) OUT {
 	const left = "design:left"
 	d := in.IR.(node.DerefNode)
-	return GetDesignator(in, left, d.Left(), func(in IN) OUT {
+	return GetDesignator(in, left, d.Left(), func(in IN) (out OUT) {
 		_v := rt2.ValueOf(in.Frame)[KeyOf(in, left)]
 		switch v := _v.(type) {
 		case scope.Array:
@@ -116,6 +118,17 @@ func getDeref(in IN) OUT {
 			default:
 				halt.As(100, t, reflect.TypeOf(cc))
 			}
+		case scope.Pointer:
+			assert.For(d.Ptr(), 41)
+			rec := v.Get()
+			rt2.ValueOf(in.Parent)[d.Adr()] = rec
+			rt2.RegOf(in.Parent)[in.Key] = d.Adr()
+			if scope.GoTypeFrom(rec) == nil {
+				out = makeTrap(in.Frame, traps.NILderef)
+			} else {
+				out = End()
+			}
+			return out
 		default:
 			halt.As(100, reflect.TypeOf(v))
 		}
@@ -237,10 +250,7 @@ func getMop(in IN) OUT {
 		case operation.NOT:
 			res = scope.Ops.Not(lv)
 		case operation.IS:
-			/*sc := rt2.ScopeFor(f, n.Left().Object().Adr())
-			rt2.ValueOf(f.Parent())[n.Adr()] = scope.Ops.Is(sc.Select(n.Left().Object().Adr()), n.Object().Complex())
-			return frame.End()*/
-			panic(0)
+			res = scope.Ops.Is(lv, op.Object().Complex())
 		case operation.ABS:
 			res = scope.Ops.Abs(lv)
 		case operation.ODD:
@@ -261,4 +271,50 @@ func getMop(in IN) OUT {
 	}
 
 	return GetExpression(in, left, op.Left(), do)
+}
+
+func getGuard(in IN) OUT {
+	const left = "guard:left"
+	g := in.IR.(node.GuardNode)
+	return GetDesignator(in, left, g.Left(), func(IN) OUT {
+		v := rt2.ValueOf(in.Frame)[KeyOf(in, left)]
+		assert.For(v != nil, 20)
+		if scope.GoTypeFrom(scope.Ops.Is(v, g.Type())).(bool) {
+			rt2.ValueOf(in.Parent)[g.Adr()] = v
+			rt2.RegOf(in.Parent)[in.Key] = g.Adr()
+			return End()
+		} else {
+			return makeTrap(in.Frame, 0)
+		}
+
+	})
+}
+
+func bit_range(_f scope.Value, _t scope.Value) scope.Value {
+	f := scope.GoTypeFrom(_f).(int32)
+	t := scope.GoTypeFrom(_t).(int32)
+	ret := big.NewInt(0)
+	for i := f; i <= t; i++ {
+		ret = ret.SetBit(ret, int(i), 1)
+	}
+	fmt.Println("bits", ret)
+	return scope.TypeFromGo(ret)
+}
+
+func getRange(in IN) OUT {
+	const (
+		left  = "range:left"
+		right = "range:right"
+	)
+	r := in.IR.(node.RangeNode)
+	return GetExpression(in, left, r.Left(), func(IN) OUT {
+		return GetExpression(in, right, r.Right(), func(in IN) OUT {
+			lv := rt2.ValueOf(in.Frame)[KeyOf(in, left)]
+			rv := rt2.ValueOf(in.Frame)[KeyOf(in, right)]
+			res := bit_range(lv, rv)
+			rt2.ValueOf(in.Parent)[r.Adr()] = res
+			rt2.RegOf(in.Parent)[in.Key] = r.Adr()
+			return End()
+		})
+	})
 }
