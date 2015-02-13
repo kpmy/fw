@@ -1,14 +1,20 @@
 package eval
 
 import (
+	"fw/cp"
+	"fw/cp/constant"
+	"fw/cp/constant/operation"
 	"fw/cp/constant/statement"
 	"fw/cp/node"
 	"fw/cp/object"
+	"fw/cp/traps"
 	"fw/rt2"
 	"fw/rt2/context"
+	"fw/rt2/frame"
 	rtm "fw/rt2/module"
 	"fw/rt2/scope"
 	"fw/utils"
+	"log"
 	"reflect"
 	"ypk/assert"
 	"ypk/halt"
@@ -66,6 +72,26 @@ func doEnter(in IN) OUT {
 	return Now(next)
 }
 
+func inc_dec_seq(in IN, code operation.Operation) OUT {
+	n := in.IR
+	a := node.New(constant.ASSIGN, cp.Some()).(node.AssignNode)
+	a.SetStatement(statement.ASSIGN)
+	a.SetLeft(n.Left())
+	op := node.New(constant.DYADIC, cp.Some()).(node.OperationNode)
+	op.SetOperation(code)
+	op.SetLeft(n.Left())
+	op.SetRight(n.Right())
+	a.SetRight(op)
+	rt2.Push(rt2.New(a), in.Frame)
+	/*seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
+		sc := f.Domain().Discover(context.SCOPE).(scope.Manager)
+		sc.Update(n.Left().Object().Adr(), scope.Simple(rt2.ValueOf(f)[op.Adr()]))
+		return frame.End()
+	}
+	ret = frame.LATER */
+	return Later(Tail(STOP))
+}
+
 func doAssign(in IN) (out OUT) {
 	const (
 		right = "assign:right"
@@ -86,6 +112,20 @@ func doAssign(in IN) (out OUT) {
 				return End()
 			})
 		})
+	case statement.INC, statement.INCL:
+		switch a.Left().(type) {
+		case node.VariableNode, node.ParameterNode, node.FieldNode:
+			out = inc_dec_seq(in, operation.PLUS)
+		default:
+			halt.As(100, "wrong left", reflect.TypeOf(a.Left()))
+		}
+	case statement.DEC, statement.EXCL:
+		switch a.Left().(type) {
+		case node.VariableNode, node.ParameterNode, node.FieldNode:
+			out = inc_dec_seq(in, operation.MINUS)
+		default:
+			halt.As(100, "wrong left", reflect.TypeOf(a.Left()))
+		}
 	default:
 		halt.As(100, "unsupported assign statement", a.Statement())
 	}
@@ -138,6 +178,95 @@ func doCondition(in IN) OUT {
 	}
 
 	return GetStrange(in, left, i.Left(), next)
+}
+
+func doWhile(in IN) OUT {
+	const left = "while:left"
+	w := in.IR.(node.WhileNode)
+	var next Do
+
+	next = func(IN) OUT {
+		key := KeyOf(in, left)
+		fi := rt2.ValueOf(in.Frame)[key]
+		rt2.ValueOf(in.Frame)[key] = nil
+		done := scope.GoTypeFrom(fi).(bool)
+		if done && w.Right() != nil {
+			rt2.Push(rt2.New(w.Right()), in.Frame)
+			return Later(func(IN) OUT { return GetExpression(in, left, w.Left(), next) })
+		} else if !done {
+			return End()
+		} else if w.Right() == nil {
+			return End()
+		} else {
+			panic("unexpected while seq")
+		}
+	}
+
+	return GetExpression(in, left, w.Left(), next)
+}
+
+const exitFlag = 1812
+
+func doExit(in IN) OUT {
+	in.Frame.Root().ForEach(func(f frame.Frame) (ok bool) {
+		n := rt2.NodeOf(f)
+		_, ok = n.(node.LoopNode)
+		if ok {
+			rt2.RegOf(f)[exitFlag] = true
+		}
+		ok = !ok
+		return ok
+	})
+	return End()
+}
+
+func doLoop(in IN) OUT {
+	l := in.IR.(node.LoopNode)
+	exit, ok := rt2.RegOf(in.Frame)[exitFlag].(bool)
+	if ok && exit {
+		return End()
+	}
+	if l.Left() != nil {
+		rt2.Push(rt2.New(l.Left()), in.Frame)
+		return Later(doLoop)
+	} else if l.Left() == nil {
+		return End()
+	} else {
+		panic("unexpected loop seq")
+	}
+}
+
+func doRepeat(in IN) OUT {
+	const right = "return:right"
+	r := in.IR.(node.RepeatNode)
+	rt2.ValueOf(in.Frame)[r.Right().Adr()] = scope.TypeFromGo(false)
+	var next Do
+	next = func(in IN) OUT {
+		fi := rt2.ValueOf(in.Frame)[r.Right().Adr()]
+		done := scope.GoTypeFrom(fi).(bool)
+		if !done && r.Left() != nil {
+			rt2.Push(rt2.New(r.Left()), in.Frame)
+			return Later(func(IN) OUT { return GetExpression(in, right, r.Right(), next) })
+		} else if done {
+			return End()
+		} else if r.Left() == nil {
+			return End()
+		} else {
+			panic("unexpected repeat seq")
+		}
+	}
+	return Now(next)
+}
+
+func doTrap(in IN) OUT {
+	const left = "trap:left"
+
+	return GetExpression(in, left, in.IR.Left(), func(IN) OUT {
+		val := rt2.ValueOf(in.Frame)[KeyOf(in, left)]
+		log.Println("TRAP:", traps.This(scope.GoTypeFrom(val)))
+		return Now(Tail(WRONG))
+	})
+
 }
 
 func doReturn(in IN) OUT {
@@ -250,8 +379,61 @@ func doCall(in IN) (out OUT) {
 		default:
 			halt.As(100, "wrong proc mode ", p.Object().Mode(), p.Object().Adr(), p.Object().Name())
 		}
+	case node.VariableNode:
+		m := rtm.DomainModule(in.Frame.Domain())
+		sc := rt2.ScopeFor(in.Frame, p.Object().Adr())
+		obj := scope.GoTypeFrom(sc.Select(p.Object().Adr()))
+
+		if obj, ok := obj.(object.Object); ok {
+			proc := m.NodeByObject(obj)
+			call(proc[0], nil)
+		} else {
+			name := p.Object().Name()
+			switch {
+			case sys[name] != nil:
+				return syscall(in.Frame)
+			default:
+				halt.As(100, "unknown sysproc variable", name)
+			}
+		}
 	default:
 		halt.As(100, reflect.TypeOf(p))
 	}
 	return
+}
+
+func doWith(in IN) OUT {
+	const left = "return:left"
+	w := in.IR.(node.WithNode)
+	f := in.Frame
+	rt2.RegOf(f)[0] = w.Left() //if
+
+	seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
+		last := rt2.RegOf(f)[0].(node.Node)
+		done := scope.GoTypeFrom(rt2.ValueOf(f)[last.Adr()]).(bool)
+		rt2.ValueOf(f)[last.Adr()] = nil
+		if done && last.Right() != nil {
+			rt2.Push(rt2.New(last.Right()), f)
+			return frame.Tail(frame.STOP), frame.LATER
+		} else if last.Right() == nil {
+			return frame.End()
+		} else if last.Link() != nil { //elsif
+			rt2.RegOf(f)[0] = last.Link()
+			rt2.Push(rt2.New(last.Link()), f)
+			rt2.Assert(f, func(f frame.Frame) (bool, int) {
+				return rt2.ValueOf(f)[last.Link().Adr()] != nil, 61
+			})
+			return seq, frame.LATER
+		} else if n.Right() != nil { //else
+			rt2.Push(rt2.New(n.Right()), f)
+			return frame.Tail(frame.STOP), frame.LATER
+		} else if n.Right() == nil {
+			return frame.End()
+		} else if last == n.Right() {
+			return frame.End()
+		} else {
+			panic("conditional sequence wrong")
+		}
+	}
+	return seq, frame.LATER
 }

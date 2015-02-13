@@ -37,6 +37,14 @@ func BeginDesignator(in IN) (out OUT) {
 		out = Now(getVar)
 	case node.ParameterNode:
 		out = Now(getVarPar)
+	case node.ProcedureNode:
+		out = Now(getProc)
+	case node.DerefNode:
+		out = Now(getDeref)
+	case node.FieldNode:
+		out = Now(getField)
+	case node.IndexNode:
+		out = Now(getIndex)
 	default:
 		halt.As(100, reflect.TypeOf(e))
 	}
@@ -130,6 +138,20 @@ func BeginStatement(in IN) (out OUT) {
 		out = Now(doReturn)
 	case node.ConditionalNode:
 		out = Now(doCondition)
+	case node.WhileNode:
+		out = Now(doWhile)
+	case node.RepeatNode:
+		out = Now(doRepeat)
+	case node.LoopNode:
+		out = Now(doLoop)
+	case node.ExitNode:
+		out = Now(doExit)
+	case node.InitNode:
+		out = Later(Tail(STOP))
+	case node.TrapNode:
+		out = Now(doTrap)
+	case node.WithNode:
+		out = Now(doWith)
 	default:
 		halt.As(100, reflect.TypeOf(n))
 	}
@@ -155,7 +177,7 @@ func EndStatement(in IN) (out OUT) {
 			}
 			return End()
 		})
-	case node.AssignNode, node.CallNode, node.ConditionalNode:
+	case node.CallNode:
 		out = Now(func(in IN) OUT {
 			next := n.Link()
 			if next != nil {
@@ -178,7 +200,18 @@ func EndStatement(in IN) (out OUT) {
 			}
 			return End()
 		})
-	case node.ReturnNode: //do nothing
+	case node.AssignNode, node.ConditionalNode, node.WhileNode, node.RepeatNode, node.ExitNode, node.InitNode, node.WithNode:
+		out = Now(func(in IN) OUT {
+			next := n.Link()
+			if next != nil {
+				nf := rt2.New(next)
+				if nf != nil {
+					in.Frame.Root().PushFor(nf, in.Parent)
+				}
+			}
+			return End()
+		})
+	case node.ReturnNode, node.LoopNode: //do nothing
 	default:
 		halt.As(100, reflect.TypeOf(n))
 	}

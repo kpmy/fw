@@ -81,7 +81,7 @@ func prologue(n node.Node) frame.Sequence {
 	case node.IfNode:
 		return Propose(eval.BeginStrange)
 	default:
-		halt.As(100, reflect.TypeOf(n))
+		halt.As(100, "no prologue for", reflect.TypeOf(n))
 	}
 	panic(0)
 }
@@ -90,9 +90,9 @@ func epilogue(n node.Node) frame.Sequence {
 	switch n.(type) {
 	case node.Statement:
 		return Propose(eval.EndStatement)
-	case node.ConstantNode, node.VariableNode, node.ParameterNode, node.DyadicNode, node.MonadicNode, node.IfNode: //do nothing
+	case node.ConstantNode, node.VariableNode, node.ParameterNode, node.DyadicNode, node.MonadicNode, node.IfNode, node.ProcedureNode, node.DerefNode, node.FieldNode, node.IndexNode: //do nothing
 	default:
-		halt.As(100, reflect.TypeOf(n))
+		halt.As(100, "no epilogue for", reflect.TypeOf(n))
 	}
 	return nil
 }
