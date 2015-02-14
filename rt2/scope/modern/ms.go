@@ -73,42 +73,6 @@ func (a *area) top() *level {
 	return nil
 }
 
-func (a *area) Exists(id cp.ID) bool {
-	var ret scope.Value
-	var sel func(x int, id cp.ID)
-	sel = func(x int, id cp.ID) {
-		utils.PrintScope("SELECT", id)
-		for i := x - 1; i >= 0 && ret == nil; i-- {
-			l := a.data[i]
-			k := 0
-			if l.ready {
-				k = l.k[id]
-				if k != 0 {
-					ret = l.v[k]
-					if ret == nil { //ref?
-						r := l.r[k]
-						if r != nil {
-							if l.l[k] != nil { //rec
-								panic(0)
-							} else {
-								utils.PrintScope("ref")
-								if r.(*ref).sc == a {
-									sel(i, r.(*ref).id)
-								} else {
-									ret = r.(*ref).sc.Select(r.(*ref).id)
-								}
-							}
-							break
-						}
-					}
-				}
-			}
-		}
-	}
-	sel(len(a.data), id)
-	return ret != nil
-}
-
 func (a *area) Provide(x interface{}) scope.ValueFor {
 	return func(scope.Value) scope.Value {
 		switch z := x.(type) {
@@ -128,6 +92,7 @@ func (l *level) alloc(d context.Domain, mod *cpm.Module, root node.Node, ol []ob
 	l.root = root
 	ml := d.Discover(context.UNIVERSE).(context.Domain).Discover(context.MOD).(rtm.List)
 	for _, o := range ol {
+		fmt.Println(o.Adr())
 		imp := mod.ImportOf(o)
 		utils.PrintScope(reflect.TypeOf(o), o.Adr())
 		_, field := o.(object.FieldObject)
@@ -312,8 +277,8 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (frame.Sequence, frame
 				case node.OperationNode:
 					nf := rt2.New(nv)
 					rt2.Push(nf, f)
-					rt2.Assert(f, func(f frame.Frame) (bool, int) {
-						return rt2.ValueOf(f)[nv.Adr()] != nil, 59
+					rt2.Assert(f, func(f frame.Frame, do frame.Condition) {
+						do(rt2.ValueOf(f)[nv.Adr()] != nil, 59)
 					})
 					rt2.ReplaceDomain(nf, global)
 					seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
@@ -326,8 +291,8 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (frame.Sequence, frame
 					nf := rt2.New(nv)
 					rt2.Push(nf, f)
 					rt2.ReplaceDomain(nf, global)
-					rt2.Assert(f, func(f frame.Frame) (bool, int) {
-						return rt2.ValueOf(f)[nv.Adr()] != nil || rt2.RegOf(f)["RETURN"] != nil, 60
+					rt2.Assert(f, func(f frame.Frame, do frame.Condition) {
+						do(rt2.ValueOf(f)[nv.Adr()] != nil || rt2.RegOf(f)["RETURN"] != nil, 60)
 					})
 					seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
 						v := rt2.ValueOf(f)[nv.Adr()]
@@ -343,8 +308,8 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (frame.Sequence, frame
 					nf := rt2.New(nv)
 					rt2.Push(nf, f)
 					rt2.ReplaceDomain(nf, global)
-					rt2.Assert(f, func(f frame.Frame) (bool, int) {
-						return rt2.ValueOf(f)[nv.Adr()] != nil, 64
+					rt2.Assert(f, func(f frame.Frame, do frame.Condition) {
+						do(rt2.ValueOf(f)[nv.Adr()] != nil, 64)
 					})
 					seq = func(f frame.Frame) (seq frame.Sequence, ret frame.WAIT) {
 						sc := rt2.ScopeFor(f, nv.Left().Object().Adr())
@@ -362,13 +327,14 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (frame.Sequence, frame
 				switch nv := val.(type) {
 				case node.VariableNode, node.ParameterNode:
 					old := l.r[l.k[o.Adr()]].(*ref)
+					fmt.Println("reref", nv.Object().Adr())
 					l.r[l.k[o.Adr()]] = &ref{link: old.link, sc: sm, id: nv.Object().Adr()}
 				case node.FieldNode:
 					nf := rt2.New(nv)
 					rt2.Push(nf, f)
 					rt2.ReplaceDomain(nf, global)
-					rt2.Assert(f, func(f frame.Frame) (bool, int) {
-						return rt2.ValueOf(f)[nv.Adr()] != nil, 60
+					rt2.Assert(f, func(f frame.Frame, do frame.Condition) {
+						do(rt2.ValueOf(f)[nv.Adr()] != nil, 60)
 					})
 					seq = func(f frame.Frame) (frame.Sequence, frame.WAIT) {
 						v := rt2.ValueOf(f)[nv.Adr()]
@@ -393,8 +359,8 @@ func (a *salloc) Initialize(n node.Node, par scope.PARAM) (frame.Sequence, frame
 					}
 				case node.DerefNode:
 					rt2.Push(rt2.New(nv), f)
-					rt2.Assert(f, func(f frame.Frame) (bool, int) {
-						return rt2.ValueOf(f)[nv.Adr()] != nil, 61
+					rt2.Assert(f, func(f frame.Frame, do frame.Condition) {
+						do(rt2.ValueOf(f)[nv.Adr()] != nil, 61)
 					})
 					dn := next
 					old := l.r[l.k[dn.Adr()]].(*ref)
@@ -492,7 +458,7 @@ func (a *area) Select(id cp.ID, val ...scope.ValueOf) (ret scope.Value) {
 								if r.(*ref).sc == a {
 									sel(i, r.(*ref).id)
 								} else {
-									ret = r.(*ref).sc.Select(r.(*ref).id)
+									ret = r.(*ref).sc.Select(r.(*ref).id, val...)
 								}
 							}
 							break
@@ -506,6 +472,45 @@ func (a *area) Select(id cp.ID, val ...scope.ValueOf) (ret scope.Value) {
 	}
 	sel(len(a.data), id)
 	assert.For(ret != nil, 60)
+	return ret
+}
+
+func (a *area) Exists(id cp.ID) bool {
+	var ret bool
+	var sel func(x int, id cp.ID)
+	sel = func(x int, id cp.ID) {
+		utils.PrintScope("SEARCH", id)
+		fmt.Println("SEARCH", id)
+		for i := x - 1; i >= 0 && !ret; i-- {
+			l := a.data[i]
+			k := 0
+			if l.ready {
+				k = l.k[id]
+				if k != 0 {
+					ret = l.v[k] != nil
+					if !ret { //ref?
+						r := l.r[k]
+						if r != nil {
+							if l.l[k] != nil { //rec
+								panic(0)
+							} else {
+								utils.PrintScope("ref")
+								if r.(*ref).sc == a {
+									fmt.Println("SEARCH REF", r.(*ref).id)
+									sel(i, r.(*ref).id)
+								} else {
+									fmt.Println("SEARCH REF", r.(*ref).id)
+									ret = r.(*ref).sc.Exists(r.(*ref).id)
+								}
+							}
+							break
+						}
+					}
+				}
+			}
+		}
+	}
+	sel(len(a.data), id)
 	return ret
 }
 

@@ -158,7 +158,6 @@ func getDop(in IN) OUT {
 			res = scope.Ops.Eq(l, r)
 		case operation.LESSER:
 			res = scope.Ops.Lss(l, r)
-			fmt.Println(res, l, r)
 		case operation.LESS_EQUAL:
 			res = scope.Ops.Leq(l, r)
 		case operation.LEN:

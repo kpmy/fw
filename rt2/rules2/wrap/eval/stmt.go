@@ -1,7 +1,6 @@
 package eval
 
 import (
-	"fmt"
 	"fw/cp"
 	"fw/cp/constant"
 	"fw/cp/constant/operation"
@@ -340,10 +339,15 @@ func doCall(in IN) (out OUT) {
 		out = Later(func(in IN) OUT {
 			if in.Key != nil {
 				val := rt2.ValueOf(in.Frame)[c.Left().Object().Adr(0, 0)]
-				assert.For(val != nil, 40, rt2.ValueOf(in.Frame))
-				rt2.ValueOf(in.Parent)[c.Adr()] = val
-				rt2.RegOf(in.Parent)[in.Key] = c.Adr()
-				rt2.ValueOf(in.Parent)[c.Adr()] = val
+				if val == nil {
+					if rv, _ := rt2.RegOf(in.Frame)[context.RETURN].(scope.Value); rv != nil {
+						val = rv
+					}
+				}
+				assert.For(val != nil, 40, in.Key, rt2.RegOf(in.Frame), rt2.ValueOf(in.Frame), rt2.RegOf(in.Parent), rt2.ValueOf(in.Parent))
+				id := cp.ID(cp.Some())
+				rt2.ValueOf(in.Parent)[id] = val
+				rt2.RegOf(in.Parent)[in.Key] = id
 			}
 			return End()
 		})
@@ -355,9 +359,9 @@ func doCall(in IN) (out OUT) {
 		ml := in.Frame.Domain().Global().Discover(context.MOD).(rtm.List)
 		switch p.Object().Mode() {
 		case object.LOCAL_PROC, object.EXTERNAL_PROC:
-			if imp := m.ImportOf(p.Object()); imp == "" || imp == m.Name {
+			if imp := p.Object().Imp(); imp == "" || imp == m.Name {
 				proc := m.NodeByObject(p.Object())
-				assert.For(proc != nil, 40)
+				assert.For(proc != nil, 40, m.Name, imp, p.Object().Imp(), p.Object().Adr(0, 0), p.Object().Name())
 				call(proc[0], nil)
 			} else {
 				m := ml.Loaded(imp)
@@ -385,16 +389,15 @@ func doCall(in IN) (out OUT) {
 				v := rt2.ValueOf(in.Frame)[id]
 				t, ct := scope.Ops.TypeOf(v)
 				if ct == nil {
-					panic(0)
-					//return thisTrap(f, traps.Default)
+					return makeTrap(in.Frame, traps.Default)
 				}
 				assert.For(ct != nil, 40, id, v, t)
 				x := ml.NewTypeCalc()
 				x.ConnectTo(ct)
 				sup := p.Super()
-				for level, ml := range x.MethodList() {
+				for _, ml := range x.MethodList() {
 					for _, m := range ml {
-						fmt.Println(m.Obj.Name(), level)
+						//fmt.Println(m.Obj.Name(), m.Obj.Adr())
 						if m.Obj.Name() == p.Object().Name() {
 							if !sup {
 								proc = append(proc, m.Enter)
@@ -429,7 +432,7 @@ func doCall(in IN) (out OUT) {
 			name := p.Object().Name()
 			switch {
 			case sys[name] != nil:
-				return syscall(in.Frame)
+				return syscall(in)
 			default:
 				halt.As(100, "unknown sysproc variable", name)
 			}

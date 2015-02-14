@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"fw/cp"
 	"fw/cp/constant"
-	cpm "fw/cp/module"
 	"fw/cp/node"
 	"fw/cp/object"
 	"fw/rt2"
-	"fw/rt2/context"
 	"fw/rt2/frame"
 	rtm "fw/rt2/module"
 	"fw/rt2/scope"
@@ -20,7 +18,7 @@ import (
 	"ypk/mathe"
 )
 
-var sys map[string]func(f frame.Frame, par node.Node) OUT
+var sys map[string]func(IN, node.Node) OUT
 
 type Msg struct {
 	Type    string
@@ -46,9 +44,9 @@ func callHandler(f frame.Frame, obj object.Object, data interface{}) {
 	rt2.Push(rt2.New(cn), f)
 }
 
-func go_process(f frame.Frame, par node.Node) OUT {
+func go_process(in IN, par node.Node) OUT {
 	assert.For(par != nil, 20)
-	sm := rt2.ThisScope(f)
+	sm := rt2.ThisScope(in.Frame)
 	do := func(val string) {
 		if val != "" {
 			msg := &Msg{}
@@ -56,23 +54,11 @@ func go_process(f frame.Frame, par node.Node) OUT {
 				switch msg.Type {
 				case "log":
 					fmt.Print(msg.Data)
-					callHandler(f, scope.FindObjByName(sm, "go_handler"), `{"type":"log"}`)
+					callHandler(in.Frame, scope.FindObjByName(sm, "go_handler"), `{"type":"log"}`)
 				case "core":
 					switch msg.Command {
 					case "load":
-						panic(0)
-						//fmt.Println("try to load", msg.Data)
-						glob := f.Domain().Discover(context.UNIVERSE).(context.Domain)
-						modList := glob.Discover(context.MOD).(rtm.List)
-						//						fl := glob.Discover(context.MT).(*flow)
-						ml := make([]*cpm.Module, 0)
-						_, err := modList.Load(msg.Data, func(m *cpm.Module) {
-							ml = append(ml, m)
-						})
-						for i := len(ml) - 1; i >= 0; i-- {
-							//							fl.grow(glob, ml[i])
-						}
-						assert.For(err == nil, 60)
+						LoadMod(in.Frame, msg.Data)
 					default:
 						halt.As(100, msg.Command)
 					}
@@ -84,42 +70,23 @@ func go_process(f frame.Frame, par node.Node) OUT {
 			}
 		}
 	}
-	var val string
-	switch p := par.(type) {
-	case node.ConstantNode:
-		val = par.(node.ConstantNode).Data().(string)
-		do(val)
+	const left = "sys:left"
+	return GetExpression(in, left, par, func(IN) OUT {
+		val := rt2.ValueOf(in.Frame)[KeyOf(in, left)]
+		assert.For(val != nil, 20)
+		do(scope.GoTypeFrom(val).(string))
 		return Later(Tail(STOP))
-	case node.VariableNode, node.ParameterNode:
-		val = scope.GoTypeFrom(sm.Select(p.Object().Adr())).(string)
-		do(val)
-		return Later(Tail(STOP))
-	case node.DerefNode:
-		panic(0)
-		rt2.Push(rt2.New(p), f)
-		/*		return This(expectExpr(f, p, func(...IN) (out OUT) {
-				v := rt2.ValueOf(f)[p.Adr()]
-				assert.For(v != nil, 60)
-				val = scope.GoTypeFrom(v).(string)
-				do(val)
-				out.do = Tail(STOP)
-				out.next = LATER
-				return out
-			})) */
-	default:
-		halt.As(100, "unsupported param", reflect.TypeOf(p))
-	}
-	panic(0)
+	})
 }
 
-func go_math(f frame.Frame, par node.Node) OUT {
+func go_math(in IN, par node.Node) OUT {
 	const (
 		LN   = 1.0
 		MANT = 2.0
 		EXP  = 3.0
 	)
 	assert.For(par != nil, 20)
-	sm := rt2.ThisScope(f)
+	sm := rt2.ThisScope(in.Frame)
 	res := math.NaN()
 	switch p := par.(type) {
 	case node.VariableNode:
@@ -139,18 +106,22 @@ func go_math(f frame.Frame, par node.Node) OUT {
 	default:
 		halt.As(100, reflect.TypeOf(p))
 	}
-	rt2.RegOf(f.Parent())[context.RETURN] = scope.TypeFromGo(res)
+	id := cp.ID(cp.Some())
+	rt2.RegOf(in.Parent)[in.Key] = id
+	rt2.ValueOf(in.Parent)[id] = scope.TypeFromGo(res)
 	return End()
 }
 
 func init() {
-	sys = make(map[string]func(f frame.Frame, par node.Node) OUT)
+	sys = make(map[string]func(IN, node.Node) OUT)
 	sys["go_process"] = go_process
 	sys["go_math"] = go_math
 }
 
-func syscall(f frame.Frame) OUT {
-	n := rt2.NodeOf(f)
+var LoadMod func(frame.Frame, string)
+
+func syscall(in IN) OUT {
+	n := in.IR
 	name := n.Left().Object().Name()
-	return sys[name](f, n.Right())
+	return sys[name](in, n.Right())
 }

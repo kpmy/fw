@@ -2,13 +2,15 @@
 package rules2
 
 import (
-	"fw/cp/module"
+	cpm "fw/cp/module"
 	"fw/rt2"
 	"fw/rt2/context"
 	"fw/rt2/decision"
 	"fw/rt2/frame"
 	"fw/rt2/frame/std"
+	rtm "fw/rt2/module"
 	_ "fw/rt2/rules2/wrap"
+	"fw/rt2/rules2/wrap/eval"
 	"fw/utils"
 	"log"
 	"time"
@@ -83,7 +85,7 @@ func (f *flow) Handle(msg interface{}) {
 	assert.For(msg != nil, 20)
 }
 
-func (f *flow) grow(global context.Domain, m *module.Module) {
+func (f *flow) grow(global context.Domain, m *cpm.Module) {
 	utils.PrintScope("queue", m.Name)
 	nf := rt2.New(m.Enter)
 	f.root.PushFor(nf, nil)
@@ -91,7 +93,7 @@ func (f *flow) grow(global context.Domain, m *module.Module) {
 	global.Attach(m.Name, nf.Domain())
 }
 
-func run(global context.Domain, init []*module.Module) {
+func run(global context.Domain, init []*cpm.Module) {
 	{
 		fl := &flow{root: std.NewRoot()}
 		global.Attach(context.STACK, fl.root.(context.ContextAware))
@@ -113,6 +115,22 @@ func run(global context.Domain, init []*module.Module) {
 	}
 }
 
+func ld(f frame.Frame, name string) {
+	//fmt.Println("try to load", msg.Data)
+	glob := f.Domain().Global()
+	modList := glob.Discover(context.MOD).(rtm.List)
+	fl := glob.Discover(context.MT).(*flow)
+	ml := make([]*cpm.Module, 0)
+	_, err := modList.Load(name, func(m *cpm.Module) {
+		ml = append(ml, m)
+	})
+	for i := len(ml) - 1; i >= 0; i-- {
+		fl.grow(glob, ml[i])
+	}
+	assert.For(err == nil, 60)
+}
+
 func init() {
 	decision.Run = run
+	eval.LoadMod = ld
 }

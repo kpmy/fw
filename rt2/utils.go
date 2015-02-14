@@ -34,9 +34,10 @@ func ScopeFor(f frame.Frame, id cp.ID, fn ...scope.ValueOf) (ret scope.Manager) 
 		if sc.Exists(id) {
 			assert.For(ret == nil, 40) //только в одном скоупе!
 			ret = sc
+			break
 		}
 	}
-	assert.For(ret != nil, 60)
+	assert.For(ret != nil, 60, id)
 	if len(fn) == 1 {
 		ret.Select(id, fn...)
 	}

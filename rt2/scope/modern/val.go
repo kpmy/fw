@@ -101,7 +101,7 @@ func (r *rec) Set(v scope.Value) {
 func (r *rec) Get(id cp.ID) scope.Value {
 	k := r.l.k[id]
 	if r.l.v[k] == nil { //ref
-		fmt.Println(r.Id(), id)
+		//fmt.Println(r.Id(), id)
 		assert.For(r.l.r[k] != nil, 20, id, k)
 		return r.l.r[k]
 	} else {

@@ -63,9 +63,9 @@ func GetStrange(in IN, key interface{}, ss node.Node, next Do) (out OUT) {
 		nf := rt2.New(ss)
 		rt2.Push(nf, in.Frame)
 		rt2.RegOf(in.Frame)[context.KEY] = key
-		rt2.Assert(in.Frame, func(f frame.Frame) (bool, int) {
+		rt2.Assert(in.Frame, func(f frame.Frame, do frame.Condition) {
 			v := rt2.RegOf(f)[key]
-			return v != nil, 1980
+			do(v != nil, 1980)
 		})
 		return Later(func(IN) OUT {
 			return Now(next)
@@ -85,9 +85,9 @@ func GetExpression(in IN, key interface{}, expr node.Node, next Do) OUT {
 	nf := rt2.New(expr)
 	rt2.Push(nf, in.Frame)
 	rt2.RegOf(in.Frame)[context.KEY] = key
-	rt2.Assert(in.Frame, func(f frame.Frame) (bool, int) {
+	rt2.Assert(in.Frame, func(f frame.Frame, do frame.Condition) {
 		v := rt2.RegOf(f)[key]
-		return v != nil, 1961
+		do(v != nil, 1961, key)
 	})
 	return Later(func(IN) OUT {
 		return Now(next)
@@ -102,9 +102,9 @@ func GetDesignator(in IN, key interface{}, design node.Node, next Do) OUT {
 	nf := rt2.New(design)
 	rt2.Push(nf, in.Frame)
 	rt2.RegOf(in.Frame)[context.KEY] = key
-	rt2.Assert(in.Frame, func(f frame.Frame) (bool, int) {
+	rt2.Assert(in.Frame, func(f frame.Frame, do frame.Condition) {
 		v := rt2.RegOf(f)[key]
-		return v != nil, 1957
+		do(v != nil, 1957, key)
 	})
 	return Later(func(IN) OUT {
 		return Now(next)

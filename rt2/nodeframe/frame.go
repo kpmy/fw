@@ -139,12 +139,15 @@ func (f *nodeFrame) OnPop() {
 	if f.parent != nil {
 		ff, ok := f.parent.(*nodeFrame)
 		if ok && ff.assertion != nil {
-			ok, code := ff.assertion(ff)
-			if !ok {
-				panic(fmt.Sprintln("assert", code, "for", reflect.TypeOf(ff.ir)))
-			} else {
-				utils.PrintFrame("assert passed", code, "for", reflect.TypeOf(ff.ir))
+			check := func(ok bool, msg ...interface{}) {
+				if !ok {
+					panic(fmt.Sprintln("assert for", reflect.TypeOf(ff.ir), ff.ir, fmt.Sprint(msg...)))
+				} else {
+					utils.PrintFrame("assert passed for", reflect.TypeOf(ff.ir), ff.ir, fmt.Sprint(msg...))
+				}
 			}
+			ff.assertion(ff, check)
+
 			ff.assertion = nil
 		}
 	}

@@ -57,7 +57,8 @@ type Frame interface {
 
 //пользовательская функция, которую выполнит фрейм, может поставить на очередь выполнения себя или другую функцию
 type Sequence func(f Frame) (Sequence, WAIT)
-type Assert func(f Frame) (bool, int)
+type Condition func(bool, ...interface{})
+type Assert func(Frame, Condition)
 
 func Tail(x WAIT) (seq Sequence) {
 	return func(f Frame) (Sequence, WAIT) { return nil, x }

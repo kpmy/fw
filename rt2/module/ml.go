@@ -2,6 +2,7 @@ package module
 
 import (
 	"fmt"
+	"fw/cp"
 	mod "fw/cp/module"
 	"fw/cp/node"
 	"fw/cp/object"
@@ -228,8 +229,12 @@ func (c *tc) ConnectTo(x interface{}) {
 }
 
 func (c *tc) MethodList() (ret map[int][]Method) {
+	type mid struct {
+		id   cp.ID
+		name string
+	}
 	ret = make(map[int][]Method, 0)
-	tmp := make(map[string]object.Object, 0)
+	tmp := make(map[mid]object.Object, 0)
 	depth := -1
 	var deep func(*mod.Module, object.ComplexType)
 	list := func(m *mod.Module, t object.ComplexType) {
@@ -248,13 +253,13 @@ func (c *tc) MethodList() (ret map[int][]Method) {
 				}
 				if local && po.Link() != nil {
 					for pt := po.Link().Complex(); pt != nil; {
-						if t.Equals(pt) && tmp[pt.Qualident()+"."+po.Name()] == nil {
-							fmt.Println("method", m.Name, pt.Qualident(), po.Name(), local)
-							tmp[pt.Qualident()+"."+po.Name()] = po
+						if t.Equals(pt) && tmp[mid{id: po.Adr(), name: po.Name()}] == nil {
+							//fmt.Println("method", m.Name, pt.Qualident(), po.Name(), po.Adr(), local)
+							tmp[mid{id: po.Adr(), name: po.Name()}] = po
 							ret[depth] = append(ret[depth], Method{Enter: et, Obj: po, Mod: m})
 							break
 						} else if t.Equals(pt) {
-							//fmt.Println("double ", pt.Qualident(), po.Name())
+							//fmt.Println("double ", pt.Qualident(), po.Name(), po.Adr())
 						}
 						if _, ok := pt.(inherited); ok {
 							pt = pt.(inherited).Complex()
@@ -284,7 +289,7 @@ func (c *tc) MethodList() (ret map[int][]Method) {
 	}
 	deep = func(m *mod.Module, x object.ComplexType) {
 		depth++
-		tmp = make(map[string]object.Object, 0)
+		tmp = make(map[mid]object.Object, 0)
 		for t := x; t != nil; {
 			list(m, t)
 			z := t.(inherited).Complex()
