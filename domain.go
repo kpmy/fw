@@ -26,11 +26,8 @@ func (d *stdDomain) Attach(name string, x context.ContextAware) {
 	d.list[name] = x
 }
 
-func (d *stdDomain) Discover(name string, opts ...interface{}) (ret context.ContextAware) {
+func (d *stdDomain) Discover(name string) (ret context.ContextAware) {
 	assert.For(name != "", 20)
-	if name == context.VSCOPE {
-		assert.For(len(opts) != 0, 20)
-	}
 	if d.list != nil {
 		ret = d.list[name]
 	}
@@ -39,6 +36,8 @@ func (d *stdDomain) Discover(name string, opts ...interface{}) (ret context.Cont
 		case name == context.UNIVERSE:
 			ret = d.global
 		case name == context.HEAP && !d.god:
+			ret = d.global.Discover(name)
+		case name == context.SCOPE && !d.god:
 			ret = d.global.Discover(name)
 		}
 	}

@@ -146,7 +146,7 @@ func doAssign(in IN) (out OUT) {
 				return GetDesignator(in, left, a.Left(), func(in IN) OUT {
 					v := rt2.ValueOf(in.Frame)[KeyOf(in, left)].(scope.Variable)
 					fn := heap.Allocate(obj, obj.Complex().(object.PointerType), size)
-					v.Set(fn(nil))
+					v.Set(fn)
 					return End()
 				})
 			})
@@ -154,7 +154,7 @@ func doAssign(in IN) (out OUT) {
 			out = GetDesignator(in, left, a.Left(), func(IN) OUT {
 				v := rt2.ValueOf(in.Frame)[KeyOf(in, left)].(scope.Variable)
 				fn := heap.Allocate(obj, obj.Complex().(object.PointerType))
-				v.Set(fn(nil))
+				v.Set(fn)
 				return End()
 			})
 		}
@@ -423,8 +423,10 @@ func doCall(in IN) (out OUT) {
 	case node.VariableNode:
 		m := rtm.DomainModule(in.Frame.Domain())
 		sc := rt2.ScopeFor(in.Frame, p.Object().Adr())
-		obj := scope.GoTypeFrom(sc.Select(p.Object().Adr()))
-
+		var obj interface{}
+		sc.Select(p.Object().Adr(), func(in scope.Value) {
+			obj = scope.GoTypeFrom(in)
+		})
 		if obj, ok := obj.(object.Object); ok {
 			proc := m.NodeByObject(obj)
 			call(proc[0], nil)

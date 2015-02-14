@@ -99,7 +99,7 @@ func (f *nodeFrame) Do() frame.WAIT {
 			var fu NodeFrameUtils
 			utils.PrintTrap()
 			utils.PrintTrap("something WRONG")
-			utils.PrintTrap(f.Domain().Discover(context.VSCOPE, 0))
+			utils.PrintTrap(f.Domain().Discover(context.SCOPE))
 			depth := 10
 			f.root.ForEach(func(old frame.Frame) bool {
 				n := fu.NodeOf(old)

@@ -90,19 +90,20 @@ func go_math(in IN, par node.Node) OUT {
 	res := math.NaN()
 	switch p := par.(type) {
 	case node.VariableNode:
-		val := sm.Select(p.Object().Adr())
-		rv, ok := scope.GoTypeFrom(val).([]float64)
-		assert.For(ok && (len(rv) > 1), 100, rv)
-		switch rv[0] {
-		case LN:
-			res = math.Log(rv[1])
-		case MANT:
-			res, _ = mathe.Me(rv[1])
-		case EXP:
-			_, res = mathe.Me(rv[1])
-		default:
-			halt.As(100, rv[0])
-		}
+		sm.Select(p.Object().Adr(), func(val scope.Value) {
+			rv, ok := scope.GoTypeFrom(val).([]float64)
+			assert.For(ok && (len(rv) > 1), 100, rv)
+			switch rv[0] {
+			case LN:
+				res = math.Log(rv[1])
+			case MANT:
+				res, _ = mathe.Me(rv[1])
+			case EXP:
+				_, res = mathe.Me(rv[1])
+			default:
+				halt.As(100, rv[0])
+			}
+		})
 	default:
 		halt.As(100, reflect.TypeOf(p))
 	}

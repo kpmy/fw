@@ -5,10 +5,8 @@ import (
 	"fw/cp/node"
 	"fw/rt2/context"
 	"fw/rt2/frame"
-	rtm "fw/rt2/module"
 	"fw/rt2/nodeframe"
 	"fw/rt2/scope"
-	"ypk/assert"
 )
 
 var utils nodeframe.NodeFrameUtils
@@ -21,26 +19,26 @@ func Push(f, p frame.Frame)                           { utils.Push(f, p) }
 func New(n node.Node) frame.Frame                     { return utils.New(n) }
 
 func ThisScope(f frame.Frame) scope.Manager {
-	return f.Domain().Discover(context.VSCOPE, 0).(scope.Manager)
+	return f.Domain().Discover(context.SCOPE).(scope.Manager)
 }
 
 func ScopeFor(f frame.Frame, id cp.ID, fn ...scope.ValueOf) (ret scope.Manager) {
-	glob := f.Domain().Discover(context.UNIVERSE).(context.Domain)
-	ml := glob.Discover(context.MOD).(rtm.List)
-	for _, m := range ml.AsList() {
-		md := glob.Discover(m.Name).(context.Domain)
-		sc := md.Discover(context.VSCOPE, 0).(scope.Manager)
-		//fmt.Println(m.Name, sc.Exists(id), id)
-		if sc.Exists(id) {
-			assert.For(ret == nil, 40) //только в одном скоупе!
-			ret = sc
-			break
+	/*	glob := f.Domain().Discover(context.UNIVERSE).(context.Domain)
+		ml := glob.Discover(context.MOD).(rtm.List)
+		for _, m := range ml.AsList() {
+			md := glob.Discover(m.Name).(context.Domain)
+			sc := md.Discover(context.SCOPE).(scope.Manager)
+			//fmt.Println(m.Name, sc.Exists(id), id)
+			if sc.Exists(id) {
+				assert.For(ret == nil, 40) //только в одном скоупе!
+				ret = sc
+				break
+			}
 		}
-	}
-	assert.For(ret != nil, 60, id)
-	if len(fn) == 1 {
-		ret.Select(id, fn...)
-	}
+		assert.For(ret != nil, 60, id)
+		if len(fn) == 1 {
+			ret.Select(id, fn...)
+		}*/
 	return
 }
 

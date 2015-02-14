@@ -72,15 +72,8 @@ type Pointer interface {
 	Get() Value
 }
 
-//средство обновления значенияx
-type ValueFor func(in Value) (out Value)
+//средство обновления значенияxb
 type ValueOf func(in Value)
-
-func Simple(v Value) ValueFor {
-	return func(Value) Value {
-		return v
-	}
-}
 
 var ValueFrom func(v Value) Value
 var GoTypeFrom func(v Value) interface{}

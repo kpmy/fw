@@ -4,7 +4,6 @@ import (
 	"container/list"
 	"fw/rt2/context"
 	"fw/rt2/frame"
-	"fw/rt2/scope"
 	"fw/utils"
 	"reflect"
 	"ypk/assert"
@@ -58,7 +57,6 @@ func (f *RootFrame) PushFor(fr, parent frame.Frame) {
 	if fr.Domain() == nil {
 		if parent == nil {
 			domain := f.Domain().(context.Factory).New()
-			domain.Attach(context.VSCOPE, scope.New(context.VSCOPE))
 			fr.Init(domain)
 		} else {
 			fr.Init(parent.Domain())

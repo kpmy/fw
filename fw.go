@@ -9,7 +9,6 @@ import (
 	rtm "fw/rt2/module"
 	_ "fw/rt2/rules2"
 	"fw/rt2/scope"
-	_ "fw/rt2/scope/modern"
 	"fw/utils"
 	"log"
 	"time"
@@ -45,8 +44,8 @@ func main() {
 	modList := rtm.New()
 	global.Attach(context.MOD, modList)
 	global.Attach(context.DIGEST, context.Data(cp.Init()))
-	heap = scope.New(context.HEAP)
-	global.Attach(context.HEAP, heap)
+	global.Attach(context.HEAP, scope.New(context.HEAP))
+	global.Attach(context.SCOPE, scope.New(context.SCOPE))
 	t0 := time.Now()
 	var init []*cpm.Module
 	_, err := modList.Load(name, func(m *cpm.Module) {

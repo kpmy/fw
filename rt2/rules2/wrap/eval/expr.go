@@ -19,7 +19,7 @@ func getConst(in IN) OUT {
 	sc := rt2.ThisScope(in.Frame)
 	fn := sc.Provide(c)
 	assert.For(fn != nil, 40)
-	rt2.ValueOf(in.Parent)[c.Adr()] = fn(nil)
+	rt2.ValueOf(in.Parent)[c.Adr()] = fn
 	rt2.RegOf(in.Parent)[in.Key] = c.Adr()
 	return End()
 }
@@ -90,7 +90,7 @@ func getProc(in IN) OUT {
 	sc := rt2.ThisScope(in.Frame)
 	fn := sc.Provide(p.Object())
 	assert.For(fn != nil, 40)
-	rt2.ValueOf(in.Parent)[p.Adr()] = fn(nil)
+	rt2.ValueOf(in.Parent)[p.Adr()] = fn
 	rt2.RegOf(in.Parent)[in.Key] = p.Adr()
 	return End()
 }

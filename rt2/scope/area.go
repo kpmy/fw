@@ -19,11 +19,9 @@ type PARAM struct {
 // pk, 20150112, инициализация параметров теперь происходит как и обычный frame.Sequence, с использованием стека
 type Manager interface {
 	context.ContextAware
-	Update(id cp.ID, val ValueFor)
-	Select(cp.ID, ...ValueOf) Value
+	Select(cp.ID, ValueOf)
 	Target(...Allocator) Allocator
-	Exists(cp.ID) bool
-	Provide(interface{}) ValueFor
+	Provide(interface{}) Value
 	String() string
 }
 
@@ -40,7 +38,7 @@ type ScopeAllocator interface {
 
 type HeapAllocator interface {
 	Allocator
-	Allocate(object.Object, object.PointerType, ...interface{}) ValueFor //указатель лежит в скоупе процедуры/модуля, а рекорд - в куче, поэтому нужно после создания экземпляра обновить указатель
+	Allocate(object.Object, object.PointerType, ...interface{}) Value //указатель лежит в скоупе процедуры/модуля, а рекорд - в куче, поэтому нужно после создания экземпляра обновить указатель
 	Dispose(id cp.ID)
 }
 
