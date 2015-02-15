@@ -37,7 +37,7 @@ func main() {
 	flag.Parse()
 	utils.Debug(debug)
 	if name == "" {
-		name = "Start"
+		name = "XevDemo1"
 	}
 	global := &stdDomain{god: true}
 	global.global = global

@@ -10,6 +10,7 @@ import (
 	"fw/rt2/frame/std"
 	rtm "fw/rt2/module"
 	_ "fw/rt2/rules2/wrap"
+	_ "fw/rt2/rules2/wrap/data"
 	"fw/rt2/rules2/wrap/eval"
 	"fw/utils"
 	"log"

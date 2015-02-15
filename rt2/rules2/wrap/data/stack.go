@@ -5,6 +5,7 @@ import (
 	"fw/cp/node"
 	"fw/cp/object"
 	"fw/rt2/context"
+	"fw/rt2/frame"
 	"fw/rt2/scope"
 	"reflect"
 	"ypk/halt"
@@ -20,6 +21,16 @@ type salloc struct {
 }
 
 func (a *area) Select(id cp.ID, val scope.ValueOf) {}
+
+func (a *salloc) Allocate(n node.Node, final bool) {
+}
+
+func (a *salloc) Dispose(n node.Node) {
+}
+
+func (a *salloc) Initialize(n node.Node, par scope.PARAM) (frame.Sequence, frame.WAIT) {
+	return frame.End()
+}
 
 func (a *salloc) Join(m scope.Manager) { a.area = m.(*area) }
 
@@ -59,8 +70,8 @@ func nn(role string) scope.Manager {
 	if role == context.SCOPE {
 		return &area{all: &salloc{}}
 	} else if role == context.HEAP {
+		return &area{all: nil}
 		//return &area{all: &halloc{}}
-		panic(0)
 	} else {
 		panic(0)
 	}
