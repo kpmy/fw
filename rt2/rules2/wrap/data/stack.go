@@ -5,10 +5,12 @@ import (
 	"fw/cp"
 	"fw/cp/node"
 	"fw/cp/object"
+	"fw/rt2"
 	"fw/rt2/context"
 	"fw/rt2/frame"
 	rtm "fw/rt2/module"
 	"fw/rt2/rules2/wrap/data/items"
+	"fw/rt2/rules2/wrap/eval"
 	"fw/rt2/scope"
 	"fw/utils"
 	"reflect"
@@ -34,6 +36,7 @@ type key struct {
 func (k *key) String() string {
 	return fmt.Sprint(k.id)
 }
+
 func (k *key) EqualTo(to items.Key) int {
 	kk, ok := to.(*key)
 	if ok && kk.id == k.id {
@@ -152,9 +155,63 @@ func (a *salloc) Dispose(n node.Node) {
 	a.area.il.Drop()
 }
 
+func (a *salloc) proper_init(root node.Node, _val node.Node, _par object.Object, tail eval.Do, in eval.IN) eval.Do {
+	utils.PrintScope("INITIALIZE")
+	const link = "initialize:par"
+	end := func(eval.IN) eval.OUT {
+		a.area.il.End()
+		return eval.Later(tail)
+	}
+	var next eval.Do
+	do := func(val node.Node, par object.Object) (out eval.OUT) {
+		fmt.Println(par.Adr(), par.Name(), ":=", reflect.TypeOf(val))
+		out = eval.Now(next)
+		switch par.(type) {
+		case object.VariableObject:
+			out = eval.GetExpression(in, link, val, func(in eval.IN) eval.OUT {
+				it := a.area.il.Get(&key{id: par.Adr()}, items.INIT).(*item)
+				v := it.Value().(scope.Variable)
+				val := rt2.ValueOf(in.Frame)[eval.KeyOf(in, link)]
+				v.Set(val)
+				return eval.Later(next)
+			})
+		case object.ParameterObject:
+			switch val.(type) {
+			case node.Designator:
+				fmt.Println("design")
+			case node.Expression:
+				fmt.Println("expr")
+			default:
+				halt.As(100, reflect.TypeOf(val))
+			}
+		default:
+			halt.As(100, reflect.TypeOf(par))
+		}
+		return
+	}
+	val := _val
+	par := _par
+	next = func(eval.IN) eval.OUT {
+		if val == nil {
+			return eval.Later(end)
+		} else {
+			step := do(val, par)
+			val = val.Link()
+			par = par.Link()
+			return step
+		}
+	}
+	return next
+}
+
 func (a *salloc) Initialize(n node.Node, par scope.PARAM) (frame.Sequence, frame.WAIT) {
-	a.area.il.End()
-	return frame.End()
+	var tail eval.Do
+	if par.Tail != nil {
+		tail = eval.Expose(par.Tail)
+	} else {
+		tail = eval.Tail(eval.STOP)
+	}
+	return eval.Propose(a.proper_init(n, par.Values, par.Objects, tail, eval.IN{Frame: par.Frame, Parent: par.Frame.Parent()})), frame.NOW
 }
 
 func (a *salloc) Join(m scope.Manager) { a.area = m.(*area) }

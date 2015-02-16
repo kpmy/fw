@@ -85,6 +85,7 @@ func GetExpression(in IN, key interface{}, expr node.Node, next Do) OUT {
 	nf := rt2.New(expr)
 	rt2.Push(nf, in.Frame)
 	rt2.RegOf(in.Frame)[context.KEY] = key
+	rt2.RegOf(in.Frame)[key] = nil
 	rt2.Assert(in.Frame, func(f frame.Frame, do frame.Condition) {
 		v := rt2.RegOf(f)[key]
 		do(v != nil, 1961, key)
@@ -102,6 +103,7 @@ func GetDesignator(in IN, key interface{}, design node.Node, next Do) OUT {
 	nf := rt2.New(design)
 	rt2.Push(nf, in.Frame)
 	rt2.RegOf(in.Frame)[context.KEY] = key
+	rt2.RegOf(in.Frame)[key] = nil
 	rt2.Assert(in.Frame, func(f frame.Frame, do frame.Condition) {
 		v := rt2.RegOf(f)[key]
 		do(v != nil, 1957, key)

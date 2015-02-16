@@ -7,6 +7,10 @@ import (
 	"ypk/halt"
 )
 
+type Opts int
+
+const INIT Opts = iota
+
 type ID struct {
 	In   Data
 	This Key
@@ -33,7 +37,7 @@ type Item interface {
 
 type Data interface {
 	Set(Key, Item)
-	Get(Key) Item
+	Get(Key, ...Opts) Item
 	Hold(Key)
 	Begin()
 	End()
@@ -82,8 +86,16 @@ func (d *data) Set(k Key, v Item) {
 	}
 }
 
-func (d *data) Get(k Key) (ret Item) {
-	d.check()
+func (d *data) Get(k Key, opts ...Opts) (ret Item) {
+	if len(opts) == 0 {
+		d.check()
+	} else {
+		switch opts[0] {
+		case INIT: //do nothing
+		default:
+			halt.As(100, fmt.Sprint(opts))
+		}
+	}
 	for x, e := d.find(k, nil); x != nil && ret == nil; {
 		switch v := x.(type) {
 		case nil: //do nothing
@@ -98,6 +110,7 @@ func (d *data) Get(k Key) (ret Item) {
 			}
 		}
 	}
+	assert.For(ret != nil, 60, k)
 	return
 }
 
