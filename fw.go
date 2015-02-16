@@ -33,11 +33,11 @@ func close() {
 }
 
 func main() {
-	utils.Debug(false)
 	flag.Parse()
 	utils.Debug(debug)
 	if name == "" {
 		name = "XevDemo1"
+		utils.Debug(true)
 	}
 	global := &stdDomain{god: true}
 	global.global = global

@@ -7,6 +7,7 @@ import (
 	"fw/rt2/frame"
 	"fw/rt2/nodeframe"
 	"fw/rt2/scope"
+	"ypk/assert"
 )
 
 var utils nodeframe.NodeFrameUtils
@@ -23,22 +24,11 @@ func ThisScope(f frame.Frame) scope.Manager {
 }
 
 func ScopeFor(f frame.Frame, id cp.ID, fn ...scope.ValueOf) (ret scope.Manager) {
-	/*	glob := f.Domain().Discover(context.UNIVERSE).(context.Domain)
-		ml := glob.Discover(context.MOD).(rtm.List)
-		for _, m := range ml.AsList() {
-			md := glob.Discover(m.Name).(context.Domain)
-			sc := md.Discover(context.SCOPE).(scope.Manager)
-			//fmt.Println(m.Name, sc.Exists(id), id)
-			if sc.Exists(id) {
-				assert.For(ret == nil, 40) //только в одном скоупе!
-				ret = sc
-				break
-			}
-		}
-		assert.For(ret != nil, 60, id)
-		if len(fn) == 1 {
-			ret.Select(id, fn...)
-		}*/
+	ret = f.Domain().Global().Discover(context.SCOPE).(scope.Manager)
+	assert.For(ret != nil, 60, id)
+	if len(fn) == 1 {
+		ret.Select(id, fn[0])
+	}
 	return
 }
 
