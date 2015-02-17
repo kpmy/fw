@@ -3,6 +3,7 @@ package items
 import (
 	"container/list"
 	"fmt"
+	"fw/utils"
 	"ypk/assert"
 	"ypk/halt"
 )
@@ -45,9 +46,11 @@ type Data interface {
 
 	Exists(Key) bool
 	ForEach(func(Value) bool)
+
 	Begin()
 	End()
 	Drop()
+	Check()
 }
 
 func New() Data {
@@ -109,7 +112,7 @@ func (d *data) ForEach(f func(Value) bool) {
 
 func (d *data) Get(k Key, opts ...Opts) (ret Item) {
 	if len(opts) == 0 {
-		d.check()
+		d.Check()
 	} else {
 		switch opts[0] {
 		case INIT: //do nothing
@@ -206,19 +209,21 @@ type limit_key struct{}
 func (l *limit_key) EqualTo(Key) int { return -1 }
 func (l *limit) KeyOf(...Key) Key    { return &limit_key{} }
 
-func (d *data) check() {
+func (d *data) Check() {
 	t := d.x.Front()
 	if t != nil {
 		_, ok := t.Value.(*limit)
-		assert.For(ok, 30)
+		assert.For(ok, 30, "data not ready")
 	}
 }
 
 func (d *data) Begin() {
-	d.check()
+	utils.PrintScope("BEGIN")
+	d.Check()
 }
 
 func (d *data) End() {
+	utils.PrintScope("END")
 	for x := d.x.Front(); x != nil; {
 		d, ok := x.Value.(*dummy)
 		assert.For(!ok, 40, "missing value for item ", d)
@@ -232,7 +237,7 @@ func (d *data) End() {
 	d.x.PushFront(&limit{})
 }
 func (d *data) Drop() {
-	d.check()
+	d.Check()
 	for x := d.x.Front(); x != nil; {
 		d.x.Remove(x)
 		x = d.x.Front()

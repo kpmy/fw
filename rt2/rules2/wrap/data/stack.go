@@ -19,9 +19,10 @@ import (
 )
 
 type area struct {
-	d   context.Domain
-	all scope.Allocator
-	il  items.Data
+	d    context.Domain
+	all  scope.Allocator
+	il   items.Data
+	init bool
 }
 
 type salloc struct {
@@ -74,7 +75,11 @@ func (i *item) Value() scope.Value {
 
 func (a *area) Select(this cp.ID, val scope.ValueOf) {
 	utils.PrintScope("SELECT", this)
-	d, ok := a.il.Get(&key{id: this}).(*item)
+	opts := make([]items.Opts, 0)
+	if a.init {
+		opts = append(opts, items.INIT)
+	}
+	d, ok := a.il.Get(&key{id: this}, opts...).(*item)
 	assert.For(ok, 20, this)
 	val(d.Value())
 }
@@ -84,27 +89,60 @@ func (a *area) Exists(this cp.ID) bool {
 	return a.il.Exists(&key{id: this})
 }
 
-func (a *salloc) push(_o object.Object) {
+func push(dom context.Domain, il items.Data, _o object.Object) {
 	switch o := _o.(type) {
-	case object.VariableObject:
+	case object.VariableObject, object.FieldObject:
 		switch t := o.Complex().(type) {
 		case nil, object.BasicType:
 			x := newData(o)
 			d := &item{}
 			d.Data(x)
-			a.area.il.Set(&key{id: o.Adr()}, d)
+			il.Set(&key{id: o.Adr()}, d)
 		case object.ArrayType, object.DynArrayType:
 			x := newData(o)
 			d := &item{}
 			d.Data(x)
-			a.area.il.Set(&key{id: o.Adr()}, d)
-		//case object.RecordType:
-
+			il.Set(&key{id: o.Adr()}, d)
+		case object.RecordType:
+			ml := dom.Global().Discover(context.MOD).(rtm.List)
+			x := newRec(o)
+			d := &item{}
+			d.Data(x)
+			il.Set(&key{id: o.Adr()}, d)
+			fl := make([]object.Object, 0)
+			for rec := t; rec != nil; {
+				for x := rec.Link(); x != nil; x = x.Link() {
+					switch x.(type) {
+					case object.FieldObject:
+						//fmt.Println(o.Name(), ".", x.Name(), x.Adr())
+						fl = append(fl, x)
+					case object.ParameterObject, object.ProcedureObject, object.VariableObject:
+						//do nothing
+					default:
+						halt.As(100, reflect.TypeOf(x))
+					}
+				}
+				if rec.BaseRec() == nil {
+					x := ml.NewTypeCalc()
+					x.ConnectTo(rec)
+					_, frec := x.ForeignBase()
+					//fmt.Println(frec)
+					rec, _ = frec.(object.RecordType)
+				} else {
+					rec = rec.BaseRec()
+				}
+			}
+			x.fi = items.New()
+			x.fi.Begin()
+			for _, f := range fl {
+				push(dom, x.fi, f)
+			}
+			x.fi.End()
 		default:
 			halt.As(100, reflect.TypeOf(t))
 		}
 	case object.ParameterObject:
-		a.area.il.Hold(&key{id: o.Adr()})
+		il.Hold(&key{id: o.Adr()})
 	default:
 		halt.As(100, reflect.TypeOf(o))
 	}
@@ -154,18 +192,21 @@ func (a *salloc) Allocate(n node.Node, final bool) {
 		}
 	}
 	a.area.il.Begin()
+	a.area.init = true
 	for _, o := range ol {
 		if skip[o.Adr()] == nil {
 			utils.PrintScope(o.Adr(), o.Name())
-			a.push(o)
+			push(a.area.d, a.area.il, o)
 		}
 	}
 	if final {
 		a.area.il.End()
+		a.area.init = false
 	}
 }
 
 func (a *salloc) Dispose(n node.Node) {
+	utils.PrintScope("DISPOSE")
 	a.area.il.Drop()
 }
 
@@ -174,6 +215,7 @@ func (a *salloc) proper_init(root node.Node, _val node.Node, _par object.Object,
 	const link = "initialize:par"
 	end := func(in eval.IN) eval.OUT {
 		a.area.il.End()
+		a.area.init = false
 		return eval.Later(tail)
 	}
 	var next eval.Do

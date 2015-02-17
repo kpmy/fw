@@ -5,7 +5,7 @@ import (
 	"fw/cp"
 	"fw/cp/node"
 	"fw/cp/object"
-	//	rtm "fw/rt2/module"
+	"fw/rt2/rules2/wrap/data/items"
 	"fw/rt2/scope"
 	"fw/utils"
 	"math"
@@ -39,7 +39,7 @@ type proc struct {
 type rec struct {
 	link object.Object
 	scope.Record
-	l *level
+	fi items.Data
 }
 
 type ptr struct {
@@ -98,15 +98,10 @@ func (r *rec) Set(v scope.Value) {
 	panic(0)
 }
 
-func (r *rec) Get(id cp.ID) scope.Value {
-	k := r.l.k[id]
-	if r.l.v[k] == nil { //ref
-		//fmt.Println(r.Id(), id)
-		assert.For(r.l.r[k] != nil, 20, id, k)
-		return r.l.r[k]
-	} else {
-		return r.l.v[k]
-	}
+func (r *rec) Get(i cp.ID) scope.Value {
+	x, ok := r.fi.Get(&key{id: i}).(*item)
+	assert.For(ok, 40)
+	return x.Value()
 }
 
 func newRec(o object.Object) *rec {

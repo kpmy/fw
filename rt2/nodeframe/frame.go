@@ -143,7 +143,7 @@ func (f *nodeFrame) OnPop() {
 				if !ok {
 					panic(fmt.Sprintln("assert for", reflect.TypeOf(ff.ir), ff.ir, fmt.Sprint(msg...)))
 				} else {
-					utils.PrintFrame("assert passed for", reflect.TypeOf(ff.ir), ff.ir, fmt.Sprint(msg...))
+					utils.PrintFrame("assert passed for", reflect.TypeOf(ff.ir), ff.ir)
 				}
 			}
 			ff.assertion(ff, check)
