@@ -98,6 +98,8 @@ func (a *salloc) push(_o object.Object) {
 			d := &item{}
 			d.Data(x)
 			a.area.il.Set(&key{id: o.Adr()}, d)
+		//case object.RecordType:
+
 		default:
 			halt.As(100, reflect.TypeOf(t))
 		}
@@ -144,6 +146,8 @@ func (a *salloc) Allocate(n node.Node, final bool) {
 			for l := t.Link(); l != nil; l = l.Link() {
 				skip[l.Adr()] = l
 			}
+			skip[o.Adr()] = o
+		case object.TypeObject:
 			skip[o.Adr()] = o
 		case object.ConstantObject:
 			skip[o.Adr()] = o
