@@ -110,6 +110,8 @@ func GetDesignator(in IN, key interface{}, design node.Node, next Do) OUT {
 		m := rt2.RegOf(f)[context.META]
 		do(v != nil, 1957, " no data for ", key)
 		do(m != nil, 1480, " no meta")
+		meta := m.(*Meta)
+		do(meta.Scope != nil || meta.Rec != nil || meta.Arr != nil, 1380, " wrong meta")
 	})
 	return Later(func(IN) OUT {
 		return Now(next)

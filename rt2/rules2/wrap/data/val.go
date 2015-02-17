@@ -461,13 +461,15 @@ func (p *ptr) Set(v scope.Value) {
 	}
 }
 
-func (p *ptr) Get() scope.Value {
+func (p *ptr) Get() (ret scope.Value) {
 	if p.val == nil {
 		return NIL
 	} else {
-		panic(0)
-		//return p.val.scope.Select(p.val.id)
+		p.val.scope.Select(p.val.id, func(v scope.Value) {
+			ret = v
+		})
 	}
+	return
 }
 
 func newPtr(o object.Object) scope.Variable {

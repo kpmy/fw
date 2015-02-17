@@ -37,11 +37,12 @@ func getVar(in IN) OUT {
 
 func getVarPar(in IN) OUT {
 	v := in.IR.(node.ParameterNode)
-	rt2.ScopeFor(in.Frame, v.Object().Adr(), func(val scope.Value) {
+	sc := rt2.ScopeFor(in.Frame, v.Object().Adr(), func(val scope.Value) {
 		rt2.ValueOf(in.Parent)[v.Adr()] = val
 		rt2.RegOf(in.Parent)[in.Key] = v.Adr()
 		rt2.RegOf(in.Parent)[context.META] = &Meta{}
 	})
+	rt2.RegOf(in.Parent)[context.META] = &Meta{Scope: sc, Id: v.Object().Adr()}
 	return End()
 }
 
@@ -52,10 +53,10 @@ func getField(in IN) OUT {
 		_v := rt2.ValueOf(in.Frame)[KeyOf(in, left)]
 		switch v := _v.(type) {
 		case scope.Record:
-			fld := v.Get(f.Object().Adr())
+			fld := v.Get(f.Object().Adr()).(scope.Variable)
 			rt2.ValueOf(in.Parent)[f.Adr()] = fld
 			rt2.RegOf(in.Parent)[in.Key] = f.Adr()
-			rt2.RegOf(in.Parent)[context.META] = &Meta{}
+			rt2.RegOf(in.Parent)[context.META] = &Meta{Scope: nil, Rec: v, Id: fld.Id()}
 			return End()
 		default:
 			halt.As(100, reflect.TypeOf(v))
@@ -80,7 +81,7 @@ func getIndex(in IN) OUT {
 			case scope.Array:
 				rt2.ValueOf(in.Parent)[i.Adr()] = a.Get(idx)
 				rt2.RegOf(in.Parent)[in.Key] = i.Adr()
-				rt2.RegOf(in.Parent)[context.META] = &Meta{}
+				rt2.RegOf(in.Parent)[context.META] = &Meta{Arr: a, Id: a.Id()}
 				return End()
 			default:
 				halt.As(100, reflect.TypeOf(a))
@@ -128,14 +129,24 @@ func getDeref(in IN) OUT {
 			}
 		case scope.Pointer:
 			assert.For(d.Ptr(), 41)
-			rec := v.Get()
-			rt2.ValueOf(in.Parent)[d.Adr()] = rec
-			rt2.RegOf(in.Parent)[in.Key] = d.Adr()
-			rt2.RegOf(in.Parent)[context.META] = &Meta{}
-			if scope.GoTypeFrom(rec) == nil {
+			if r := v.Get(); scope.GoTypeFrom(r) == nil {
 				out = makeTrap(in.Frame, traps.NILderef)
 			} else {
 				out = End()
+				switch r.(type) {
+				case scope.Record:
+					rec := r.(scope.Record)
+					rt2.ValueOf(in.Parent)[d.Adr()] = rec
+					rt2.RegOf(in.Parent)[in.Key] = d.Adr()
+					rt2.RegOf(in.Parent)[context.META] = &Meta{Scope: rt2.ScopeFor(in.Frame, rec.Id()), Id: rec.Id()}
+				case scope.Array:
+					arr := r.(scope.Array)
+					rt2.ValueOf(in.Parent)[d.Adr()] = arr
+					rt2.RegOf(in.Parent)[in.Key] = d.Adr()
+					rt2.RegOf(in.Parent)[context.META] = &Meta{Scope: rt2.ScopeFor(in.Frame, arr.Id()), Id: arr.Id()}
+				default:
+					halt.As(100, reflect.TypeOf(r))
+				}
 			}
 			return out
 		default:
@@ -290,7 +301,7 @@ func getGuard(in IN) OUT {
 		if scope.GoTypeFrom(scope.Ops.Is(v, g.Type())).(bool) {
 			rt2.ValueOf(in.Parent)[g.Adr()] = v
 			rt2.RegOf(in.Parent)[in.Key] = g.Adr()
-			rt2.RegOf(in.Parent)[context.META] = &Meta{}
+			rt2.RegOf(in.Parent)[context.META] = rt2.RegOf(in.Frame)[context.META] //&Meta{Id: vv.Id(), }
 			return End()
 		} else {
 			return makeTrap(in.Frame, 0)

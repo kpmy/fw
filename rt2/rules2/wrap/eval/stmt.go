@@ -25,6 +25,7 @@ import (
 func makeTrap(f frame.Frame, err traps.TRAP) (out OUT) {
 	trap := node.New(constant.TRAP, cp.Some()).(node.TrapNode)
 	code := node.New(constant.CONSTANT, cp.Some()).(node.ConstantNode)
+	code.SetType(object.INTEGER)
 	code.SetData(int32(err))
 	trap.SetLeft(code)
 	rt2.Push(rt2.New(trap), f)

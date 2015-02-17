@@ -39,6 +39,7 @@ type Item interface {
 type Data interface {
 	Set(Key, Item)
 	Get(Key, ...Opts) Item
+	Remove(Key)
 
 	Hold(Key)
 	Link(Key, ID)
@@ -50,11 +51,11 @@ type Data interface {
 	Begin()
 	End()
 	Drop()
-	Check()
+	Check(...Opts)
 }
 
 func New() Data {
-	return &data{x: list.New()}
+	return &data{x: list.New(), check: true}
 }
 
 type dummy struct {
@@ -66,7 +67,8 @@ func (d *dummy) String() string {
 }
 
 type data struct {
-	x *list.List
+	x     *list.List
+	check bool
 }
 
 func (d *data) find(k Key, from *list.Element) (ret Value, elem *list.Element) {
@@ -130,12 +132,25 @@ func (d *data) Get(k Key, opts ...Opts) (ret Item) {
 			if to.In == d {
 				x, e = d.find(to.This, e)
 			} else {
-				ret = to.In.Get(to.This)
+				ret = to.In.Get(to.This, opts...)
 			}
 		}
 	}
 	assert.For(ret != nil, 60, k)
 	return
+}
+
+func (d *data) Remove(key Key) {
+	ok := false
+	for x := d.x.Front(); x != nil && !ok; x = x.Next() {
+		switch v := x.Value.(type) {
+		case Value:
+			if v.KeyOf().EqualTo(key) == 0 {
+				d.x.Remove(x)
+				ok = true
+			}
+		}
+	}
 }
 
 func (d *data) Hold(key Key) {
@@ -209,9 +224,12 @@ type limit_key struct{}
 func (l *limit_key) EqualTo(Key) int { return -1 }
 func (l *limit) KeyOf(...Key) Key    { return &limit_key{} }
 
-func (d *data) Check() {
+func (d *data) Check(o ...Opts) {
+	if len(o) == 1 {
+		d.check = false
+	}
 	t := d.x.Front()
-	if t != nil {
+	if d.check && t != nil {
 		_, ok := t.Value.(*limit)
 		assert.For(ok, 30, "data not ready")
 	}

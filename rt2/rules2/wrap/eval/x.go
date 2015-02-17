@@ -21,6 +21,8 @@ const (
 type Meta struct {
 	Id    cp.ID
 	Scope scope.Manager
+	Rec   scope.Record
+	Arr   scope.Array
 }
 
 var Propose func(Do) frame.Sequence

@@ -3,6 +3,7 @@ package data
 import (
 	"fmt"
 	"fw/cp"
+	"fw/cp/constant"
 	"fw/cp/node"
 	"fw/cp/object"
 	"fw/rt2"
@@ -14,18 +15,23 @@ import (
 	"fw/rt2/scope"
 	"fw/utils"
 	"reflect"
+	"runtime"
 	"ypk/assert"
 	"ypk/halt"
 )
 
 type area struct {
-	d    context.Domain
-	all  scope.Allocator
-	il   items.Data
-	init bool
+	d      context.Domain
+	all    scope.Allocator
+	il     items.Data
+	unsafe bool
 }
 
 type salloc struct {
+	area *area
+}
+
+type halloc struct {
 	area *area
 }
 
@@ -76,7 +82,7 @@ func (i *item) Value() scope.Value {
 func (a *area) Select(this cp.ID, val scope.ValueOf) {
 	utils.PrintScope("SELECT", this)
 	opts := make([]items.Opts, 0)
-	if a.init {
+	if a.unsafe {
 		opts = append(opts, items.INIT)
 	}
 	d, ok := a.il.Get(&key{id: this}, opts...).(*item)
@@ -92,23 +98,16 @@ func (a *area) Exists(this cp.ID) bool {
 func push(dom context.Domain, il items.Data, _o object.Object) {
 	switch o := _o.(type) {
 	case object.VariableObject, object.FieldObject:
+		var x interface{}
 		switch t := o.Complex().(type) {
 		case nil, object.BasicType:
-			x := newData(o)
-			d := &item{}
-			d.Data(x)
-			il.Set(&key{id: o.Adr()}, d)
+			x = newData(o)
 		case object.ArrayType, object.DynArrayType:
-			x := newData(o)
-			d := &item{}
-			d.Data(x)
-			il.Set(&key{id: o.Adr()}, d)
+			x = newData(o)
 		case object.RecordType:
 			ml := dom.Global().Discover(context.MOD).(rtm.List)
-			x := newRec(o)
-			d := &item{}
-			d.Data(x)
-			il.Set(&key{id: o.Adr()}, d)
+			r := newRec(o)
+			x = r
 			fl := make([]object.Object, 0)
 			for rec := t; rec != nil; {
 				for x := rec.Link(); x != nil; x = x.Link() {
@@ -132,21 +131,112 @@ func push(dom context.Domain, il items.Data, _o object.Object) {
 					rec = rec.BaseRec()
 				}
 			}
-			x.fi = items.New()
-			x.fi.Begin()
+			r.fi = items.New()
+			r.fi.Begin()
 			for _, f := range fl {
-				push(dom, x.fi, f)
+				push(dom, r.fi, f)
 			}
-			x.fi.End()
+			r.fi.End()
+		case object.PointerType:
+			x = newPtr(o)
 		default:
 			halt.As(100, reflect.TypeOf(t))
 		}
+		assert.For(x != nil, 40)
+		//fmt.Println(_o.Name(), x)
+		d := &item{}
+		d.Data(x)
+		il.Set(&key{id: o.Adr()}, d)
 	case object.ParameterObject:
 		il.Hold(&key{id: o.Adr()})
 	default:
 		halt.As(100, reflect.TypeOf(o))
 	}
 }
+
+func fin(x interface{}) {
+	switch p := x.(type) {
+	case *ptrValue:
+		defer func() {
+			mod := rtm.ModuleOfType(p.scope.Domain(), p.link.Complex())
+			ol := mod.Objects[mod.Enter]
+			var fn object.ProcedureObject
+			for _, _po := range ol {
+				switch po := _po.(type) {
+				case object.ProcedureObject:
+					if po.Name() == "FINALIZE" && po.Link().Complex().Equals(p.link.Complex()) {
+						fn = po
+						break
+					}
+				}
+			}
+			if fn != nil {
+				global := p.scope.Domain().Discover(context.UNIVERSE).(context.Domain)
+				root := global.Discover(context.STACK).(frame.Stack)
+				cn := node.New(constant.CALL, cp.Some())
+				ol := mod.NodeByObject(fn)
+				assert.For(len(ol) <= 1, 40)
+				cn.SetLeft(ol[0])
+				cc := node.New(constant.CONSTANT, cp.Some()).(node.ConstantNode)
+				cc.SetData(p)
+				cc.SetType(object.COMPLEX)
+				cn.SetRight(cc)
+				nf := rt2.New(cn)
+				nf.Init(global.Discover(mod.Name).(context.Domain))
+				root.Queue(nf)
+			}
+			p.scope.Target().(scope.HeapAllocator).Dispose(p.id)
+		}()
+	}
+}
+
+func (h *halloc) Allocate(o object.Object, t object.PointerType, par ...interface{}) scope.Value {
+	utils.PrintScope("HEAP ALLOCATE")
+	//mod := rtm.ModuleOfType(h.area.d, t)
+	assert.For(t != nil, 20)
+	assert.For(o != nil, 21)
+	var res scope.Value
+	var talloc func(t object.PointerType)
+	talloc = func(t object.PointerType) {
+		switch bt := t.Complex().(type) {
+		case object.RecordType:
+			fake := object.New(object.VARIABLE, cp.Some())
+			fake.SetComplex(bt)
+			fake.SetType(object.COMPLEX)
+			fake.SetName("{" + o.Name() + "}")
+			push(h.area.d, h.area.il, fake)
+			res = &ptrValue{scope: h.area, id: fake.Adr(), link: o}
+		case object.DynArrayType:
+			assert.For(len(par) > 0, 20)
+			fake := object.New(object.VARIABLE, cp.Some())
+			fake.SetComplex(bt)
+			fake.SetType(object.COMPLEX)
+			fake.SetName("[]")
+			push(h.area.d, h.area.il, fake)
+			h.area.Select(fake.Adr(), func(v scope.Value) {
+				arr, ok := v.(*dynarr)
+				assert.For(ok, 60)
+				arr.Set(par[0].(scope.Value))
+			})
+			res = &ptrValue{scope: h.area, id: fake.Adr(), link: o}
+		default:
+			halt.As(100, fmt.Sprintln("cannot allocate", reflect.TypeOf(bt)))
+		}
+	}
+	talloc(t)
+	assert.For(res != nil, 60)
+	runtime.SetFinalizer(res, fin)
+	return res
+}
+
+func (h *halloc) Dispose(i cp.ID) {
+	h.area.Select(i, func(v scope.Value) {
+		utils.PrintScope("dispose", v)
+		h.area.il.Remove(&key{id: i})
+	})
+}
+
+func (a *halloc) Join(m scope.Manager) { a.area = m.(*area) }
 
 func (a *salloc) Allocate(n node.Node, final bool) {
 	mod := rtm.ModuleOfNode(a.area.d, n)
@@ -189,10 +279,12 @@ func (a *salloc) Allocate(n node.Node, final bool) {
 			skip[o.Adr()] = o
 		case object.ConstantObject:
 			skip[o.Adr()] = o
+		case object.Module:
+			skip[o.Adr()] = o
 		}
 	}
 	a.area.il.Begin()
-	a.area.init = true
+	a.area.unsafe = true
 	for _, o := range ol {
 		if skip[o.Adr()] == nil {
 			utils.PrintScope(o.Adr(), o.Name())
@@ -201,7 +293,7 @@ func (a *salloc) Allocate(n node.Node, final bool) {
 	}
 	if final {
 		a.area.il.End()
-		a.area.init = false
+		a.area.unsafe = false
 	}
 }
 
@@ -215,7 +307,7 @@ func (a *salloc) proper_init(root node.Node, _val node.Node, _par object.Object,
 	const link = "initialize:par"
 	end := func(in eval.IN) eval.OUT {
 		a.area.il.End()
-		a.area.init = false
+		a.area.unsafe = false
 		return eval.Later(tail)
 	}
 	var next eval.Do
@@ -327,8 +419,9 @@ func nn(role string) scope.Manager {
 	case context.SCOPE, context.CALL:
 		return &area{all: &salloc{}, il: items.New()}
 	case context.HEAP:
-		return &area{all: nil}
-		//return &area{all: &halloc{}}
+		ret := &area{all: &halloc{}, il: items.New(), unsafe: true}
+		ret.il.Check(items.INIT)
+		return ret
 	default:
 		panic(0)
 	}
