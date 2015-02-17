@@ -36,8 +36,8 @@ func main() {
 	flag.Parse()
 	utils.Debug(debug)
 	if name == "" {
-		name = "XevDemo1"
-		utils.Debug(true)
+		name = "XevDemo7"
+		utils.Debug(false)
 	}
 	global := &stdDomain{god: true}
 	global.global = global
@@ -46,6 +46,7 @@ func main() {
 	global.Attach(context.DIGEST, context.Data(cp.Init()))
 	global.Attach(context.HEAP, scope.New(context.HEAP))
 	global.Attach(context.SCOPE, scope.New(context.SCOPE))
+	global.Attach(context.CALL, scope.New(context.CALL))
 	t0 := time.Now()
 	var init []*cpm.Module
 	_, err := modList.Load(name, func(m *cpm.Module) {

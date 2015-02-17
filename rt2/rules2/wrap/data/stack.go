@@ -79,11 +79,21 @@ func (a *area) Select(this cp.ID, val scope.ValueOf) {
 	val(d.Value())
 }
 
+func (a *area) Exists(this cp.ID) bool {
+	utils.PrintScope("SEARCH", this)
+	return a.il.Exists(&key{id: this})
+}
+
 func (a *salloc) push(_o object.Object) {
 	switch o := _o.(type) {
 	case object.VariableObject:
 		switch t := o.Complex().(type) {
 		case nil, object.BasicType:
+			x := newData(o)
+			d := &item{}
+			d.Data(x)
+			a.area.il.Set(&key{id: o.Adr()}, d)
+		case object.ArrayType, object.DynArrayType:
 			x := newData(o)
 			d := &item{}
 			d.Data(x)
@@ -142,7 +152,7 @@ func (a *salloc) Allocate(n node.Node, final bool) {
 	a.area.il.Begin()
 	for _, o := range ol {
 		if skip[o.Adr()] == nil {
-			fmt.Println(o.Adr(), o.Name())
+			utils.PrintScope(o.Adr(), o.Name())
 			a.push(o)
 		}
 	}
@@ -158,13 +168,13 @@ func (a *salloc) Dispose(n node.Node) {
 func (a *salloc) proper_init(root node.Node, _val node.Node, _par object.Object, tail eval.Do, in eval.IN) eval.Do {
 	utils.PrintScope("INITIALIZE")
 	const link = "initialize:par"
-	end := func(eval.IN) eval.OUT {
+	end := func(in eval.IN) eval.OUT {
 		a.area.il.End()
 		return eval.Later(tail)
 	}
 	var next eval.Do
 	do := func(val node.Node, par object.Object) (out eval.OUT) {
-		fmt.Println(par.Adr(), par.Name(), ":=", reflect.TypeOf(val))
+		utils.PrintScope(par.Adr(), par.Name(), ":=", reflect.TypeOf(val))
 		out = eval.Now(next)
 		switch par.(type) {
 		case object.VariableObject:
@@ -178,9 +188,27 @@ func (a *salloc) proper_init(root node.Node, _val node.Node, _par object.Object,
 		case object.ParameterObject:
 			switch val.(type) {
 			case node.Designator:
-				fmt.Println("design")
-			case node.Expression:
-				fmt.Println("expr")
+				out = eval.GetDesignator(in, link, val, func(in eval.IN) eval.OUT {
+					mt := rt2.RegOf(in.Frame)[context.META].(*eval.Meta)
+					fa := mt.Scope.(*area).il
+					a.area.il.Link(&key{id: par.Adr()}, items.ID{In: fa, This: &key{id: mt.Id}})
+					return eval.Later(next)
+				})
+			case node.Expression: //array заменяем ссылку на переменную
+				out = eval.GetExpression(in, link, val, func(in eval.IN) eval.OUT {
+					d := &item{}
+					data := rt2.ValueOf(in.Frame)[eval.KeyOf(in, link)]
+					switch data.(type) {
+					case STRING, SHORTSTRING:
+						val := &dynarr{link: par}
+						val.Set(data)
+						d.Data(val)
+					default:
+						halt.As(100, reflect.TypeOf(data))
+					}
+					a.area.il.Put(&key{id: par.Adr()}, d)
+					return eval.Later(next)
+				})
 			default:
 				halt.As(100, reflect.TypeOf(val))
 			}
@@ -249,17 +277,44 @@ func (a *area) Domain() context.Domain { return a.d }
 func (a *area) Handle(msg interface{}) {}
 
 func nn(role string) scope.Manager {
-	if role == context.SCOPE {
+	switch role {
+	case context.SCOPE, context.CALL:
 		return &area{all: &salloc{}, il: items.New()}
-	} else if role == context.HEAP {
+	case context.HEAP:
 		return &area{all: nil}
 		//return &area{all: &halloc{}}
-	} else {
+	default:
 		panic(0)
 	}
 }
 
+func fn(mgr scope.Manager, name string) (ret object.Object) {
+	utils.PrintScope("FIND", name)
+	a, ok := mgr.(*area)
+	assert.For(ok, 20)
+	assert.For(name != "", 21)
+	a.il.ForEach(func(in items.Value) (ok bool) {
+		var v scope.Value
+		switch val := in.(type) {
+		case *item:
+			v = val.Value()
+		}
+		switch vv := v.(type) {
+		case *data:
+			utils.PrintScope(vv.link.Name())
+			if vv.link.Name() == name {
+				ret = vv.link
+				ok = true
+			}
+		default:
+			utils.PrintScope(reflect.TypeOf(vv))
+		}
+		return
+	})
+	return ret
+}
+
 func init() {
 	scope.New = nn
-	//scope.FindObjByName = fn
+	scope.FindObjByName = fn
 }

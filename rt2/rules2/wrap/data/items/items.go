@@ -38,7 +38,13 @@ type Item interface {
 type Data interface {
 	Set(Key, Item)
 	Get(Key, ...Opts) Item
+
 	Hold(Key)
+	Link(Key, ID)
+	Put(Key, Item)
+
+	Exists(Key) bool
+	ForEach(func(Value) bool)
 	Begin()
 	End()
 	Drop()
@@ -74,6 +80,11 @@ func (d *data) find(k Key, from *list.Element) (ret Value, elem *list.Element) {
 	return
 }
 
+func (d *data) Exists(k Key) bool {
+	r, _ := d.find(k, nil)
+	return r != nil
+}
+
 func (d *data) Set(k Key, v Item) {
 	assert.For(v != nil, 20)
 	assert.For(v.KeyOf() == nil, 21)
@@ -83,6 +94,16 @@ func (d *data) Set(k Key, v Item) {
 		d.x.PushFront(v)
 	} else {
 		halt.As(123)
+	}
+}
+
+func (d *data) ForEach(f func(Value) bool) {
+	ok := false
+	for x := d.x.Front(); x != nil && !ok; {
+		if v, da := x.Value.(Value); da {
+			ok = f(v)
+		}
+		x = x.Next()
 	}
 }
 
@@ -117,6 +138,43 @@ func (d *data) Get(k Key, opts ...Opts) (ret Item) {
 func (d *data) Hold(key Key) {
 	assert.For(key != nil, 20)
 	d.x.PushFront(&dummy{k: key})
+}
+
+func (d *data) Link(key Key, to ID) {
+	assert.For(key != nil, 20)
+	var this *list.Element
+	for x := d.x.Front(); x != nil && this == nil; {
+		if _, ok := x.Value.(*dummy); ok {
+			this = x
+		}
+		x = x.Next()
+		if x != nil {
+			if _, ok := x.Value.(*limit); ok {
+				x = nil
+			}
+		}
+	}
+	assert.For(this != nil, 60)
+	this.Value = &link{k: key, id: to}
+}
+
+func (d *data) Put(key Key, item Item) {
+	assert.For(key != nil, 20)
+	var this *list.Element
+	for x := d.x.Front(); x != nil && this == nil; {
+		if _, ok := x.Value.(*dummy); ok {
+			this = x
+		}
+		x = x.Next()
+		if x != nil {
+			if _, ok := x.Value.(*limit); ok {
+				x = nil
+			}
+		}
+	}
+	assert.For(this != nil, 60)
+	this.Value = item
+	item.KeyOf(key)
 }
 
 type link struct {
@@ -178,8 +236,10 @@ func (d *data) Drop() {
 	for x := d.x.Front(); x != nil; {
 		d.x.Remove(x)
 		x = d.x.Front()
-		if _, ok := x.Value.(*limit); ok {
-			x = nil
+		if x != nil {
+			if _, ok := x.Value.(*limit); ok {
+				x = nil
+			}
 		}
 	}
 }

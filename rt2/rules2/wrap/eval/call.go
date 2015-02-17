@@ -46,7 +46,7 @@ func callHandler(f frame.Frame, obj object.Object, data interface{}) {
 
 func go_process(in IN, par node.Node) OUT {
 	assert.For(par != nil, 20)
-	sm := rt2.ThisScope(in.Frame)
+	sm := rt2.CallScope(in.Frame)
 	do := func(val string) {
 		if val != "" {
 			msg := &Msg{}
@@ -86,7 +86,7 @@ func go_math(in IN, par node.Node) OUT {
 		EXP  = 3.0
 	)
 	assert.For(par != nil, 20)
-	sm := rt2.ThisScope(in.Frame)
+	sm := rt2.CallScope(in.Frame)
 	res := math.NaN()
 	switch p := par.(type) {
 	case node.VariableNode:

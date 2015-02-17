@@ -104,9 +104,12 @@ func GetDesignator(in IN, key interface{}, design node.Node, next Do) OUT {
 	rt2.Push(nf, in.Frame)
 	rt2.RegOf(in.Frame)[context.KEY] = key
 	rt2.RegOf(in.Frame)[key] = nil
+	rt2.RegOf(in.Frame)[context.META] = nil
 	rt2.Assert(in.Frame, func(f frame.Frame, do frame.Condition) {
 		v := rt2.RegOf(f)[key]
-		do(v != nil, 1957, key)
+		m := rt2.RegOf(f)[context.META]
+		do(v != nil, 1957, " no data for ", key)
+		do(m != nil, 1480, " no meta")
 	})
 	return Later(func(IN) OUT {
 		return Now(next)
@@ -190,7 +193,7 @@ func EndStatement(in IN) (out OUT) {
 	case node.EnterNode:
 		out = Now(func(in IN) OUT {
 			if n.Enter() == enter.PROCEDURE {
-				rt2.ThisScope(in.Frame).Target().(scope.ScopeAllocator).Dispose(n)
+				rt2.CallScope(in.Frame).Target().(scope.ScopeAllocator).Dispose(n)
 			}
 			if in.Parent != nil {
 				par := rt2.RegOf(in.Parent)

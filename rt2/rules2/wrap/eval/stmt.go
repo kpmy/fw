@@ -3,6 +3,7 @@ package eval
 import (
 	"fw/cp"
 	"fw/cp/constant"
+	"fw/cp/constant/enter"
 	"fw/cp/constant/operation"
 	"fw/cp/constant/statement"
 	"fw/cp/node"
@@ -56,7 +57,13 @@ func doEnter(in IN) OUT {
 		}
 		return
 	}
-	sm := rt2.ThisScope(in.Frame)
+	var sm scope.Manager
+	switch e.Enter() {
+	case enter.MODULE:
+		sm = rt2.ModScope(in.Frame)
+	case enter.PROCEDURE:
+		sm = rt2.CallScope(in.Frame)
+	}
 	if e.Object() != nil { //параметры процедуры
 		par, ok := rt2.RegOf(in.Frame)[e.Object()].(node.Node)
 		//fmt.Println(rt2.DataOf(f)[n.Object()])
@@ -344,10 +351,13 @@ func doCall(in IN) (out OUT) {
 						val = rv
 					}
 				}
-				assert.For(val != nil, 40, in.Key, rt2.RegOf(in.Frame), rt2.ValueOf(in.Frame), rt2.RegOf(in.Parent), rt2.ValueOf(in.Parent))
-				id := cp.ID(cp.Some())
-				rt2.ValueOf(in.Parent)[id] = val
-				rt2.RegOf(in.Parent)[in.Key] = id
+				if val != nil {
+					id := cp.ID(cp.Some())
+					rt2.ValueOf(in.Parent)[id] = val
+					rt2.RegOf(in.Parent)[in.Key] = id
+				} else {
+					utils.PrintFrame("possibly no return", in.Key, rt2.RegOf(in.Frame), rt2.ValueOf(in.Frame), rt2.RegOf(in.Parent), rt2.ValueOf(in.Parent))
+				}
 			}
 			return End()
 		})

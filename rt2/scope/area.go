@@ -23,6 +23,7 @@ type Manager interface {
 	Target(...Allocator) Allocator
 	Provide(interface{}) Value
 	String() string
+	Exists(cp.ID) bool
 }
 
 type Allocator interface {

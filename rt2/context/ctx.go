@@ -1,16 +1,17 @@
 package context
 
 const (
-	STACK    = "fw/rt2/frame"
-	SCOPE    = "fw/rt2/scope"
-	MOD      = "fw/rt2/module"
-	UNIVERSE = "fw/rt2/ctx"
-	HEAP     = "fw/rt2/scope,heap"
-	MT       = "fw/rt2/table,flow"
-	DIGEST   = "fw/cp"
-
-	RETURN = "RETURN"
-	KEY    = "KEY"
+	UNIVERSE = "ctx"
+	STACK    = "stack"
+	MOD      = "mt"
+	MT       = "flow"
+	DIGEST   = "cp"
+	HEAP     = "heap"
+	SCOPE    = "mod"
+	CALL     = "call"
+	RETURN   = "return"
+	KEY      = "key"
+	META     = "meta"
 )
 
 type Factory interface {

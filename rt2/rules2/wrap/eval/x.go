@@ -1,8 +1,10 @@
 package eval
 
 import (
+	"fw/cp"
 	"fw/cp/node"
 	"fw/rt2/frame"
+	"fw/rt2/scope"
 )
 
 type WAIT int
@@ -15,6 +17,11 @@ const (
 	BEGIN
 	END
 )
+
+type Meta struct {
+	Id    cp.ID
+	Scope scope.Manager
+}
 
 var Propose func(Do) frame.Sequence
 var Expose func(frame.Sequence) Do

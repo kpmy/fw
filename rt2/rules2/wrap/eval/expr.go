@@ -7,6 +7,7 @@ import (
 	"fw/cp/object"
 	"fw/cp/traps"
 	"fw/rt2"
+	"fw/rt2/context"
 	"fw/rt2/scope"
 	"math/big"
 	"reflect"
@@ -16,7 +17,7 @@ import (
 
 func getConst(in IN) OUT {
 	c := in.IR.(node.ConstantNode)
-	sc := rt2.ThisScope(in.Frame)
+	sc := rt2.ModScope(in.Frame)
 	fn := sc.Provide(c)
 	assert.For(fn != nil, 40)
 	rt2.ValueOf(in.Parent)[c.Adr()] = fn
@@ -26,10 +27,11 @@ func getConst(in IN) OUT {
 
 func getVar(in IN) OUT {
 	v := in.IR.(node.VariableNode)
-	rt2.ScopeFor(in.Frame, v.Object().Adr(), func(val scope.Value) {
+	sc := rt2.ScopeFor(in.Frame, v.Object().Adr(), func(val scope.Value) {
 		rt2.ValueOf(in.Parent)[v.Adr()] = val
 		rt2.RegOf(in.Parent)[in.Key] = v.Adr()
 	})
+	rt2.RegOf(in.Parent)[context.META] = &Meta{Scope: sc, Id: v.Object().Adr()}
 	return End()
 }
 
@@ -38,6 +40,7 @@ func getVarPar(in IN) OUT {
 	rt2.ScopeFor(in.Frame, v.Object().Adr(), func(val scope.Value) {
 		rt2.ValueOf(in.Parent)[v.Adr()] = val
 		rt2.RegOf(in.Parent)[in.Key] = v.Adr()
+		rt2.RegOf(in.Parent)[context.META] = &Meta{}
 	})
 	return End()
 }
@@ -52,6 +55,7 @@ func getField(in IN) OUT {
 			fld := v.Get(f.Object().Adr())
 			rt2.ValueOf(in.Parent)[f.Adr()] = fld
 			rt2.RegOf(in.Parent)[in.Key] = f.Adr()
+			rt2.RegOf(in.Parent)[context.META] = &Meta{}
 			return End()
 		default:
 			halt.As(100, reflect.TypeOf(v))
@@ -76,6 +80,7 @@ func getIndex(in IN) OUT {
 			case scope.Array:
 				rt2.ValueOf(in.Parent)[i.Adr()] = a.Get(idx)
 				rt2.RegOf(in.Parent)[in.Key] = i.Adr()
+				rt2.RegOf(in.Parent)[context.META] = &Meta{}
 				return End()
 			default:
 				halt.As(100, reflect.TypeOf(a))
@@ -87,11 +92,12 @@ func getIndex(in IN) OUT {
 
 func getProc(in IN) OUT {
 	p := in.IR.(node.ProcedureNode)
-	sc := rt2.ThisScope(in.Frame)
+	sc := rt2.ModScope(in.Frame)
 	fn := sc.Provide(p.Object())
 	assert.For(fn != nil, 40)
 	rt2.ValueOf(in.Parent)[p.Adr()] = fn
 	rt2.RegOf(in.Parent)[in.Key] = p.Adr()
+	rt2.RegOf(in.Parent)[context.META] = &Meta{}
 	return End()
 }
 
@@ -109,11 +115,13 @@ func getDeref(in IN) OUT {
 				assert.For(cc.Base() == object.CHAR || cc.Base() == object.SHORTCHAR, 41)
 				rt2.ValueOf(in.Parent)[d.Adr()] = scope.TypeFromGo(scope.GoTypeFrom(v))
 				rt2.RegOf(in.Parent)[in.Key] = d.Adr()
+				rt2.RegOf(in.Parent)[context.META] = &Meta{}
 				return End()
 			case object.DynArrayType:
 				assert.For(cc.Base() == object.CHAR || cc.Base() == object.SHORTCHAR, 41)
 				rt2.ValueOf(in.Parent)[d.Adr()] = scope.TypeFromGo(scope.GoTypeFrom(v))
 				rt2.RegOf(in.Parent)[in.Key] = d.Adr()
+				rt2.RegOf(in.Parent)[context.META] = &Meta{}
 				return End()
 			default:
 				halt.As(100, t, reflect.TypeOf(cc))
@@ -123,6 +131,7 @@ func getDeref(in IN) OUT {
 			rec := v.Get()
 			rt2.ValueOf(in.Parent)[d.Adr()] = rec
 			rt2.RegOf(in.Parent)[in.Key] = d.Adr()
+			rt2.RegOf(in.Parent)[context.META] = &Meta{}
 			if scope.GoTypeFrom(rec) == nil {
 				out = makeTrap(in.Frame, traps.NILderef)
 			} else {
@@ -281,6 +290,7 @@ func getGuard(in IN) OUT {
 		if scope.GoTypeFrom(scope.Ops.Is(v, g.Type())).(bool) {
 			rt2.ValueOf(in.Parent)[g.Adr()] = v
 			rt2.RegOf(in.Parent)[in.Key] = g.Adr()
+			rt2.RegOf(in.Parent)[context.META] = &Meta{}
 			return End()
 		} else {
 			return makeTrap(in.Frame, 0)

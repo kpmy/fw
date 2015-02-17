@@ -772,6 +772,8 @@ func gfrom(v scope.Value) interface{} {
 		return bool(n)
 	case STRING:
 		return string(n)
+	case SHORTSTRING:
+		return string(n)
 	case CHAR:
 		return rune(n)
 	default:

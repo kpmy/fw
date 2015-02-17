@@ -39,6 +39,8 @@ func (d *stdDomain) Discover(name string) (ret context.ContextAware) {
 			ret = d.global.Discover(name)
 		case name == context.SCOPE && !d.god:
 			ret = d.global.Discover(name)
+		case name == context.CALL && !d.god:
+			ret = d.global.Discover(name)
 		}
 	}
 	assert.For(ret != nil, 60) //все плохо
