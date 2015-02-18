@@ -128,12 +128,12 @@ func getDeref(in IN) OUT {
 				halt.As(100, t, reflect.TypeOf(cc))
 			}
 		case scope.Pointer:
-			assert.For(d.Ptr(), 41)
-			if r := v.Get(); scope.GoTypeFrom(r) == nil {
+			switch {
+			case scope.GoTypeFrom(v.Get()) == nil:
 				out = makeTrap(in.Frame, traps.NILderef)
-			} else {
+			case d.Ptr():
 				out = End()
-				switch r.(type) {
+				switch r := v.Get().(type) {
 				case scope.Record:
 					rec := r.(scope.Record)
 					rt2.ValueOf(in.Parent)[d.Adr()] = rec
@@ -147,6 +147,19 @@ func getDeref(in IN) OUT {
 				default:
 					halt.As(100, reflect.TypeOf(r))
 				}
+			case !d.Ptr():
+				out = End()
+				switch r := v.Get().(type) {
+				case scope.Array:
+					arr := r.(scope.Array)
+					rt2.ValueOf(in.Parent)[d.Adr()] = scope.TypeFromGo(scope.GoTypeFrom(arr))
+					rt2.RegOf(in.Parent)[in.Key] = d.Adr()
+					rt2.RegOf(in.Parent)[context.META] = &Meta{Arr: arr, Id: arr.Id()}
+				default:
+					halt.As(100, reflect.TypeOf(r))
+				}
+			default:
+				halt.As(100, d.Adr(), d.Ptr(), v, v.Get())
 			}
 			return out
 		default:

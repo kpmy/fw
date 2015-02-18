@@ -98,7 +98,7 @@ func GetExpression(in IN, key interface{}, expr node.Node, next Do) OUT {
 func GetDesignator(in IN, key interface{}, design node.Node, next Do) OUT {
 	assert.For(design != nil, 20)
 	_, ok := design.(node.Designator)
-	assert.For(ok, 21)
+	assert.For(ok, 21, reflect.TypeOf(design))
 	assert.For(key != nil, 22)
 	nf := rt2.New(design)
 	rt2.Push(nf, in.Frame)
