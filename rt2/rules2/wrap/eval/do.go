@@ -1,6 +1,7 @@
 package eval
 
 import (
+	"fw/cp"
 	"fw/cp/constant/enter"
 	"fw/cp/node"
 	"fw/rt2"
@@ -87,6 +88,14 @@ func GetExpression(in IN, key interface{}, expr node.Node, next Do) OUT {
 	rt2.RegOf(in.Frame)[context.KEY] = key
 	rt2.RegOf(in.Frame)[key] = nil
 	rt2.Assert(in.Frame, func(f frame.Frame, do frame.Condition) {
+		if _, call := expr.(node.CallNode); call {
+			tmp := rt2.RegOf(in.Frame)[context.RETURN]
+			if tmp != nil {
+				tmp_id := cp.ID(cp.Some())
+				rt2.RegOf(in.Frame)[key] = tmp_id
+				rt2.ValueOf(in.Frame)[tmp_id] = tmp.(scope.Value)
+			}
+		}
 		v := rt2.RegOf(f)[key]
 		do(v != nil, 1961, key)
 	})
@@ -98,7 +107,8 @@ func GetExpression(in IN, key interface{}, expr node.Node, next Do) OUT {
 func GetDesignator(in IN, key interface{}, design node.Node, next Do) OUT {
 	assert.For(design != nil, 20)
 	_, ok := design.(node.Designator)
-	assert.For(ok, 21, reflect.TypeOf(design))
+	_, call := design.(node.CallNode)
+	assert.For(ok || call, 21, reflect.TypeOf(design))
 	assert.For(key != nil, 22)
 	nf := rt2.New(design)
 	rt2.Push(nf, in.Frame)
@@ -106,12 +116,25 @@ func GetDesignator(in IN, key interface{}, design node.Node, next Do) OUT {
 	rt2.RegOf(in.Frame)[key] = nil
 	rt2.RegOf(in.Frame)[context.META] = nil
 	rt2.Assert(in.Frame, func(f frame.Frame, do frame.Condition) {
+		//do(m != nil, 1480, " no meta")
+		if m := rt2.RegOf(f)[context.META]; m != nil {
+			meta := m.(*Meta)
+			if call {
+				tmp := rt2.RegOf(in.Frame)[context.RETURN]
+				assert.For(tmp != nil, 40)
+				tmp_id := cp.ID(cp.Some())
+				rt2.RegOf(in.Frame)[key] = tmp_id
+				vr := tmp.(scope.Pointer).Copy()
+				assert.For(vr != nil, 50)
+				rt2.ValueOf(in.Frame)[tmp_id] = vr
+				meta.Scope = rt2.ScopeFor(in.Frame, vr.Id())
+				meta.Id = vr.Id()
+			}
+			do(meta.Scope != nil || meta.Rec != nil || meta.Arr != nil, 1380, " wrong meta")
+		}
 		v := rt2.RegOf(f)[key]
-		m := rt2.RegOf(f)[context.META]
 		do(v != nil, 1957, " no data for ", key)
-		do(m != nil, 1480, " no meta")
-		meta := m.(*Meta)
-		do(meta.Scope != nil || meta.Rec != nil || meta.Arr != nil, 1380, " wrong meta")
+
 	})
 	return Later(func(IN) OUT {
 		return Now(next)

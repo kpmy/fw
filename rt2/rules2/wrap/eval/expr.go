@@ -8,6 +8,7 @@ import (
 	"fw/cp/traps"
 	"fw/rt2"
 	"fw/rt2/context"
+	rtm "fw/rt2/module"
 	"fw/rt2/scope"
 	"math/big"
 	"reflect"
@@ -27,11 +28,12 @@ func getConst(in IN) OUT {
 
 func getVar(in IN) OUT {
 	v := in.IR.(node.VariableNode)
-	sc := rt2.ScopeFor(in.Frame, v.Object().Adr(), func(val scope.Value) {
+	obj := rtm.MapImportObject(in.Frame.Domain(), v.Object())
+	sc := rt2.ScopeFor(in.Frame, obj.Adr(), func(val scope.Value) {
 		rt2.ValueOf(in.Parent)[v.Adr()] = val
 		rt2.RegOf(in.Parent)[in.Key] = v.Adr()
 	})
-	rt2.RegOf(in.Parent)[context.META] = &Meta{Scope: sc, Id: v.Object().Adr()}
+	rt2.RegOf(in.Parent)[context.META] = &Meta{Scope: sc, Id: obj.Adr()}
 	return End()
 }
 
@@ -116,13 +118,13 @@ func getDeref(in IN) OUT {
 				assert.For(cc.Base() == object.CHAR || cc.Base() == object.SHORTCHAR, 41)
 				rt2.ValueOf(in.Parent)[d.Adr()] = scope.TypeFromGo(scope.GoTypeFrom(v))
 				rt2.RegOf(in.Parent)[in.Key] = d.Adr()
-				rt2.RegOf(in.Parent)[context.META] = &Meta{}
+				rt2.RegOf(in.Parent)[context.META] = nil
 				return End()
 			case object.DynArrayType:
 				assert.For(cc.Base() == object.CHAR || cc.Base() == object.SHORTCHAR, 41)
 				rt2.ValueOf(in.Parent)[d.Adr()] = scope.TypeFromGo(scope.GoTypeFrom(v))
 				rt2.RegOf(in.Parent)[in.Key] = d.Adr()
-				rt2.RegOf(in.Parent)[context.META] = &Meta{}
+				rt2.RegOf(in.Parent)[context.META] = nil
 				return End()
 			default:
 				halt.As(100, t, reflect.TypeOf(cc))
@@ -162,6 +164,28 @@ func getDeref(in IN) OUT {
 				halt.As(100, d.Adr(), d.Ptr(), v, v.Get())
 			}
 			return out
+		case scope.Index:
+			switch {
+			case scope.GoTypeFrom(v.Get()) == nil:
+				out = makeTrap(in.Frame, traps.NILderef)
+			case !d.Ptr():
+				out = End()
+				switch r := v.Get().(type) {
+				case scope.Array:
+					arr := r.(scope.Array)
+					rt2.ValueOf(in.Parent)[d.Adr()] = scope.TypeFromGo(scope.GoTypeFrom(arr))
+					rt2.RegOf(in.Parent)[in.Key] = d.Adr()
+					rt2.RegOf(in.Parent)[context.META] = &Meta{Arr: arr, Id: arr.Id()}
+				default:
+					halt.As(100, reflect.TypeOf(r))
+				}
+			}
+			return out
+		case scope.Value:
+			rt2.ValueOf(in.Parent)[d.Adr()] = v
+			rt2.RegOf(in.Parent)[in.Key] = d.Adr()
+			rt2.RegOf(in.Parent)[context.META] = nil
+			return End()
 		default:
 			halt.As(100, reflect.TypeOf(v))
 		}

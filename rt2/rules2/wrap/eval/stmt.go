@@ -145,15 +145,14 @@ func doAssign(in IN) (out OUT) {
 			halt.As(100, "wrong left", reflect.TypeOf(a.Left()))
 		}
 	case statement.NEW:
-		obj := a.Left().Object()
-		assert.For(obj != nil, 20)
 		heap := in.Frame.Domain().Discover(context.HEAP).(scope.Manager).Target().(scope.HeapAllocator)
 		if a.Right() != nil {
 			out = GetExpression(in, right, a.Right(), func(in IN) OUT {
 				size := rt2.ValueOf(in.Frame)[KeyOf(in, right)]
 				return GetDesignator(in, left, a.Left(), func(in IN) OUT {
 					v := rt2.ValueOf(in.Frame)[KeyOf(in, left)].(scope.Variable)
-					fn := heap.Allocate(obj, obj.Complex().(object.PointerType), size)
+					_, c := scope.Ops.TypeOf(v)
+					fn := heap.Allocate("new", c.(object.PointerType), size)
 					v.Set(fn)
 					return End()
 				})
@@ -161,7 +160,8 @@ func doAssign(in IN) (out OUT) {
 		} else {
 			out = GetDesignator(in, left, a.Left(), func(IN) OUT {
 				v := rt2.ValueOf(in.Frame)[KeyOf(in, left)].(scope.Variable)
-				fn := heap.Allocate(obj, obj.Complex().(object.PointerType))
+				_, c := scope.Ops.TypeOf(v)
+				fn := heap.Allocate("new", c.(object.PointerType))
 				v.Set(fn)
 				return End()
 			})
@@ -371,11 +371,12 @@ func doCall(in IN) (out OUT) {
 	case node.EnterNode:
 		call(p, nil)
 	case node.ProcedureNode:
-		m := rtm.DomainModule(in.Frame.Domain())
+		//m := rtm.DomainModule(in.Frame.Domain())
 		ml := in.Frame.Domain().Global().Discover(context.MOD).(rtm.List)
 		switch p.Object().Mode() {
 		case object.LOCAL_PROC, object.EXTERNAL_PROC:
 			if imp := p.Object().Imp(); imp == "" {
+				m := rtm.ModuleOfObject(in.Frame.Domain(), p.Object())
 				proc := m.NodeByObject(p.Object())
 				assert.For(proc != nil, 40, m.Name, imp, p.Object().Imp(), p.Object().Adr(0, 0), p.Object().Name())
 				call(proc[0], nil)

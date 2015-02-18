@@ -69,7 +69,7 @@ func (i *idx) base() (object.Type, object.ComplexType) {
 	case object.ArrayType:
 		return a.Base(), a.Complex()
 	case object.DynArrayType:
-		return a.Base(), nil
+		return a.Base(), a.Complex()
 	default:
 		panic(0)
 	}
@@ -305,7 +305,7 @@ func (i *idx) Set(v scope.Value) {
 		case object.DynArrayType:
 			_, ok := tt.Complex().(object.PointerType)
 			assert.For(ok, 20)
-			i.val()[i.idx] = &ptr{link: x.link, val: x}
+			i.val()[i.idx] = &ptr{link: i.link(), val: x}
 		default:
 			halt.As(100, reflect.TypeOf(tt))
 		}
@@ -474,6 +474,18 @@ func (p *ptr) Get() (ret scope.Value) {
 	return
 }
 
+func (p *ptr) Copy() (ret scope.Pointer) {
+	fake := object.New(object.VARIABLE, cp.Some())
+	fake.SetComplex(p.link.Complex())
+	fake.SetType(object.COMPLEX)
+	fake.SetName("<" + p.link.Name() + ">")
+	push(p.val.scope.d, p.val.scope.il, fake)
+	tmp := newPtr(fake)
+	ret = tmp.(scope.Pointer)
+	ret.Set(p)
+	return
+}
+
 func newPtr(o object.Object) scope.Variable {
 	_, ok := o.Complex().(object.PointerType)
 	assert.For(ok, 20)
@@ -483,7 +495,8 @@ func newPtr(o object.Object) scope.Variable {
 type ptrValue struct {
 	scope *area
 	id    cp.ID
-	link  object.Object
+	ct    object.ComplexType
+	//link  object.Object
 }
 
 func (p *ptrValue) String() string {
@@ -1849,9 +1862,9 @@ func (o *ops) TypeOf(x scope.Value) (object.Type, object.ComplexType) {
 	case *ptr:
 		//assert.For(v.val != nil, 20, v.Id())
 		if v.val != nil {
-			return v.val.link.Type(), v.val.link.Complex()
+			return object.COMPLEX, v.val.ct
 		} else {
-			//return v.link.Type(), v.link.Complex()
+			return v.link.Type(), v.link.Complex()
 		}
 	case *rec:
 		return v.link.Type(), v.link.Complex()
@@ -1861,6 +1874,8 @@ func (o *ops) TypeOf(x scope.Value) (object.Type, object.ComplexType) {
 		return v.link.Type(), v.link.Complex()
 	case *data:
 		return v.link.Type(), v.link.Complex()
+	case *idx:
+		return v.base()
 	default:
 		halt.As(100, reflect.TypeOf(v))
 	}

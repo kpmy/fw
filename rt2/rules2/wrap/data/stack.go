@@ -158,13 +158,13 @@ func fin(x interface{}) {
 	switch p := x.(type) {
 	case *ptrValue:
 		defer func() {
-			mod := rtm.ModuleOfType(p.scope.Domain(), p.link.Complex())
+			mod := rtm.ModuleOfType(p.scope.Domain(), p.ct)
 			ol := mod.Objects[mod.Enter]
 			var fn object.ProcedureObject
 			for _, _po := range ol {
 				switch po := _po.(type) {
 				case object.ProcedureObject:
-					if po.Name() == "FINALIZE" && po.Link().Complex().Equals(p.link.Complex()) {
+					if po.Name() == "FINALIZE" && po.Link().Complex().Equals(p.ct) {
 						fn = po
 						break
 					}
@@ -190,11 +190,10 @@ func fin(x interface{}) {
 	}
 }
 
-func (h *halloc) Allocate(o object.Object, t object.PointerType, par ...interface{}) scope.Value {
+func (h *halloc) Allocate(name string, t object.PointerType, par ...interface{}) scope.Value {
 	utils.PrintScope("HEAP ALLOCATE")
 	//mod := rtm.ModuleOfType(h.area.d, t)
 	assert.For(t != nil, 20)
-	assert.For(o != nil, 21)
 	var res scope.Value
 	var talloc func(t object.PointerType)
 	talloc = func(t object.PointerType) {
@@ -203,9 +202,9 @@ func (h *halloc) Allocate(o object.Object, t object.PointerType, par ...interfac
 			fake := object.New(object.VARIABLE, cp.Some())
 			fake.SetComplex(bt)
 			fake.SetType(object.COMPLEX)
-			fake.SetName("{" + o.Name() + "}")
+			fake.SetName("{" + "}")
 			push(h.area.d, h.area.il, fake)
-			res = &ptrValue{scope: h.area, id: fake.Adr(), link: o}
+			res = &ptrValue{scope: h.area, id: fake.Adr(), ct: t}
 		case object.DynArrayType:
 			assert.For(len(par) > 0, 20)
 			fake := object.New(object.VARIABLE, cp.Some())
@@ -218,7 +217,7 @@ func (h *halloc) Allocate(o object.Object, t object.PointerType, par ...interfac
 				assert.For(ok, 60)
 				arr.Set(par[0].(scope.Value))
 			})
-			res = &ptrValue{scope: h.area, id: fake.Adr(), link: o}
+			res = &ptrValue{scope: h.area, id: fake.Adr(), ct: t}
 		default:
 			halt.As(100, fmt.Sprintln("cannot allocate", reflect.TypeOf(bt)))
 		}
@@ -327,9 +326,15 @@ func (a *salloc) proper_init(root node.Node, _val node.Node, _par object.Object,
 			switch val.(type) {
 			case node.Designator:
 				out = eval.GetDesignator(in, link, val, func(in eval.IN) eval.OUT {
-					mt := rt2.RegOf(in.Frame)[context.META].(*eval.Meta)
-					fa := mt.Scope.(*area).il
-					a.area.il.Link(&key{id: par.Adr()}, items.ID{In: fa, This: &key{id: mt.Id}})
+					if mt, _ := rt2.RegOf(in.Frame)[context.META].(*eval.Meta); mt != nil && mt.Scope != nil {
+						fa := mt.Scope.(*area).il
+						a.area.il.Link(&key{id: par.Adr()}, items.ID{In: fa, This: &key{id: mt.Id}})
+					} else { //поля, элементы массива, некоторые результаты разыменований
+						d := &item{}
+						v := rt2.ValueOf(in.Frame)[eval.KeyOf(in, link)]
+						d.Data(v)
+						a.area.il.Put(&key{id: par.Adr()}, d)
+					}
 					return eval.Later(next)
 				})
 			case node.Expression: //array заменяем ссылку на переменную

@@ -53,10 +53,6 @@ type Variable interface {
 	Value
 }
 
-type Ref interface {
-	Value
-}
-
 type Record interface {
 	Variable
 	Get(cp.ID) Value
@@ -70,9 +66,15 @@ type Array interface {
 type Pointer interface {
 	Variable
 	Get() Value
+	Copy() Pointer
 }
 
-//средство обновления значенияxb
+type Index interface {
+	Variable
+	Get() Value
+}
+
+//средство обновления значения
 type ValueOf func(in Value)
 
 var ValueFrom func(v Value) Value
