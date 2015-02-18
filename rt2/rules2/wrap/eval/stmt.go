@@ -172,6 +172,8 @@ func doAssign(in IN) (out OUT) {
 	return
 }
 
+const ifCode = 1700
+
 func doIf(in IN) OUT {
 	const left = "if:left:if"
 	i := in.IR.(node.IfNode)
@@ -187,13 +189,14 @@ func doIf(in IN) OUT {
 func doCondition(in IN) OUT {
 	const left = "if:left"
 	i := in.IR.(node.ConditionalNode)
-	rt2.RegOf(in.Frame)[0] = i.Left() // if
+	rt2.RegOf(in.Frame)[ifCode] = i.Left() // if
+
 	var next Do
 	next = func(in IN) OUT {
-		last := rt2.RegOf(in.Frame)[0].(node.Node)
+		last := rt2.RegOf(in.Frame)[ifCode].(node.Node)
 		fi := rt2.ValueOf(in.Frame)[KeyOf(in, left)]
 		done := scope.GoTypeFrom(fi).(bool)
-		rt2.RegOf(in.Frame)[0] = nil
+		rt2.RegOf(in.Frame)[ifCode] = nil
 		rt2.ValueOf(in.Frame)[KeyOf(in, left)] = nil
 
 		if done && last.Right() != nil {
@@ -202,8 +205,8 @@ func doCondition(in IN) OUT {
 		} else if last.Right() == nil {
 			return End()
 		} else if last.Link() != nil { //elsif
-			rt2.RegOf(in.Frame)[0] = last.Link()
-			return GetStrange(in, left, i.Left(), next)
+			rt2.RegOf(in.Frame)[ifCode] = last.Link()
+			return GetStrange(in, left, last.Link(), next)
 		} else if i.Right() != nil { //else
 			rt2.Push(rt2.New(i.Right()), in.Frame)
 			return Later(Tail(STOP))

@@ -11,6 +11,11 @@ func Debug(x bool) {
 	debugScope = x
 }
 
+func Debug2(x, y bool) {
+	debugFrame = x
+	debugScope = y
+}
+
 func PrintFrame(x ...interface{}) {
 	if debugFrame {
 		fmt.Println(x...)

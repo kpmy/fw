@@ -224,6 +224,7 @@ func (a *arr) Get(id scope.Value) scope.Value {
 	case *data:
 		return a.Get(i.val.(scope.Value))
 	case INTEGER:
+		assert.For(int64(i) >= 0, 21, a.link.Name())
 		assert.For(int64(i) < a.length, 20)
 		if len(a.val) == 0 {
 			a.val = make([]interface{}, int(a.length))
@@ -241,6 +242,7 @@ func (a *dynarr) Get(id scope.Value) scope.Value {
 	case *data:
 		return a.Get(i.val.(scope.Value))
 	case INTEGER:
+		assert.For(int64(i) >= 0, 21)
 		assert.For(int(i) < len(a.val), 20)
 		if len(a.val) == 0 {
 			panic(0)

@@ -37,7 +37,7 @@ func main() {
 	utils.Debug(debug)
 	if name == "" {
 		name = "Start"
-		utils.Debug(false)
+		utils.Debug2(false, false)
 	}
 	global := &stdDomain{god: true}
 	global.global = global
