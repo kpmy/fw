@@ -35,6 +35,7 @@ func ScopeFor(f frame.Frame, id cp.ID, fn ...scope.ValueOf) (ret scope.Manager) 
 	mr := f.Domain().Global().Discover(context.SCOPE).(scope.Manager)
 	cr := f.Domain().Global().Discover(context.CALL).(scope.Manager)
 	hr := f.Domain().Global().Discover(context.HEAP).(scope.Manager)
+
 	switch {
 	case mr.Exists(id):
 		ret = mr

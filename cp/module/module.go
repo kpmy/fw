@@ -102,8 +102,10 @@ func (m *Module) NodeByObject(obj object.Object) (ret []node.Node) {
 	assert.For(obj != nil, 20)
 	for i := 0; (i < len(m.Nodes)) && (ret == nil); i++ {
 		node := m.Nodes[i]
-		if node.Object() == obj {
-			ret = append(ret, node)
+		if node.Object() != nil {
+			if node.Object().Adr(0, 0) == obj.Adr() {
+				ret = append(ret, node)
+			}
 		}
 	}
 	return ret

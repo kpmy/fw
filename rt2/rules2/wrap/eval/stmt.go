@@ -365,12 +365,14 @@ func doCall(in IN) (out OUT) {
 	}
 
 	switch p := c.Left().(type) {
+	case node.EnterNode:
+		call(p, nil)
 	case node.ProcedureNode:
 		m := rtm.DomainModule(in.Frame.Domain())
 		ml := in.Frame.Domain().Global().Discover(context.MOD).(rtm.List)
 		switch p.Object().Mode() {
 		case object.LOCAL_PROC, object.EXTERNAL_PROC:
-			if imp := p.Object().Imp(); imp == "" || imp == m.Name {
+			if imp := p.Object().Imp(); imp == "" {
 				proc := m.NodeByObject(p.Object())
 				assert.For(proc != nil, 40, m.Name, imp, p.Object().Imp(), p.Object().Adr(0, 0), p.Object().Name())
 				call(proc[0], nil)

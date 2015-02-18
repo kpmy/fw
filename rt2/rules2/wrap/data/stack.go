@@ -44,6 +44,10 @@ func (k *key) String() string {
 	return fmt.Sprint(k.id)
 }
 
+func (k *key) Hash() int {
+	return int(k.id)
+}
+
 func (k *key) EqualTo(to items.Key) int {
 	kk, ok := to.(*key)
 	if ok && kk.id == k.id {
@@ -81,11 +85,7 @@ func (i *item) Value() scope.Value {
 
 func (a *area) Select(this cp.ID, val scope.ValueOf) {
 	utils.PrintScope("SELECT", this)
-	opts := make([]items.Opts, 0)
-	if a.unsafe {
-		opts = append(opts, items.INIT)
-	}
-	d, ok := a.il.Get(&key{id: this}, opts...).(*item)
+	d, ok := a.il.Get(&key{id: this}).(*item)
 	assert.For(ok, 20, this)
 	val(d.Value())
 }
@@ -317,7 +317,7 @@ func (a *salloc) proper_init(root node.Node, _val node.Node, _par object.Object,
 		switch par.(type) {
 		case object.VariableObject:
 			out = eval.GetExpression(in, link, val, func(in eval.IN) eval.OUT {
-				it := a.area.il.Get(&key{id: par.Adr()}, items.INIT).(*item)
+				it := a.area.il.Get(&key{id: par.Adr()}).(*item)
 				v := it.Value().(scope.Variable)
 				val := rt2.ValueOf(in.Frame)[eval.KeyOf(in, link)]
 				v.Set(val)
@@ -420,7 +420,7 @@ func nn(role string) scope.Manager {
 		return &area{all: &salloc{}, il: items.New()}
 	case context.HEAP:
 		ret := &area{all: &halloc{}, il: items.New(), unsafe: true}
-		ret.il.Check(items.INIT)
+		ret.il.Begin()
 		return ret
 	default:
 		panic(0)

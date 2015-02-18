@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"fw/cp/module"
 	"io"
-	"log"
 	"path/filepath"
 	"ypk/assert"
 )
@@ -12,7 +11,7 @@ import (
 const CODE = "code"
 
 func Load(path, name string) (ret *module.Module) {
-	log.Println(path + ` ` + name)
+	//log.Println(path + ` ` + name)
 	//var data []byte
 	var rd io.Reader
 	r, err := zip.OpenReader(filepath.Join(path, CODE, name))

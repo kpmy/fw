@@ -1,16 +1,8 @@
 package items
 
 import (
-	"container/list"
-	"fmt"
-	"fw/utils"
 	"ypk/assert"
-	"ypk/halt"
 )
-
-type Opts int
-
-const INIT Opts = iota
 
 type ID struct {
 	In   Data
@@ -19,6 +11,7 @@ type ID struct {
 
 type Key interface {
 	EqualTo(Key) int
+	Hash() int
 }
 
 type Value interface {
@@ -38,7 +31,7 @@ type Item interface {
 
 type Data interface {
 	Set(Key, Item)
-	Get(Key, ...Opts) Item
+	Get(Key) Item
 	Remove(Key)
 
 	Hold(Key)
@@ -51,148 +44,87 @@ type Data interface {
 	Begin()
 	End()
 	Drop()
-	Check(...Opts)
 }
 
 func New() Data {
-	return &data{x: list.New(), check: true}
+	return &tree{root: make([]*node, 0)}
+}
+
+type tree struct {
+	root []*node
+}
+
+type node struct {
+	data map[int]Value
+}
+
+func (t *tree) Begin() {
+	n := &node{data: make(map[int]Value)}
+	t.root = append(t.root, n)
+}
+
+func (t *tree) top() (ret *node) {
+	if len(t.root) > 0 {
+		ret = t.root[len(t.root)-1]
+	}
+	return
+}
+
+func (t *tree) End() {
+	var this *node
+	if len(t.root) > 0 {
+		this = t.root[len(t.root)-1]
+	}
+	assert.For(this != nil, 20)
+}
+
+func (t *tree) Drop() {
+	tmp := make([]*node, 0)
+	for i := 0; i < len(t.root)-1; i++ {
+		tmp = append(tmp, t.root[i])
+	}
+	t.root = tmp
+}
+
+func (t *tree) Set(k Key, i Item) {
+	assert.For(i != nil, 20)
+	x := t.top()
+	x.data[k.Hash()] = i
+	i.KeyOf(k)
+}
+
+func (t *tree) Get(k Key) (ret Item) {
+	for i := len(t.root) - 1; i >= 0 && ret == nil; i-- {
+		tmp := t.root[i].data[k.Hash()]
+		switch this := tmp.(type) {
+		case Item:
+			ret = tmp.(Item)
+		case Link:
+			ret = this.To().In.Get(this.To().This)
+		}
+	}
+	return
+}
+
+func (t *tree) Remove(k Key) {
+	var tmp Value
+	for i := len(t.root) - 1; i >= 0 && tmp != nil; i-- {
+		tmp = t.root[i].data[k.Hash()]
+		if tmp != nil {
+			delete(t.root[i].data, k.Hash())
+		}
+	}
 }
 
 type dummy struct {
 	k Key
 }
 
-func (d *dummy) String() string {
-	return fmt.Sprint(d.k)
-}
+func (d *dummy) KeyOf(...Key) Key { return d.k }
 
-type data struct {
-	x     *list.List
-	check bool
-}
-
-func (d *data) find(k Key, from *list.Element) (ret Value, elem *list.Element) {
-	if from == nil {
-		from = d.x.Front()
-	}
-	for x := from; x != nil && ret == nil; x = x.Next() {
-		if v, ok := x.Value.(Value); ok {
-			if z := v.KeyOf().EqualTo(k); z == 0 {
-				ret = v
-			}
-		}
-	}
-	return
-}
-
-func (d *data) Exists(k Key) bool {
-	r, _ := d.find(k, nil)
-	return r != nil
-}
-
-func (d *data) Set(k Key, v Item) {
-	assert.For(v != nil, 20)
-	assert.For(v.KeyOf() == nil, 21)
-	x, _ := d.find(k, nil)
-	if x == nil {
-		v.KeyOf(k)
-		d.x.PushFront(v)
-	} else {
-		halt.As(123)
-	}
-}
-
-func (d *data) ForEach(f func(Value) bool) {
-	ok := false
-	for x := d.x.Front(); x != nil && !ok; {
-		if v, da := x.Value.(Value); da {
-			ok = f(v)
-		}
-		x = x.Next()
-	}
-}
-
-func (d *data) Get(k Key, opts ...Opts) (ret Item) {
-	if len(opts) == 0 {
-		d.Check()
-	} else {
-		switch opts[0] {
-		case INIT: //do nothing
-		default:
-			halt.As(100, fmt.Sprint(opts))
-		}
-	}
-	for x, e := d.find(k, nil); x != nil && ret == nil; {
-		switch v := x.(type) {
-		case nil: //do nothing
-		case Item:
-			ret = v
-		case Link:
-			to := v.To()
-			if to.In == d {
-				x, e = d.find(to.This, e)
-			} else {
-				ret = to.In.Get(to.This, opts...)
-			}
-		}
-	}
-	assert.For(ret != nil, 60, k)
-	return
-}
-
-func (d *data) Remove(key Key) {
-	ok := false
-	for x := d.x.Front(); x != nil && !ok; x = x.Next() {
-		switch v := x.Value.(type) {
-		case Value:
-			if v.KeyOf().EqualTo(key) == 0 {
-				d.x.Remove(x)
-				ok = true
-			}
-		}
-	}
-}
-
-func (d *data) Hold(key Key) {
-	assert.For(key != nil, 20)
-	d.x.PushFront(&dummy{k: key})
-}
-
-func (d *data) Link(key Key, to ID) {
-	assert.For(key != nil, 20)
-	var this *list.Element
-	for x := d.x.Front(); x != nil && this == nil; {
-		if _, ok := x.Value.(*dummy); ok {
-			this = x
-		}
-		x = x.Next()
-		if x != nil {
-			if _, ok := x.Value.(*limit); ok {
-				x = nil
-			}
-		}
-	}
-	assert.For(this != nil, 60)
-	this.Value = &link{k: key, id: to}
-}
-
-func (d *data) Put(key Key, item Item) {
-	assert.For(key != nil, 20)
-	var this *list.Element
-	for x := d.x.Front(); x != nil && this == nil; {
-		if _, ok := x.Value.(*dummy); ok {
-			this = x
-		}
-		x = x.Next()
-		if x != nil {
-			if _, ok := x.Value.(*limit); ok {
-				x = nil
-			}
-		}
-	}
-	assert.For(this != nil, 60)
-	this.Value = item
-	item.KeyOf(key)
+func (t *tree) Hold(key Key) {
+	n := t.top()
+	n.data[key.Hash()] = &dummy{k: key}
 }
 
 type link struct {
@@ -214,55 +146,28 @@ func (l *link) To(id ...ID) ID {
 	return l.id
 }
 
-func NewLink(to ID) Link {
-	return &link{id: to}
+func (t *tree) Link(key Key, to ID) {
+	l := &link{k: key, id: to}
+	n := t.top()
+	n.data[key.Hash()] = l
 }
 
-type limit struct{}
-type limit_key struct{}
+func (t *tree) Put(k Key, i Item) {
+	t.Set(k, i)
+}
 
-func (l *limit_key) EqualTo(Key) int { return -1 }
-func (l *limit) KeyOf(...Key) Key    { return &limit_key{} }
-
-func (d *data) Check(o ...Opts) {
-	if len(o) == 1 {
-		d.check = false
+func (t *tree) Exists(k Key) (ret bool) {
+	for i := len(t.root) - 1; i >= 0 && !ret; i-- {
+		ret = t.root[i].data[k.Hash()] != nil
 	}
-	t := d.x.Front()
-	if d.check && t != nil {
-		_, ok := t.Value.(*limit)
-		assert.For(ok, 30, "data not ready")
-	}
+	return
 }
 
-func (d *data) Begin() {
-	utils.PrintScope("BEGIN")
-	d.Check()
-}
-
-func (d *data) End() {
-	utils.PrintScope("END")
-	for x := d.x.Front(); x != nil; {
-		d, ok := x.Value.(*dummy)
-		assert.For(!ok, 40, "missing value for item ", d)
-		x = x.Next()
-		if x != nil {
-			if _, ok := x.Value.(*limit); ok {
-				x = nil
-			}
-		}
-	}
-	d.x.PushFront(&limit{})
-}
-func (d *data) Drop() {
-	d.Check()
-	for x := d.x.Front(); x != nil; {
-		d.x.Remove(x)
-		x = d.x.Front()
-		if x != nil {
-			if _, ok := x.Value.(*limit); ok {
-				x = nil
-			}
+func (t *tree) ForEach(f func(Value) bool) {
+	ok := false
+	for i := len(t.root) - 1; i >= 0 && !ok; i-- {
+		for _, v := range t.root[i].data {
+			ok = f(v)
 		}
 	}
 }

@@ -86,10 +86,10 @@ func go_math(in IN, par node.Node) OUT {
 		EXP  = 3.0
 	)
 	assert.For(par != nil, 20)
-	sm := rt2.CallScope(in.Frame)
 	res := math.NaN()
 	switch p := par.(type) {
 	case node.VariableNode:
+		sm := rt2.ScopeFor(in.Frame, p.Object().Adr())
 		sm.Select(p.Object().Adr(), func(val scope.Value) {
 			rv, ok := scope.GoTypeFrom(val).([]float64)
 			assert.For(ok && (len(rv) > 1), 100, rv)
