@@ -3,6 +3,7 @@ package scope
 import (
 	"fw/cp"
 	"fw/cp/object"
+	"fw/rt2/context"
 )
 
 type Operations interface {
@@ -37,6 +38,7 @@ type Operations interface {
 	Conv(Value, object.Type, ...object.ComplexType) Value
 	Len(object.Object, Value, Value) Value
 	TypeOf(Value) (object.Type, object.ComplexType)
+	Domain(...context.Domain) context.Domain
 }
 
 type Value interface {

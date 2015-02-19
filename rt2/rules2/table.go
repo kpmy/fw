@@ -12,6 +12,7 @@ import (
 	_ "fw/rt2/rules2/wrap"
 	_ "fw/rt2/rules2/wrap/data"
 	"fw/rt2/rules2/wrap/eval"
+	"fw/rt2/scope"
 	"fw/utils"
 	"log"
 	"time"
@@ -105,6 +106,7 @@ func run(global context.Domain, init []*cpm.Module) {
 		fl.root.PushFor(fl, nil)
 		i := 0
 		t0 := time.Now()
+		scope.Ops.Domain(global)
 		for x := frame.NOW; x == frame.NOW; x = fl.root.(frame.Frame).Do() {
 			utils.PrintFrame("STEP", i)
 			//assert.For(i < 1000, 40)

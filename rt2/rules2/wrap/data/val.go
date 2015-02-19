@@ -5,6 +5,8 @@ import (
 	"fw/cp"
 	"fw/cp/node"
 	"fw/cp/object"
+	"fw/rt2/context"
+	rtm "fw/rt2/module"
 	"fw/rt2/rules2/wrap/data/items"
 	"fw/rt2/scope"
 	"fw/utils"
@@ -792,7 +794,9 @@ func gfrom(v scope.Value) interface{} {
 	return nil
 }
 
-type ops struct{}
+type ops struct {
+	domain context.Domain
+}
 
 func (o *ops) Sum(a, b scope.Value) scope.Value {
 	switch a.(type) {
@@ -1353,22 +1357,30 @@ func (o *ops) Is(a scope.Value, typ object.ComplexType) scope.Value {
 		case object.RecordType:
 			switch a := _a.(type) {
 			case object.RecordType:
+				tc := o.Domain().Global().Discover(context.MOD).(rtm.List).NewTypeCalc()
+				tc.ConnectTo(a)
+				_, fc := tc.ForeignBase()
+				fmt.Println(a, fc)
 				switch {
 				case x.Name() == a.Name():
-					//	fmt.Println("eq")
-					//fmt.Println("qid ", _x.Qualident(), _a.Qualident(), "names ", x.Name(), a.Name())
+					fmt.Println("eq")
+					fmt.Println("qid ", _x.Qualident(), _a.Qualident(), "names ", x.Name(), a.Name())
 					return true //опасно сравнивать имена конеш
 				case x.Complex() != nil:
-					//	fmt.Println("go base")
+					fmt.Println("go base")
 					return compare(x.Complex(), a)
+				case fc != nil:
+					fmt.Println("go foreign")
+					return compare(x, fc)
 				default:
+					fmt.Println("go here")
 					return false
 				}
 			case object.PointerType:
 				if a.Complex() != nil {
 					return compare(x, a.Complex())
 				} else {
-					fmt.Println("here")
+					fmt.Println("to here")
 					return false
 				}
 			default:
@@ -1379,10 +1391,10 @@ func (o *ops) Is(a scope.Value, typ object.ComplexType) scope.Value {
 			case object.PointerType:
 				switch {
 				case x.Name() == a.Name():
-					//	fmt.Println("eq")
+					fmt.Println("eq")
 					return true //опасно сравнивать имена конеш
 				case x.Complex() != nil:
-					//	fmt.Println("go base")
+					fmt.Println("go base")
 					return compare(x.Complex(), a)
 				default:
 					return false
@@ -1399,7 +1411,7 @@ func (o *ops) Is(a scope.Value, typ object.ComplexType) scope.Value {
 	case *rec:
 		z, a := x.comp.(object.RecordType)
 		y, b := typ.(object.RecordType)
-		//fmt.Println("compare rec", x.link.Complex(), typ, a, b, a && b && compare(z, y))
+		fmt.Println("compare rec", x.comp, typ, a, b, a && b && compare(z, y))
 		return BOOLEAN(a && b && compare(z, y))
 	case *ptr:
 		z, a := x.comp.(object.PointerType)
@@ -1409,7 +1421,7 @@ func (o *ops) Is(a scope.Value, typ object.ComplexType) scope.Value {
 			z, a = c.(object.RecordType)
 		}
 		y, b := typ.(object.PointerType)
-		//fmt.Println("compare ptr", z, typ, a, b, a && b && compare(z, y))
+		fmt.Println("compare ptr", z, typ, a, b, a && b && compare(z, y))
 		return BOOLEAN(a && b && compare(z, y))
 	case *idx:
 		return o.Is(x.Get(), typ)
@@ -1880,6 +1892,13 @@ func (o *ops) TypeOf(x scope.Value) (object.Type, object.ComplexType) {
 		halt.As(100, reflect.TypeOf(v))
 	}
 	return object.NOTYPE, nil
+}
+
+func (o *ops) Domain(x ...context.Domain) context.Domain {
+	if len(x) == 1 {
+		o.domain = x[0]
+	}
+	return o.domain
 }
 
 func init() {
