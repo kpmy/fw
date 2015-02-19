@@ -48,7 +48,7 @@ type Constant interface {
 }
 
 type Variable interface {
-	Id() cp.ID
+	//Id() cp.ID
 	Set(Value)
 	Value
 }

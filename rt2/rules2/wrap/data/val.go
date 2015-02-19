@@ -17,19 +17,21 @@ import (
 )
 
 type data struct {
-	link object.Object
 	val  interface{}
+	typ  object.Type
+	comp object.ComplexType
+	name string
 }
 
 type arr struct {
-	link   object.Object
 	val    []interface{}
 	length int64
+	comp   object.ComplexType
 }
 
 type dynarr struct {
-	link object.Object
 	val  []interface{}
+	comp object.ComplexType
 }
 
 type proc struct {
@@ -37,15 +39,17 @@ type proc struct {
 }
 
 type rec struct {
-	link object.Object
 	scope.Record
-	fi items.Data
+	fi   items.Data
+	name string
+	comp object.ComplexType
 }
 
 type ptr struct {
-	link object.Object
 	scope.Pointer
-	val *ptrValue
+	val  *ptrValue
+	comp object.ComplexType
+	typ  object.Type
 }
 
 type idx struct {
@@ -53,19 +57,19 @@ type idx struct {
 	idx  int
 }
 
-func (i *idx) link() object.Object {
+func (i *idx) comp() object.ComplexType {
 	switch a := i.some.(type) {
 	case *arr:
-		return a.link
+		return a.comp
 	case *dynarr:
-		return a.link
+		return a.comp
 	default:
 		panic(0)
 	}
 }
 
 func (i *idx) base() (object.Type, object.ComplexType) {
-	switch a := i.link().Complex().(type) {
+	switch a := i.comp().(type) {
 	case object.ArrayType:
 		return a.Base(), a.Complex()
 	case object.DynArrayType:
@@ -87,11 +91,7 @@ func (i *idx) val() []interface{} {
 }
 
 func (r *rec) String() string {
-	return r.link.Name()
-}
-
-func (r *rec) Id() cp.ID {
-	return r.link.Adr()
+	return r.name
 }
 
 func (r *rec) Set(v scope.Value) {
@@ -107,18 +107,18 @@ func (r *rec) Get(i cp.ID) scope.Value {
 func newRec(o object.Object) *rec {
 	_, ok := o.Complex().(object.RecordType)
 	assert.For(ok, 20)
-	return &rec{link: o}
+	return &rec{name: o.Name(), comp: o.Complex()}
 }
 
 func (p *proc) String() string {
 	return fmt.Sprint(p.link.Adr(), p.link.Name())
 }
 
-func (x *data) Id() cp.ID { return x.link.Adr() }
+//func (x *data) Id() cp.ID { return x.link.Adr() }
 
-func (x *arr) Id() cp.ID { return x.link.Adr() }
+//func (x *arr) Id() cp.ID { return x.link.Adr() }
 
-func (x *dynarr) Id() cp.ID { return x.link.Adr() }
+//func (x *dynarr) Id() cp.ID { return x.link.Adr() }
 
 func (a *arr) Set(v scope.Value) {
 	switch x := v.(type) {
@@ -224,7 +224,7 @@ func (a *arr) Get(id scope.Value) scope.Value {
 	case *data:
 		return a.Get(i.val.(scope.Value))
 	case INTEGER:
-		assert.For(int64(i) >= 0, 21, a.link.Name())
+		assert.For(int64(i) >= 0, 21)
 		assert.For(int64(i) < a.length, 20)
 		if len(a.val) == 0 {
 			a.val = make([]interface{}, int(a.length))
@@ -254,20 +254,18 @@ func (a *dynarr) Get(id scope.Value) scope.Value {
 	panic(0)
 }
 
-func (i *idx) Id() cp.ID {
-	return i.some.Id()
-}
+//func (i *idx) Id() cp.ID { return i.some.Id()}
 
 func (i *idx) String() string {
-	return fmt.Sprint("@", i.Id(), "[", i.idx, "]")
+	return fmt.Sprint("@", "[", i.idx, "]")
 }
 
 func (i *idx) Set(v scope.Value) {
-	t := i.link().Complex()
+	t := i.comp()
 	switch x := v.(type) {
 	case *idx:
 		var comp object.Type = object.NOTYPE
-		switch xt := x.link().Complex().(type) {
+		switch xt := x.comp().(type) {
 		case object.ArrayType:
 			comp = xt.Base()
 		case object.DynArrayType:
@@ -280,7 +278,7 @@ func (i *idx) Set(v scope.Value) {
 		} else {
 			switch z := x.val()[x.idx].(type) {
 			case *arr:
-				t := z.link.Complex().(object.ArrayType).Base()
+				t := z.comp.(object.ArrayType).Base()
 				switch t {
 				case object.CHAR:
 					i.val()[i.idx].(*arr).Set(STRING(z.tryString()))
@@ -305,7 +303,7 @@ func (i *idx) Set(v scope.Value) {
 		case object.DynArrayType:
 			_, ok := tt.Complex().(object.PointerType)
 			assert.For(ok, 20)
-			i.val()[i.idx] = &ptr{link: i.link(), val: x}
+			i.val()[i.idx] = &ptr{val: x}
 		default:
 			halt.As(100, reflect.TypeOf(tt))
 		}
@@ -324,7 +322,7 @@ func (i *idx) Get() scope.Value {
 	case CHAR:
 		return z
 	case nil:
-		b := i.link().Complex().(object.ArrayType).Base()
+		b := i.comp().(object.ArrayType).Base()
 		switch b {
 		case object.CHAR:
 			return CHAR(rune(0))
@@ -379,21 +377,21 @@ func (d *data) Set(v scope.Value) {
 	utils.PrintScope("set data")
 	switch x := v.(type) {
 	case *data:
-		if d.link.Type() == x.link.Type() {
+		if d.typ == x.typ {
 			d.val = x.val
 		} else {
 			d.Set(x.val.(scope.Value))
 		}
 	case *proc:
-		assert.For(d.link.Type() == object.COMPLEX, 20)
-		t, ok := d.link.Complex().(object.BasicType)
-		assert.For(ok, 21, reflect.TypeOf(d.link.Complex()))
+		assert.For(d.typ == object.COMPLEX, 20)
+		t, ok := d.comp.(object.BasicType)
+		assert.For(ok, 21, reflect.TypeOf(d.comp))
 		assert.For(t.Type() == object.PROCEDURE, 22)
 		d.val = x
 	case *idx:
 		d.val = x.val()[x.idx]
 	case INTEGER:
-		switch d.link.Type() {
+		switch d.typ {
 		case object.INTEGER:
 			d.val = x
 		case object.LONGINT:
@@ -401,34 +399,34 @@ func (d *data) Set(v scope.Value) {
 		case object.REAL:
 			d.val = REAL(x)
 		default:
-			halt.As(20, d.link.Type())
+			halt.As(20, d.typ)
 		}
 	case BOOLEAN:
-		assert.For(d.link.Type() == object.BOOLEAN, 20)
+		assert.For(d.typ == object.BOOLEAN, 20)
 		d.val = x
 	case SHORTCHAR:
-		assert.For(d.link.Type() == object.SHORTCHAR, 20)
+		assert.For(d.typ == object.SHORTCHAR, 20)
 		d.val = x
 	case CHAR:
-		assert.For(d.link.Type() == object.CHAR, 20)
+		assert.For(d.typ == object.CHAR, 20)
 		d.val = x
 	case SHORTINT:
-		assert.For(d.link.Type() == object.SHORTINT, 20)
+		assert.For(d.typ == object.SHORTINT, 20)
 		d.val = x
 	case LONGINT:
-		assert.For(d.link.Type() == object.LONGINT, 20)
+		assert.For(d.typ == object.LONGINT, 20)
 		d.val = x
 	case BYTE:
-		assert.For(d.link.Type() == object.BYTE, 20)
+		assert.For(d.typ == object.BYTE, 20)
 		d.val = x
 	case SET:
-		assert.For(d.link.Type() == object.SET, 20)
+		assert.For(d.typ == object.SET, 20)
 		d.val = x
 	case REAL:
-		assert.For(d.link.Type() == object.REAL, 20)
+		assert.For(d.typ == object.REAL, 20)
 		d.val = x
 	case SHORTREAL:
-		assert.For(d.link.Type() == object.SHORTREAL, 20)
+		assert.For(d.typ == object.SHORTREAL, 20)
 		d.val = x
 	default:
 		panic(fmt.Sprintln(reflect.TypeOf(x)))
@@ -436,18 +434,16 @@ func (d *data) Set(v scope.Value) {
 }
 
 func (d *data) String() string {
-	return fmt.Sprint(d.link.Name(), "=", d.val)
+	return fmt.Sprint(d.name, "=", d.val)
 }
 
 func (p *ptr) String() string {
-	if p.link.Complex() != nil {
-		return fmt.Sprint("pointer ", p.link.Complex().(object.PointerType).Name(), "&", p.val)
+	if p.comp != nil {
+		return fmt.Sprint("pointer ", p.comp.(object.PointerType).Name(), "&", p.val)
 	} else {
-		return fmt.Sprint("pointer simple", p.link.Type())
+		return fmt.Sprint("pointer simple", p.typ)
 	}
 }
-
-func (p *ptr) Id() cp.ID { return p.link.Adr() }
 
 func (p *ptr) Set(v scope.Value) {
 	switch x := v.(type) {
@@ -476,9 +472,9 @@ func (p *ptr) Get() (ret scope.Value) {
 
 func (p *ptr) Copy() (ret scope.Pointer) {
 	fake := object.New(object.VARIABLE, cp.Some())
-	fake.SetComplex(p.link.Complex())
+	fake.SetComplex(p.comp)
 	fake.SetType(object.COMPLEX)
-	fake.SetName("<" + p.link.Name() + ">")
+	fake.SetName("<" + ">")
 	push(p.val.scope.d, p.val.scope.il, fake)
 	tmp := newPtr(fake)
 	ret = tmp.(scope.Pointer)
@@ -489,7 +485,7 @@ func (p *ptr) Copy() (ret scope.Pointer) {
 func newPtr(o object.Object) scope.Variable {
 	_, ok := o.Complex().(object.PointerType)
 	assert.For(ok, 20)
-	return &ptr{link: o}
+	return &ptr{typ: o.Type(), comp: o.Complex()}
 }
 
 type ptrValue struct {
@@ -542,36 +538,36 @@ func (x BOOLEAN) String() string     { return fmt.Sprint(bool(x)) }
 func newData(o object.Object) (ret scope.Variable) {
 	switch o.Type() {
 	case object.INTEGER:
-		ret = &data{link: o, val: INTEGER(0)}
+		ret = &data{typ: o.Type(), comp: o.Complex(), name: o.Name(), val: INTEGER(0)}
 	case object.BOOLEAN:
-		ret = &data{link: o, val: BOOLEAN(false)}
+		ret = &data{typ: o.Type(), comp: o.Complex(), name: o.Name(), val: BOOLEAN(false)}
 	case object.BYTE:
-		ret = &data{link: o, val: BYTE(0)}
+		ret = &data{typ: o.Type(), comp: o.Complex(), name: o.Name(), val: BYTE(0)}
 	case object.CHAR:
-		ret = &data{link: o, val: CHAR(0)}
+		ret = &data{typ: o.Type(), comp: o.Complex(), name: o.Name(), val: CHAR(0)}
 	case object.LONGINT:
-		ret = &data{link: o, val: LONGINT(0)}
+		ret = &data{typ: o.Type(), comp: o.Complex(), name: o.Name(), val: LONGINT(0)}
 	case object.SHORTINT:
-		ret = &data{link: o, val: SHORTINT(0)}
+		ret = &data{typ: o.Type(), comp: o.Complex(), name: o.Name(), val: SHORTINT(0)}
 	case object.SET:
-		ret = &data{link: o, val: SET{bits: big.NewInt(0)}}
+		ret = &data{typ: o.Type(), comp: o.Complex(), name: o.Name(), val: SET{bits: big.NewInt(0)}}
 	case object.REAL:
-		ret = &data{link: o, val: REAL(0)}
+		ret = &data{typ: o.Type(), comp: o.Complex(), name: o.Name(), val: REAL(0)}
 	case object.SHORTREAL:
-		ret = &data{link: o, val: SHORTREAL(0)}
+		ret = &data{typ: o.Type(), comp: o.Complex(), name: o.Name(), val: SHORTREAL(0)}
 	case object.SHORTCHAR:
-		ret = &data{link: o, val: SHORTCHAR(0)}
+		ret = &data{typ: o.Type(), comp: o.Complex(), name: o.Name(), val: SHORTCHAR(0)}
 	case object.COMPLEX:
 		switch t := o.Complex().(type) {
 		case object.BasicType:
 			switch t.Type() {
 			case object.PROCEDURE:
-				ret = &data{link: o, val: nil}
+				ret = &data{typ: o.Type(), comp: o.Complex(), name: o.Name(), val: nil}
 			default:
 				halt.As(100, t.Type())
 			}
 		case object.ArrayType:
-			ret = &arr{link: o, length: t.Len()}
+			ret = &arr{comp: o.Complex(), length: t.Len()}
 			if a := ret.(*arr); t.Base() == object.COMPLEX {
 				a.val = make([]interface{}, int(t.Len()))
 				for i := 0; i < int(t.Len()); i++ {
@@ -583,14 +579,14 @@ func newData(o object.Object) (ret scope.Variable) {
 				}
 			}
 		case object.DynArrayType:
-			ret = &dynarr{link: o}
+			ret = &dynarr{comp: o.Complex()}
 		default:
 			halt.As(100, reflect.TypeOf(t))
 		}
 	case object.NOTYPE:
 		switch t := o.Complex().(type) {
 		case nil:
-			ret = &ptr{link: o}
+			ret = &ptr{typ: o.Type(), comp: o.Complex()}
 		default:
 			halt.As(100, reflect.TypeOf(t))
 		}
@@ -671,7 +667,7 @@ func newConst(n node.Node) scope.Value {
 func vfrom(v scope.Value) scope.Value {
 	switch n := v.(type) {
 	case *data:
-		switch n.link.Type() {
+		switch n.typ {
 		case object.INTEGER:
 			return n.val.(INTEGER)
 		case object.BYTE:
@@ -687,7 +683,7 @@ func vfrom(v scope.Value) scope.Value {
 		case object.LONGINT:
 			return n.val.(LONGINT)
 		default:
-			halt.As(100, n.link.Type())
+			halt.As(100, n.typ)
 		}
 	case INTEGER, CHAR:
 		return n
@@ -712,7 +708,7 @@ func gfrom(v scope.Value) interface{} {
 	case *proc:
 		return n.link
 	case *dynarr:
-		switch n.link.Complex().(object.DynArrayType).Base() {
+		switch n.comp.(object.DynArrayType).Base() {
 		case object.SHORTCHAR:
 			if n.val != nil {
 				return n.tryString()
@@ -728,11 +724,11 @@ func gfrom(v scope.Value) interface{} {
 		case object.COMPLEX:
 			return n.val
 		default:
-			halt.As(100, n.link.Complex().(object.DynArrayType).Base())
+			halt.As(100, n.comp.(object.DynArrayType).Base())
 		}
 		panic(0)
 	case *arr:
-		switch n.link.Complex().(object.ArrayType).Base() {
+		switch n.comp.(object.ArrayType).Base() {
 		case object.SHORTCHAR:
 			if n.val != nil {
 				return n.tryString()
@@ -752,11 +748,11 @@ func gfrom(v scope.Value) interface{} {
 			}
 			return ret
 		default:
-			halt.As(100, n.link.Complex().(object.ArrayType).Base())
+			halt.As(100, n.comp.(object.ArrayType).Base())
 		}
 		panic(0)
 	case *idx:
-		switch t := n.link().Complex().(type) {
+		switch t := n.comp().(type) {
 		case object.ArrayType:
 			switch t.Base() {
 			case object.CHAR:
@@ -835,17 +831,17 @@ func (o *ops) Sum(a, b scope.Value) scope.Value {
 				switch y := b.(type) {
 				case *arr:
 					switch {
-					case x.link.Type() == y.link.Type() && x.link.Complex().(object.ArrayType).Base() == object.CHAR:
+					case x.comp.(object.ArrayType).Base() == object.CHAR:
 						return STRING(x.tryString() + y.tryString())
 					default:
-						halt.As(100, x.link.Type(), y.link.Type())
+						halt.As(100, x.comp, y.comp)
 					}
 				case STRING:
 					switch {
-					case x.link.Complex().(object.ArrayType).Base() == object.CHAR:
+					case x.comp.(object.ArrayType).Base() == object.CHAR:
 						return STRING(x.tryString() + string(y))
 					default:
-						halt.As(100, x.link.Type())
+						halt.As(100, x.comp)
 					}
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
@@ -854,10 +850,10 @@ func (o *ops) Sum(a, b scope.Value) scope.Value {
 				switch y := b.(type) {
 				case STRING:
 					switch {
-					case x.link.Complex().(object.DynArrayType).Base() == object.CHAR:
+					case x.comp.(object.DynArrayType).Base() == object.CHAR:
 						return STRING(x.tryString() + string(y))
 					default:
-						halt.As(100, x.link.Type())
+						halt.As(100, x.comp)
 					}
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
@@ -1399,12 +1395,12 @@ func (o *ops) Is(a scope.Value, typ object.ComplexType) scope.Value {
 	}
 	switch x := a.(type) {
 	case *rec:
-		z, a := x.link.Complex().(object.RecordType)
+		z, a := x.comp.(object.RecordType)
 		y, b := typ.(object.RecordType)
 		//fmt.Println("compare rec", x.link.Complex(), typ, a, b, a && b && compare(z, y))
 		return BOOLEAN(a && b && compare(z, y))
 	case *ptr:
-		z, a := x.link.Complex().(object.PointerType)
+		z, a := x.comp.(object.PointerType)
 		if val := x.Get(); z.Name() == "ANYPTR" && val != NIL {
 			t, c := o.TypeOf(val)
 			assert.For(t == object.COMPLEX, 40)
@@ -1864,16 +1860,16 @@ func (o *ops) TypeOf(x scope.Value) (object.Type, object.ComplexType) {
 		if v.val != nil {
 			return object.COMPLEX, v.val.ct
 		} else {
-			return v.link.Type(), v.link.Complex()
+			return v.typ, v.comp
 		}
 	case *rec:
-		return v.link.Type(), v.link.Complex()
+		return object.COMPLEX, v.comp
 	case *dynarr:
-		return v.link.Type(), v.link.Complex()
+		return object.COMPLEX, v.comp
 	case *arr:
-		return v.link.Type(), v.link.Complex()
+		return object.COMPLEX, v.comp
 	case *data:
-		return v.link.Type(), v.link.Complex()
+		return v.typ, v.comp
 	case *idx:
 		return v.base()
 	default:

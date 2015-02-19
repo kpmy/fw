@@ -343,7 +343,7 @@ func (a *salloc) proper_init(root node.Node, _val node.Node, _par object.Object,
 					data := rt2.ValueOf(in.Frame)[eval.KeyOf(in, link)]
 					switch data.(type) {
 					case STRING, SHORTSTRING:
-						val := &dynarr{link: par}
+						val := &dynarr{comp: par.Complex()}
 						val.Set(data)
 						d.Data(val)
 					default:
@@ -445,10 +445,14 @@ func fn(mgr scope.Manager, name string) (ret object.Object) {
 		}
 		switch vv := v.(type) {
 		case *data:
-			utils.PrintScope(vv.link.Name())
-			if vv.link.Name() == name {
-				ret = vv.link
-				ok = true
+			r := vv.val
+			switch p := r.(type) {
+			case *proc:
+				utils.PrintScope(p.link.Name())
+				if p.link.Name() == name {
+					ret = p.link
+					ok = true
+				}
 			}
 		default:
 			utils.PrintScope(reflect.TypeOf(vv))

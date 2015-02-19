@@ -58,7 +58,7 @@ func getField(in IN) OUT {
 			fld := v.Get(f.Object().Adr()).(scope.Variable)
 			rt2.ValueOf(in.Parent)[f.Adr()] = fld
 			rt2.RegOf(in.Parent)[in.Key] = f.Adr()
-			rt2.RegOf(in.Parent)[context.META] = &Meta{Scope: nil, Rec: v, Id: fld.Id()}
+			//rt2.RegOf(in.Parent)[context.META] = &Meta{Scope: nil, Rec: v, Id: fld.Id()}
 			return End()
 		default:
 			halt.As(100, reflect.TypeOf(v))
@@ -83,7 +83,7 @@ func getIndex(in IN) OUT {
 			case scope.Array:
 				rt2.ValueOf(in.Parent)[i.Adr()] = a.Get(idx)
 				rt2.RegOf(in.Parent)[in.Key] = i.Adr()
-				rt2.RegOf(in.Parent)[context.META] = &Meta{Arr: a, Id: a.Id()}
+				//rt2.RegOf(in.Parent)[context.META] = &Meta{Arr: a, Id: a.Id()}
 				return End()
 			default:
 				halt.As(100, reflect.TypeOf(a))
@@ -140,12 +140,12 @@ func getDeref(in IN) OUT {
 					rec := r.(scope.Record)
 					rt2.ValueOf(in.Parent)[d.Adr()] = rec
 					rt2.RegOf(in.Parent)[in.Key] = d.Adr()
-					rt2.RegOf(in.Parent)[context.META] = &Meta{Scope: rt2.ScopeFor(in.Frame, rec.Id()), Id: rec.Id()}
+					//rt2.RegOf(in.Parent)[context.META] = &Meta{Scope: rt2.ScopeFor(in.Frame, rec.Id()), Id: rec.Id()}
 				case scope.Array:
 					arr := r.(scope.Array)
 					rt2.ValueOf(in.Parent)[d.Adr()] = arr
 					rt2.RegOf(in.Parent)[in.Key] = d.Adr()
-					rt2.RegOf(in.Parent)[context.META] = &Meta{Scope: rt2.ScopeFor(in.Frame, arr.Id()), Id: arr.Id()}
+					//rt2.RegOf(in.Parent)[context.META] = &Meta{Scope: rt2.ScopeFor(in.Frame, arr.Id()), Id: arr.Id()}
 				default:
 					halt.As(100, reflect.TypeOf(r))
 				}
@@ -156,7 +156,7 @@ func getDeref(in IN) OUT {
 					arr := r.(scope.Array)
 					rt2.ValueOf(in.Parent)[d.Adr()] = scope.TypeFromGo(scope.GoTypeFrom(arr))
 					rt2.RegOf(in.Parent)[in.Key] = d.Adr()
-					rt2.RegOf(in.Parent)[context.META] = &Meta{Arr: arr, Id: arr.Id()}
+					//rt2.RegOf(in.Parent)[context.META] = &Meta{Arr: arr, Id: arr.Id()}
 				default:
 					halt.As(100, reflect.TypeOf(r))
 				}
@@ -175,7 +175,7 @@ func getDeref(in IN) OUT {
 					arr := r.(scope.Array)
 					rt2.ValueOf(in.Parent)[d.Adr()] = scope.TypeFromGo(scope.GoTypeFrom(arr))
 					rt2.RegOf(in.Parent)[in.Key] = d.Adr()
-					rt2.RegOf(in.Parent)[context.META] = &Meta{Arr: arr, Id: arr.Id()}
+					//rt2.RegOf(in.Parent)[context.META] = &Meta{Arr: arr, Id: arr.Id()}
 				default:
 					halt.As(100, reflect.TypeOf(r))
 				}
