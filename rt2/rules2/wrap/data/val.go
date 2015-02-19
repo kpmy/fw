@@ -1364,13 +1364,15 @@ func (o *ops) Is(a scope.Value, typ object.ComplexType) scope.Value {
 				switch {
 				case x.Name() == a.Name():
 					fmt.Println("eq")
-					fmt.Println("qid ", _x.Qualident(), _a.Qualident(), "names ", x.Name(), a.Name())
+					fmt.Println("qid ", x.Qualident(), _a.Qualident(), "names ", x.Name(), a.Name())
 					return true //опасно сравнивать имена конеш
 				case x.Complex() != nil:
 					fmt.Println("go base")
+					fmt.Println("qid ", x.Complex().Qualident(), a.Qualident())
 					return compare(x.Complex(), a)
 				case fc != nil:
 					fmt.Println("go foreign")
+					fmt.Println("qid ", x.Qualident(), fc.Qualident())
 					return compare(x, fc)
 				default:
 					fmt.Println("go here")
