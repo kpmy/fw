@@ -63,6 +63,8 @@ func (t Type) String() string {
 		return "SHORTSTRING"
 	case NIL:
 		return "NIL"
+	case WRONG:
+		return "WRONG type"
 	default:
 		return fmt.Sprint("looks like new type here", int(t))
 	}

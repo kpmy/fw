@@ -104,9 +104,13 @@ func getProc(in IN) OUT {
 	return End()
 }
 
+const nullSafeFlag = "deref:null"
+
 func getDeref(in IN) OUT {
 	const left = "design:left"
 	d := in.IR.(node.DerefNode)
+	//nullSafe, _ := rt2.RegOf(in.Parent)[nullSafeFlag].(bool)
+	//fmt.Println(reflect.TypeOf(rt2.NodeOf(in.Parent)), nullSafe)
 	return GetDesignator(in, left, d.Left(), func(in IN) (out OUT) {
 		_v := rt2.ValueOf(in.Frame)[KeyOf(in, left)]
 		switch v := _v.(type) {
@@ -179,6 +183,33 @@ func getDeref(in IN) OUT {
 				default:
 					halt.As(100, reflect.TypeOf(r))
 				}
+			case d.Ptr():
+				out = End()
+				switch r := v.Get().(type) {
+				case scope.Pointer:
+					if scope.GoTypeFrom(v.Get()) == nil {
+						out = makeTrap(in.Frame, traps.NILderef)
+					} else {
+						switch vr := r.Get().(type) {
+						case scope.Record:
+							rec := vr.(scope.Record)
+							rt2.ValueOf(in.Parent)[d.Adr()] = rec
+							rt2.RegOf(in.Parent)[in.Key] = d.Adr()
+							//rt2.RegOf(in.Parent)[context.META] = &Meta{Scope: rt2.ScopeFor(in.Frame, rec.Id()), Id: rec.Id()}
+						case scope.Array:
+							arr := vr.(scope.Array)
+							rt2.ValueOf(in.Parent)[d.Adr()] = arr
+							rt2.RegOf(in.Parent)[in.Key] = d.Adr()
+							//rt2.RegOf(in.Parent)[context.META] = &Meta{Scope: rt2.ScopeFor(in.Frame, arr.Id()), Id: arr.Id()}
+						default:
+							halt.As(100, reflect.TypeOf(r))
+						}
+					}
+				default:
+					halt.As(100, reflect.TypeOf(r))
+				}
+			default:
+				halt.As(100, d.Adr(), d.Ptr(), v, v.Get())
 			}
 			return out
 		case scope.Value:
@@ -341,7 +372,7 @@ func getGuard(in IN) OUT {
 			rt2.RegOf(in.Parent)[context.META] = rt2.RegOf(in.Frame)[context.META] //&Meta{Id: vv.Id(), }
 			return End()
 		} else {
-			return makeTrap(in.Frame, 0)
+			return makeTrap(in.Frame, traps.NILderef)
 		}
 
 	})

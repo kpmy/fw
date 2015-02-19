@@ -307,6 +307,8 @@ func (i *idx) Set(v scope.Value) {
 		default:
 			halt.As(100, reflect.TypeOf(tt))
 		}
+	case *ptr:
+		i.val()[i.idx] = x
 	default:
 		halt.As(100, reflect.TypeOf(x), x, t)
 	}
@@ -1409,6 +1411,8 @@ func (o *ops) Is(a scope.Value, typ object.ComplexType) scope.Value {
 		y, b := typ.(object.PointerType)
 		//fmt.Println("compare ptr", z, typ, a, b, a && b && compare(z, y))
 		return BOOLEAN(a && b && compare(z, y))
+	case *idx:
+		return o.Is(x.Get(), typ)
 	default:
 		halt.As(100, reflect.TypeOf(x))
 	}

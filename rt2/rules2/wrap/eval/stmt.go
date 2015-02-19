@@ -149,6 +149,7 @@ func doAssign(in IN) (out OUT) {
 		if a.Right() != nil {
 			out = GetExpression(in, right, a.Right(), func(in IN) OUT {
 				size := rt2.ValueOf(in.Frame)[KeyOf(in, right)]
+				rt2.RegOf(in.Frame)[nullSafeFlag] = true
 				return GetDesignator(in, left, a.Left(), func(in IN) OUT {
 					v := rt2.ValueOf(in.Frame)[KeyOf(in, left)].(scope.Variable)
 					_, c := scope.Ops.TypeOf(v)
@@ -306,7 +307,17 @@ func doTrap(in IN) OUT {
 
 	return GetExpression(in, left, in.IR.Left(), func(IN) OUT {
 		val := rt2.ValueOf(in.Frame)[KeyOf(in, left)]
+
 		log.Println("TRAP:", traps.This(scope.GoTypeFrom(val)))
+		in.Frame.Root().ForEach(func(x frame.Frame) (do bool) {
+			n := rt2.NodeOf(x)
+			if n != nil {
+				log.Println(reflect.TypeOf(n), n.Adr())
+			} else {
+				log.Println(reflect.TypeOf(x))
+			}
+			return true
+		})
 		return Now(Tail(WRONG))
 	})
 

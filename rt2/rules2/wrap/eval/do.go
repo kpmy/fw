@@ -124,7 +124,13 @@ func GetDesignator(in IN, key interface{}, design node.Node, next Do) OUT {
 				assert.For(tmp != nil, 40)
 				tmp_id := cp.ID(cp.Some())
 				rt2.RegOf(in.Frame)[key] = tmp_id
-				vr := tmp.(scope.Pointer).Copy()
+				var vr scope.Value
+				switch t := tmp.(type) {
+				case scope.Pointer:
+					vr = t.Copy()
+				case scope.Index:
+					vr = t
+				}
 				assert.For(vr != nil, 50)
 				rt2.ValueOf(in.Frame)[tmp_id] = vr
 				//meta.Scope = rt2.ScopeFor(in.Frame, vr.Id())
