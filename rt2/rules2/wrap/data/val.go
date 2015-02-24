@@ -1427,14 +1427,24 @@ func (o *ops) Is(a scope.Value, typ object.ComplexType) scope.Value {
 		dump(with)
 		fmt.Println()
 	}
+	var do func(scope.Value, object.ComplexType) bool
+	do = func(a scope.Value, typ object.ComplexType) (ret bool) {
+		switch x := a.(type) {
+		case *rec:
+			comp2(x.comp, typ)
+		case *ptr:
+			comp2(x.comp, typ)
+		case *idx:
+			return do(x.Get(), typ)
+		}
+		return
+	}
+	do(a, typ)
 	switch x := a.(type) {
 	case *rec:
 		z, a := x.comp.(object.RecordType)
 		y, b := typ.(object.RecordType)
 		//fmt.Println("compare rec", x.comp, typ, a, b, a && b && compare(z, y))
-		if a && b {
-			comp2(z, y)
-		}
 		return BOOLEAN(a && b && compare(z, y))
 	case *ptr:
 		z, a := x.comp.(object.PointerType)
@@ -1445,9 +1455,6 @@ func (o *ops) Is(a scope.Value, typ object.ComplexType) scope.Value {
 		}
 		y, b := typ.(object.PointerType)
 		//fmt.Println("compare ptr", z, typ, a, b, a && b && compare(z, y))
-		if a && b {
-			comp2(z, y)
-		}
 		return BOOLEAN(a && b && compare(z, y))
 	case *idx:
 		return o.Is(x.Get(), typ)
