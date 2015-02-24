@@ -211,7 +211,7 @@ type tc struct {
 	TypeCalc
 }
 
-type inherited interface {
+type Inherited interface {
 	Complex(...object.ComplexType) object.ComplexType
 }
 
@@ -261,8 +261,8 @@ func (c *tc) MethodList() (ret map[int][]Method) {
 						} else if t.Equals(pt) {
 							//fmt.Println("double ", pt.Qualident(), po.Name(), po.Adr())
 						}
-						if _, ok := pt.(inherited); ok {
-							pt = pt.(inherited).Complex()
+						if _, ok := pt.(Inherited); ok {
+							pt = pt.(Inherited).Complex()
 						} else {
 							pt = nil
 						}
@@ -292,7 +292,7 @@ func (c *tc) MethodList() (ret map[int][]Method) {
 		tmp = make(map[mid]object.Object, 0)
 		for t := x; t != nil; {
 			list(m, t)
-			z := t.(inherited).Complex()
+			z := t.(Inherited).Complex()
 			if z != nil {
 				t = z
 			} else {
@@ -354,8 +354,8 @@ func (c *tc) String() (ret string) {
 				if po.Link() != nil {
 					pt := po.Link().Complex()
 					var pb object.ComplexType
-					if _, ok := pt.(inherited); ok {
-						pb = pt.(inherited).Complex()
+					if _, ok := pt.(Inherited); ok {
+						pb = pt.(Inherited).Complex()
 					}
 					if t.Equals(pt) || t.Equals(pb) {
 						ret = fmt.Sprintln(ret, po.Name(), local)
