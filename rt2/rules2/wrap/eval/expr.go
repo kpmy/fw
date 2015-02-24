@@ -366,13 +366,19 @@ func getGuard(in IN) OUT {
 	return GetDesignator(in, left, g.Left(), func(IN) OUT {
 		v := rt2.ValueOf(in.Frame)[KeyOf(in, left)]
 		assert.For(v != nil, 20)
+		switch vv := v.(type) {
+		case scope.Pointer:
+			v = vv.Get()
+		}
 		if scope.GoTypeFrom(scope.Ops.Is(v, g.Type())).(bool) {
 			rt2.ValueOf(in.Parent)[g.Adr()] = v
 			rt2.RegOf(in.Parent)[in.Key] = g.Adr()
 			rt2.RegOf(in.Parent)[context.META] = rt2.RegOf(in.Frame)[context.META] //&Meta{Id: vv.Id(), }
 			return End()
-		} else {
+		} else if scope.GoTypeFrom(v) == nil {
 			return makeTrap(in.Frame, traps.NILderef)
+		} else {
+			return makeTrap(in.Frame, traps.GUARDfail)
 		}
 
 	})
