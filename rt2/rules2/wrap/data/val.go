@@ -458,6 +458,8 @@ func (p *ptr) Set(v scope.Value) {
 	case PTR:
 		assert.For(x == NIL, 40)
 		p.val = nil
+	case *idx:
+		p.Set(x.Get())
 	default:
 		halt.As(100, reflect.TypeOf(x))
 	}
@@ -1351,117 +1353,149 @@ func (o *ops) Len(a object.Object, _a, _b scope.Value) (ret scope.Value) {
 }
 
 func (o *ops) Is(a scope.Value, typ object.ComplexType) scope.Value {
-	var compare func(x, a object.ComplexType) bool
-	compare = func(_x, _a object.ComplexType) bool {
-		switch x := _x.(type) {
-		case object.RecordType:
-			switch a := _a.(type) {
+	/*	var compare func(x, a object.ComplexType) bool
+		compare = func(_x, _a object.ComplexType) bool {
+			switch x := _x.(type) {
 			case object.RecordType:
-				tc := o.Domain().Global().Discover(context.MOD).(rtm.List).NewTypeCalc()
-				tc.ConnectTo(a)
-				_, fc := tc.ForeignBase()
-				//fmt.Println(a, fc)
-				switch {
-				case x.Name() == a.Name():
-					//fmt.Println("eq")
-					//fmt.Println("qid ", x.Qualident(), _a.Qualident(), "names ", x.Name(), a.Name())
-					return true //опасно сравнивать имена конеш
-				case x.Complex() != nil:
-					//fmt.Println("go base")
-					//fmt.Println("qid ", x.Complex().Qualident(), a.Qualident())
-					return compare(x.Complex(), a)
-				case fc != nil:
-					//fmt.Println("go foreign")
-					//fmt.Println("qid ", x.Qualident(), fc.Qualident())
-					return compare(x, fc)
+				switch a := _a.(type) {
+				case object.RecordType:
+					tc := o.Domain().Global().Discover(context.MOD).(rtm.List).NewTypeCalc()
+					tc.ConnectTo(a)
+					_, fc := tc.ForeignBase()
+					//fmt.Println(a, fc)
+					switch {
+					case x.Name() == a.Name():
+						//fmt.Println("eq")
+						//fmt.Println("qid ", x.Qualident(), _a.Qualident(), "names ", x.Name(), a.Name())
+						return true //опасно сравнивать имена конеш
+					case x.Complex() != nil:
+						//fmt.Println("go base")
+						//fmt.Println("qid ", x.Complex().Qualident(), a.Qualident())
+						return compare(x.Complex(), a)
+					case fc != nil:
+						//fmt.Println("go foreign")
+						//fmt.Println("qid ", x.Qualident(), fc.Qualident())
+						return compare(x, fc)
+					default:
+						//fmt.Println("go here")
+						return false
+					}
+				case object.PointerType:
+					if a.Complex() != nil {
+						return compare(x, a.Complex())
+					} else {
+						//fmt.Println("to here")
+						return false
+					}
 				default:
-					//fmt.Println("go here")
-					return false
+					halt.As(100, reflect.TypeOf(a))
 				}
 			case object.PointerType:
-				if a.Complex() != nil {
-					return compare(x, a.Complex())
-				} else {
-					//fmt.Println("to here")
-					return false
+				switch a := _a.(type) {
+				case object.PointerType:
+					switch {
+					case x.Name() == a.Name():
+						//fmt.Println("eq")
+						return true //опасно сравнивать имена конеш
+					case x.Complex() != nil:
+						//fmt.Println("go base")
+						return compare(x.Complex(), a)
+					default:
+						return false
+					}
+				default:
+					halt.As(100, reflect.TypeOf(a))
 				}
 			default:
 				halt.As(100, reflect.TypeOf(a))
 			}
-		case object.PointerType:
-			switch a := _a.(type) {
-			case object.PointerType:
-				switch {
-				case x.Name() == a.Name():
-					//fmt.Println("eq")
-					return true //опасно сравнивать имена конеш
-				case x.Complex() != nil:
-					//fmt.Println("go base")
-					return compare(x.Complex(), a)
-				default:
-					return false
-				}
-			default:
-				halt.As(100, reflect.TypeOf(a))
-			}
-		default:
-			halt.As(100, reflect.TypeOf(a))
-		}
-		panic(0)
-	}
-	comp2 := func(this, with object.ComplexType) {
-		fmt.Println("compare")
+			panic(0)
+		} */
+	comp2 := func(this, with object.ComplexType) (ret bool) {
+		//fmt.Println("compare")
+		tc := o.Domain().Global().Discover(context.MOD).(rtm.List).NewTypeCalc()
+		other := with
 		dump := func(this object.ComplexType) {
-			fmt.Println(this.Adr())
-			tc := o.Domain().Global().Discover(context.MOD).(rtm.List).NewTypeCalc()
-			for x := this; x != nil; {
+			//fmt.Println(this.Adr())
+			for x := this; x != nil && !ret; {
 				tc.ConnectTo(x)
-				fmt.Println(x.Qualident())
+				//fmt.Println(x.Qualident(), other.Qualident(), x.Qualident() == other.Qualident())
+				ret = x.Qualident() == other.Qualident()
 				x = x.(rtm.Inherited).Complex()
 				if x == nil {
 					_, x = tc.ForeignBase()
 				}
 			}
 		}
+		tc.ConnectTo(with)
+		if _, foreign := tc.ForeignBase(); foreign != nil {
+			other = foreign
+		}
 		dump(this)
-		dump(with)
-		fmt.Println()
+		//dump(with)
+		//fmt.Println()
+		return
+	}
+	comp3 := func(this, with object.ComplexType) bool {
+		switch w := with.(type) {
+		case object.PointerType:
+			return comp2(this, w.Complex())
+		default:
+			return comp2(this, with)
+		}
 	}
 	var do func(scope.Value, object.ComplexType) bool
 	do = func(a scope.Value, typ object.ComplexType) (ret bool) {
 		switch x := a.(type) {
 		case *rec:
-			comp2(x.comp, typ)
+			switch tt := typ.(type) {
+			case object.PointerType:
+				ret = comp2(x.comp, tt.Complex())
+			default:
+				ret = comp2(x.comp, typ)
+			}
 		case *ptr:
-			comp2(x.comp, typ)
+			switch xt := x.comp.(type) {
+			case object.PointerType:
+				if xt.Name() == "ANYPTR" {
+					val := x.Get()
+					t, c := o.TypeOf(val)
+					assert.For(t == object.COMPLEX, 40)
+					ret = comp3(c, typ)
+				}
+			default:
+				ret = comp3(x.comp, typ)
+			}
 		case *idx:
-			return do(x.Get(), typ)
+			ret = do(x.Get(), typ)
 		}
 		return
 	}
-	do(a, typ)
-	switch x := a.(type) {
-	case *rec:
-		z, a := x.comp.(object.RecordType)
-		y, b := typ.(object.RecordType)
-		//fmt.Println("compare rec", x.comp, typ, a, b, a && b && compare(z, y))
-		return BOOLEAN(a && b && compare(z, y))
-	case *ptr:
-		z, a := x.comp.(object.PointerType)
-		if val := x.Get(); z.Name() == "ANYPTR" && val != NIL {
-			t, c := o.TypeOf(val)
-			assert.For(t == object.COMPLEX, 40)
-			z, a = c.(object.RecordType)
+	return BOOLEAN(do(a, typ))
+	/*	switch x := a.(type) {
+		case *rec:
+			z, a := x.comp.(object.RecordType)
+			y, b := typ.(object.RecordType)
+			//fmt.Println("compare rec", x.comp, typ, a, b, a && b && compare(z, y))
+			return BOOLEAN(a && b && compare(z, y))
+		case *ptr:
+			var zz object.ComplexType
+			z, a := x.comp.(object.PointerType)
+			zz = z
+			if val := x.Get(); z.Name() == "ANYPTR" && val != NIL {
+				t, c := o.TypeOf(val)
+				assert.For(t == object.COMPLEX, 40)
+				zz, a = c.(object.RecordType)
+			}
+			y, b := typ.(object.PointerType)
+			//fmt.Println("compare ptr", z, typ, a, b, a && b && compare(z, y))
+			return BOOLEAN(a && b && compare(zz, y))
+		case *idx:
+			return o.Is(x.Get(), typ)
+		default:
+			halt.As(100, reflect.TypeOf(x))
 		}
-		y, b := typ.(object.PointerType)
-		//fmt.Println("compare ptr", z, typ, a, b, a && b && compare(z, y))
-		return BOOLEAN(a && b && compare(z, y))
-	case *idx:
-		return o.Is(x.Get(), typ)
-	default:
-		halt.As(100, reflect.TypeOf(x))
-	}
-	panic(0)
+		panic(0)*/
 }
 
 func (o *ops) Conv(a scope.Value, typ object.Type, comp ...object.ComplexType) scope.Value {

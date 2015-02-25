@@ -22,7 +22,9 @@ start fw_test XevDemo19
 start fw_test XevDemo20
 start fw_test XevDemo21
 start fw_test XevDemo22
+start fw_test XevDemo23
 
 start fw_test TestA0
 start fw_test Start
 start fw_test Start2
+start fw_test Start3

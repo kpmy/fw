@@ -360,17 +360,24 @@ func getMop(in IN) OUT {
 	return GetExpression(in, left, op.Left(), do)
 }
 
+func narrowValue(in scope.Value) scope.Value {
+	//fmt.Println(reflect.TypeOf(in))
+	switch v := in.(type) {
+	case scope.Pointer:
+		return narrowValue(v.Get())
+	case scope.Index:
+		return narrowValue(v.Get())
+	default:
+		return v
+	}
+}
 func getGuard(in IN) OUT {
 	const left = "guard:left"
 	g := in.IR.(node.GuardNode)
 	return GetDesignator(in, left, g.Left(), func(IN) OUT {
 		v := rt2.ValueOf(in.Frame)[KeyOf(in, left)]
 		assert.For(v != nil, 20)
-		switch vv := v.(type) {
-		case scope.Pointer:
-			v = vv.Get()
-		}
-		if scope.GoTypeFrom(scope.Ops.Is(v, g.Type())).(bool) {
+		if scope.GoTypeFrom(scope.Ops.Is(narrowValue(v), g.Type())).(bool) {
 			rt2.ValueOf(in.Parent)[g.Adr()] = v
 			rt2.RegOf(in.Parent)[in.Key] = g.Adr()
 			rt2.RegOf(in.Parent)[context.META] = rt2.RegOf(in.Frame)[context.META] //&Meta{Id: vv.Id(), }

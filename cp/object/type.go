@@ -112,6 +112,7 @@ type BasicType interface {
 type PointerType interface {
 	ComplexType
 	Complex(...ComplexType) ComplexType
+	self() PointerType
 	Name() string
 }
 
@@ -244,7 +245,8 @@ func NewPointerType(n string, id int) PointerType {
 	return p
 }
 
-func (p *ptr) Name() string { return p.name }
+func (p *ptr) self() PointerType { return p }
+func (p *ptr) Name() string      { return p.name }
 
 func (p *ptr) Complex(x ...ComplexType) ComplexType {
 	if len(x) == 1 {
