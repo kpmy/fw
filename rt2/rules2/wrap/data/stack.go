@@ -399,7 +399,18 @@ func (a *area) Target(all ...scope.Allocator) scope.Allocator {
 	}
 }
 
-func (a *area) String() string { return "fixme" }
+func (a *area) String() (ret string) {
+	a.il.ForEach(func(in items.Value) bool {
+		v, ok := in.(*item)
+		if ok {
+			ret = fmt.Sprintln(ret, v.Data())
+		} else {
+			ret = fmt.Sprintln(ret, "..")
+		}
+		return false
+	})
+	return
+}
 
 func (a *area) Provide(x interface{}) scope.Value {
 	switch z := x.(type) {

@@ -60,7 +60,7 @@ func (l *list) Handle(msg interface{}) {}
 
 func (l *list) Load(name string, ldr ...Loader) (ret *mod.Module, err error) {
 	assert.For(name != "", 20)
-	//fmt.Println("loading", name, "loaded", l.Loaded(name) != nil)
+	fmt.Println("loading", name, "loaded", l.Loaded(name) != nil)
 	ret = l.Loaded(name)
 	var loader Loader = func(m *mod.Module) {}
 	if len(ldr) > 0 {
@@ -71,14 +71,16 @@ func (l *list) Load(name string, ldr ...Loader) (ret *mod.Module, err error) {
 		ret = xev.Load(path, name+".oz")
 		ret.Name = name
 		for _, imp := range ret.Imports {
-			//fmt.Println("imports", imp.Name, "loaded", l.Loaded(imp.Name) != nil)
+			fmt.Println(name, "imports", imp.Name, "loaded", l.Loaded(imp.Name) != nil)
 			_, err = l.Load(imp.Name, loader)
 		}
 		if err == nil {
-			ret.Init()
+			ret.Init(func(t object.ComplexType) {
+				fmt.Println(t.Qualident())
+			})
 			l.inner[name] = ret
 			loader(ret)
-			//fmt.Println("loaded", name)
+			fmt.Println("loaded", name)
 		}
 	}
 	return ret, err
@@ -225,7 +227,7 @@ func (c *tc) ConnectTo(x interface{}) {
 		halt.As(100, reflect.TypeOf(t))
 	}
 	c.m = ModuleOfType(c.ml.Domain(), c.typ)
-	assert.For(c.m != nil, 60)
+	assert.For(c.m != nil, 60, c.typ.Qualident(), c.typ)
 }
 
 func (c *tc) MethodList() (ret map[int][]Method) {

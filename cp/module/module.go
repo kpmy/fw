@@ -1,6 +1,7 @@
 package module
 
 import (
+	"fmt"
 	"fw/cp"
 	"fw/cp/constant/enter"
 	"fw/cp/node"
@@ -136,7 +137,7 @@ func (m *Module) Init(inittd ...func(t object.ComplexType)) {
 		return strconv.Itoa(int(id))
 	}
 
-	//fmt.Println("init", m.Name)
+	fmt.Println("init", m.Name)
 	for k, s := range m.Types {
 		q := ""
 		switch e := k.(type) {
