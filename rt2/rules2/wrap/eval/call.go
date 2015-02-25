@@ -11,6 +11,7 @@ import (
 	"fw/rt2/frame"
 	rtm "fw/rt2/module"
 	"fw/rt2/scope"
+	"log"
 	"math"
 	"reflect"
 	"ypk/assert"
@@ -66,7 +67,7 @@ func go_process(in IN, par node.Node) OUT {
 					panic(40)
 				}
 			} else {
-				fmt.Println(val, "not a json")
+				log.Println(val, "not a json")
 			}
 		}
 	}

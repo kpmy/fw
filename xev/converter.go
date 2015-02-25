@@ -9,6 +9,7 @@ import (
 	"fw/cp/module"
 	"fw/cp/node"
 	"fw/cp/object"
+	"log"
 	"math/big"
 	"strconv"
 	"unicode/utf16"
@@ -230,7 +231,7 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 				}
 				ret = t
 			default:
-				fmt.Println("unknown basic type", n.Data.Typ.Typ)
+				log.Println("unknown basic type", n.Data.Typ.Typ)
 			}
 		case "DYNAMIC":
 			switch n.Data.Typ.Base {
@@ -342,7 +343,7 @@ func (r *Result) doObject(n *Node) (ret object.Object) {
 		case "module":
 			ret = object.New(object.MODULE, n.Id)
 		default:
-			fmt.Println(n.Data.Obj.Mode)
+			log.Println(n.Data.Obj.Mode)
 			panic("no such object mode")
 		}
 	}
@@ -516,7 +517,7 @@ func (r *Result) buildNode(n *Node) (ret node.Node) {
 		case "compound":
 			ret = node.New(node.COMPOUND, n.Id)
 		default:
-			fmt.Println(n.Data.Nod.Class)
+			log.Println(n.Data.Nod.Class)
 			panic("no such node type")
 		}
 	} else {

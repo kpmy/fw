@@ -1,7 +1,6 @@
 package eval
 
 import (
-	"fmt"
 	"fw/cp/constant/operation"
 	"fw/cp/node"
 	"fw/cp/object"
@@ -398,7 +397,7 @@ func bit_range(_f scope.Value, _t scope.Value) scope.Value {
 	for i := f; i <= t; i++ {
 		ret = ret.SetBit(ret, int(i), 1)
 	}
-	fmt.Println("bits", ret)
+	//fmt.Println("bits", ret)
 	return scope.TypeFromGo(ret)
 }
 

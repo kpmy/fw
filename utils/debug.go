@@ -1,6 +1,6 @@
 package utils
 
-import "fmt"
+import "log"
 
 var debugFrame = false
 var debugScope = false
@@ -18,19 +18,19 @@ func Debug2(x, y bool) {
 
 func PrintFrame(x ...interface{}) {
 	if debugFrame {
-		fmt.Println(x...)
+		log.Println(x...)
 	}
 }
 
 func PrintScope(x ...interface{}) {
 	if debugScope {
-		fmt.Println(x...)
+		log.Println(x...)
 	}
 }
 
 func PrintTrap(x ...interface{}) {
 	if debugTrap {
-		fmt.Println(x...)
+		log.Println(x...)
 	}
 }
 
