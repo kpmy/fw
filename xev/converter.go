@@ -191,17 +191,21 @@ func init() { reset() }
 func (r *Result) doType(n *Node) (ret object.ComplexType) {
 	//fmt.Println("type", n.Id)
 	ret = typeMap[n.Id]
+	var tail func()
 	if ret == nil {
+		tail = nil
 		switch n.Data.Typ.Form {
 		case "BASIC":
 			switch n.Data.Typ.Typ {
 			case "PROCEDURE":
 				t := object.NewBasicType(object.PROCEDURE, n.Id)
-				link := r.findLink(n, "link")
-				if link != nil {
-					t.SetLink(r.doObject(link))
-					assert.For(t.Link() != nil, 40)
-					t.Link().SetRef(t)
+				tail = func() {
+					link := r.findLink(n, "link")
+					if link != nil {
+						t.SetLink(r.doObject(link))
+						assert.For(t.Link() != nil, 40)
+						t.Link().SetRef(t)
+					}
 				}
 				ret = t
 			case "SHORTSTRING":
@@ -217,10 +221,12 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 				"NOTYP":
 			case "POINTER":
 				t := object.NewPointerType(n.Data.Typ.Name, n.Id)
-				base := r.findLink(n, "base")
-				if base != nil {
-					t.Complex(r.doType(base))
-					assert.For(t.Complex() != nil, 41)
+				tail = func() {
+					base := r.findLink(n, "base")
+					if base != nil {
+						t.Complex(r.doType(base))
+						assert.For(t.Complex() != nil, 41)
+					}
 				}
 				ret = t
 			default:
@@ -238,10 +244,12 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 				ret = object.NewDynArrayType(object.REAL, n.Id)
 			case "POINTER":
 				ret = object.NewDynArrayType(object.COMPLEX, n.Id)
-				base := r.findLink(n, "base")
-				if base != nil {
-					ret.(object.DynArrayType).Complex(r.doType(base))
-					assert.For(ret.(object.DynArrayType).Complex() != nil, 41)
+				tail = func() {
+					base := r.findLink(n, "base")
+					if base != nil {
+						ret.(object.DynArrayType).Complex(r.doType(base))
+						assert.For(ret.(object.DynArrayType).Complex() != nil, 41)
+					}
 				}
 			default:
 				panic(fmt.Sprintln("unknown dyn type", n.Id, n.Data.Typ.Base, n.Data.Typ.Typ))
@@ -256,10 +264,12 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 				ret = object.NewArrayType(object.REAL, int64(n.Data.Typ.Par), n.Id)
 			case "COMPLEX":
 				ret = object.NewArrayType(object.COMPLEX, int64(n.Data.Typ.Par), n.Id)
-				base := r.findLink(n, "base")
-				if base != nil {
-					ret.(object.ArrayType).Complex(r.doType(base))
-					assert.For(ret.(object.ArrayType).Complex() != nil, 41)
+				tail = func() {
+					base := r.findLink(n, "base")
+					if base != nil {
+						ret.(object.ArrayType).Complex(r.doType(base))
+						assert.For(ret.(object.ArrayType).Complex() != nil, 41)
+					}
 				}
 			default:
 				panic(fmt.Sprintln("unknown array type", n.Id, n.Data.Typ.Base))
@@ -271,16 +281,18 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 			default:
 				ret = object.NewRecordType(n.Data.Typ.Name, n.Id, n.Data.Typ.Base)
 			}
-			link := r.findLink(n, "link")
-			if link != nil {
-				ret.SetLink(r.doObject(link))
-				assert.For(ret.Link() != nil, 40)
-				ret.Link().SetRef(ret)
-			}
-			base := r.findLink(n, "base")
-			if base != nil {
-				ret.(object.RecordType).Complex(r.doType(base))
-				assert.For(ret.(object.RecordType).BaseRec() != nil, 41)
+			tail = func() {
+				link := r.findLink(n, "link")
+				if link != nil {
+					ret.SetLink(r.doObject(link))
+					assert.For(ret.Link() != nil, 40)
+					ret.Link().SetRef(ret)
+				}
+				base := r.findLink(n, "base")
+				if base != nil {
+					ret.(object.RecordType).Complex(r.doType(base))
+					assert.For(ret.(object.RecordType).BaseRec() != nil, 41)
+				}
 			}
 		default:
 			panic(fmt.Sprintln("unknown form", n.Data.Typ.Form))
@@ -288,6 +300,9 @@ func (r *Result) doType(n *Node) (ret object.ComplexType) {
 	}
 	if ret != nil {
 		typeMap[n.Id] = ret
+		if tail != nil { //функция нужна чтобы выполнить рекурсивный вызов doType после обновления индекса типов typeMap
+			tail()
+		}
 	}
 	return ret
 }

@@ -78,13 +78,15 @@ type nodeFrame struct {
 }
 
 func done(f frame.Frame) {
-	utils.PrintScope("== SCOPE ==")
-	utils.PrintScope(f.Domain().Discover(context.SCOPE))
-	utils.PrintScope("==  HEAP ==")
-	utils.PrintScope(f.Domain().Discover(context.HEAP))
-	utils.PrintScope("== CALL ==")
-	utils.PrintScope(f.Domain().Discover(context.CALL))
-	utils.PrintScope("^^^^^^^^^")
+	utils.Do(func() {
+		utils.PrintScope("== SCOPE ==")
+		utils.PrintScope(f.Domain().Discover(context.SCOPE))
+		utils.PrintScope("==  HEAP ==")
+		utils.PrintScope(f.Domain().Discover(context.HEAP))
+		utils.PrintScope("== CALL ==")
+		utils.PrintScope(f.Domain().Discover(context.CALL))
+		utils.PrintScope("^^^^^^^^^")
+	})
 }
 
 func (f *nodeFrame) Do() frame.WAIT {

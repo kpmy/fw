@@ -33,3 +33,9 @@ func PrintTrap(x ...interface{}) {
 		fmt.Println(x...)
 	}
 }
+
+func Do(do func()) {
+	if debugFrame {
+		do()
+	}
+}
