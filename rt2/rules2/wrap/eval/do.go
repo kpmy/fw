@@ -97,7 +97,7 @@ func GetExpression(in IN, key interface{}, expr node.Node, next Do) OUT {
 			}
 		}
 		v := rt2.RegOf(f)[key]
-		do(v != nil, 1961, key)
+		do(v != nil, 1961, " ", key)
 	})
 	return Later(func(IN) OUT {
 		return Now(next)

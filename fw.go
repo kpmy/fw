@@ -36,7 +36,7 @@ func main() {
 	flag.Parse()
 	utils.Debug(debug)
 	if name == "" {
-		//utils.Debug2(false, true)
+		utils.Debug2(false, false)
 		//name = "XevDemo23"
 		//name = "XevDemo11"
 		//name = "XevDemo12"

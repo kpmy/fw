@@ -332,8 +332,15 @@ func doReturn(in IN) OUT {
 			val, _ = rt2.RegOf(in.Frame)[context.RETURN].(scope.Value)
 		}
 		assert.For(val != nil, 40)
-		rt2.ValueOf(in.Parent)[r.Object().Adr()] = val
-		rt2.RegOf(in.Parent)[context.RETURN] = val
+		in.Frame.Root().ForEach(func(f frame.Frame) bool {
+			n := rt2.NodeOf(f)
+			_, done := n.(node.EnterNode)
+			if done {
+				rt2.ValueOf(f)[r.Object().Adr()] = val
+				rt2.RegOf(f)[context.RETURN] = val
+			}
+			return !done
+		})
 		return End()
 	})
 }
