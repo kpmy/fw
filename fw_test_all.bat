@@ -28,3 +28,4 @@ start fw_test TestA0
 start fw_test Start
 start fw_test Start2
 start fw_test Start3
+start fw_test Start4

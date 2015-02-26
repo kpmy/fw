@@ -54,7 +54,26 @@ func getField(in IN) OUT {
 		_v := rt2.ValueOf(in.Frame)[KeyOf(in, left)]
 		switch v := _v.(type) {
 		case scope.Record:
-			fld := v.Get(f.Object().Adr()).(scope.Variable)
+			_fo := f.Object()
+			switch fo := _fo.(type) {
+			case object.FieldObject:
+				tc := in.Frame.Domain().Global().Discover(context.MOD).(rtm.List).NewTypeCalc()
+				tc.ConnectTo(fo.TypeOf())
+				if _, ft := tc.ForeignBase(); ft != nil {
+					for x := ft.Link(); x != nil; x = x.Link() {
+						switch fx := x.(type) {
+						case object.FieldObject:
+							if fx.Name() == fo.Name() {
+								_fo = fx
+							}
+						}
+					}
+
+				}
+			default:
+				halt.As(100, reflect.TypeOf(fo))
+			}
+			fld := v.Get(_fo.Adr()).(scope.Variable)
 			rt2.ValueOf(in.Parent)[f.Adr()] = fld
 			rt2.RegOf(in.Parent)[in.Key] = f.Adr()
 			//rt2.RegOf(in.Parent)[context.META] = &Meta{Scope: nil, Rec: v, Id: fld.Id()}

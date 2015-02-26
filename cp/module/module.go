@@ -167,6 +167,15 @@ func (m *Module) Init(inittd ...func(t object.ComplexType)) {
 		for _, s := range m.Types {
 			for _, t := range s {
 				inittd[0](t)
+				switch rec := t.(type) {
+				case object.RecordType:
+					for x := rec.Link(); x != nil; x = x.Link() {
+						switch f := x.(type) {
+						case object.FieldObject:
+							f.TypeOf(rec)
+						}
+					}
+				}
 			}
 		}
 	}

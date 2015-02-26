@@ -109,12 +109,18 @@ func push(dom context.Domain, il items.Data, _o object.Object) {
 			r := newRec(o)
 			x = r
 			fl := make([]object.Object, 0)
+			var tl []object.Object
 			for rec := t; rec != nil; {
+				//fmt.Println(rec.Qualident())
+				if tl != nil {
+					fl = append(fl, tl...)
+					tl = nil
+				}
 				for x := rec.Link(); x != nil; x = x.Link() {
 					switch x.(type) {
 					case object.FieldObject:
-						fmt.Println(o.Name(), ".", x.Name(), x.Adr())
-						fl = append(fl, x)
+						//fmt.Println(rec.Qualident(), o.Name(), ".", x.Name(), x.Adr())
+						tl = append(tl, x)
 					case object.ParameterObject, object.ProcedureObject, object.VariableObject:
 						//do nothing
 					default:
@@ -125,11 +131,20 @@ func push(dom context.Domain, il items.Data, _o object.Object) {
 					x := ml.NewTypeCalc()
 					x.ConnectTo(rec)
 					_, frec := x.ForeignBase()
-					fmt.Println(frec)
+					if frec != nil {
+						//fmt.Println("fbase", frec.Qualident())
+						tl = nil
+					}
 					rec, _ = frec.(object.RecordType)
 				} else {
 					rec = rec.BaseRec()
+					if rec != nil {
+						//fmt.Println("base", rec.Qualident())
+					}
 				}
+			}
+			if tl != nil {
+				fl = append(fl, tl...)
 			}
 			r.fi = items.New()
 			r.fi.Begin()

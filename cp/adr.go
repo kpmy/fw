@@ -18,6 +18,14 @@ func (i ID) String() string {
 	}
 }
 
+func Degrade(i ID) int {
+	if i > 0 {
+		return getId(i)
+	} else {
+		return int(i)
+	}
+}
+
 type Digest interface{}
 
 type dig struct {

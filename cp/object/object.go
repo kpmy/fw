@@ -87,6 +87,7 @@ type ParameterObject interface {
 type FieldObject interface {
 	Object
 	self() FieldObject
+	TypeOf(...ComplexType) ComplexType
 }
 
 type ProcedureObject interface {
@@ -243,9 +244,17 @@ func (v *parameterObject) self() ParameterObject { return v }
 
 type fieldObject struct {
 	objectFields
+	comp ComplexType
 }
 
 func (v *fieldObject) self() FieldObject { return v }
+
+func (v *fieldObject) TypeOf(t ...ComplexType) ComplexType {
+	if len(t) == 1 {
+		v.comp = t[0]
+	}
+	return v.comp
+}
 
 type typeObject struct {
 	objectFields
