@@ -113,7 +113,7 @@ func push(dom context.Domain, il items.Data, _o object.Object) {
 				for x := rec.Link(); x != nil; x = x.Link() {
 					switch x.(type) {
 					case object.FieldObject:
-						//fmt.Println(o.Name(), ".", x.Name(), x.Adr())
+						fmt.Println(o.Name(), ".", x.Name(), x.Adr())
 						fl = append(fl, x)
 					case object.ParameterObject, object.ProcedureObject, object.VariableObject:
 						//do nothing
@@ -125,7 +125,7 @@ func push(dom context.Domain, il items.Data, _o object.Object) {
 					x := ml.NewTypeCalc()
 					x.ConnectTo(rec)
 					_, frec := x.ForeignBase()
-					//fmt.Println(frec)
+					fmt.Println(frec)
 					rec, _ = frec.(object.RecordType)
 				} else {
 					rec = rec.BaseRec()

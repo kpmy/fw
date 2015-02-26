@@ -102,7 +102,7 @@ func (r *rec) Set(v scope.Value) {
 
 func (r *rec) Get(i cp.ID) scope.Value {
 	x, ok := r.fi.Get(&key{id: i}).(*item)
-	assert.For(ok, 40)
+	assert.For(ok, 40, i)
 	return x.Value()
 }
 

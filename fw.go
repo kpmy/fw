@@ -42,7 +42,7 @@ func main() {
 		//name = "XevDemo12"
 		//name = "XevDemo13"
 		//name = "XevDemo19"
-		name = "Start3"
+		name = "Start4"
 	}
 	global := &stdDomain{god: true}
 	global.global = global
