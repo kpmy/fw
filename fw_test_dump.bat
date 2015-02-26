@@ -1,5 +1,5 @@
 @echo off 
-fw -i=%1 -d=true > .1
+fw -i=%1 -d=true 2> .1
 IF ERRORLEVEL 1 GOTO err
 
 GOTO ok

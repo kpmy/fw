@@ -1682,6 +1682,15 @@ func (o *ops) Eq(a, b scope.Value) scope.Value {
 				case PTR:
 					assert.For(y == NIL, 40)
 					return BOOLEAN(x.val == nil || x.val.id == 0)
+				case *ptr:
+					switch {
+					case x.val == nil:
+						return BOOLEAN(y.val == nil || y.val.id == 0)
+					case y.val == nil:
+						return BOOLEAN(x.val == nil || y.val.id == 0)
+					default:
+						return BOOLEAN(x.val != nil && y.val != nil && x.val.id == y.val.id)
+					}
 				default:
 					panic(fmt.Sprintln(reflect.TypeOf(y)))
 				}
