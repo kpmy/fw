@@ -11,12 +11,12 @@ import (
 	"fw/rt2/frame"
 	rtm "fw/rt2/module"
 	"fw/rt2/scope"
+	"github.com/kpmy/ypk/assert"
+	"github.com/kpmy/ypk/halt"
+	"github.com/kpmy/ypk/mathe"
 	"log"
 	"math"
 	"reflect"
-	"ypk/assert"
-	"ypk/halt"
-	"ypk/mathe"
 )
 
 var sys map[string]func(IN, node.Node) OUT

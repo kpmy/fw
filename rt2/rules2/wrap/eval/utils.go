@@ -4,7 +4,7 @@ import (
 	"fw/cp"
 	"fw/rt2"
 	"fw/rt2/context"
-	"ypk/assert"
+	"github.com/kpmy/ypk/assert"
 )
 
 func KeyOf(in IN, key interface{}) cp.ID {

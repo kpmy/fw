@@ -8,12 +8,9 @@ import (
 	"fw/rt2/context"
 	"fw/rt2/frame"
 	"fw/rt2/scope"
+	"github.com/kpmy/ypk/assert"
+	"github.com/kpmy/ypk/halt"
 	"reflect"
-	"ypk/assert"
-)
-
-import (
-	"ypk/halt"
 )
 
 func BeginExpression(in IN) (out OUT) {

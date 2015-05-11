@@ -5,7 +5,7 @@ import (
 )
 
 import (
-	"ypk/halt"
+	"github.com/kpmy/ypk/halt"
 )
 
 func (a *basic) Equals(x ComplexType) bool {

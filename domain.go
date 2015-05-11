@@ -2,7 +2,7 @@ package main
 
 import (
 	"fw/rt2/context"
-	"ypk/assert"
+	"github.com/kpmy/ypk/assert"
 )
 
 type stdDomain struct {

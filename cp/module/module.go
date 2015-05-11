@@ -5,10 +5,10 @@ import (
 	"fw/cp/constant/enter"
 	"fw/cp/node"
 	"fw/cp/object"
+	"github.com/kpmy/ypk/assert"
+	"github.com/kpmy/ypk/halt"
 	"reflect"
 	"strconv"
-	"ypk/assert"
-	"ypk/halt"
 )
 
 type Import struct {

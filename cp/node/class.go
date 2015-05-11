@@ -8,7 +8,7 @@ import (
 	"fw/cp/constant/operation"
 	"fw/cp/constant/statement"
 	"fw/cp/object"
-	"ypk/assert"
+	"github.com/kpmy/ypk/assert"
 )
 
 const INIT constant.Class = -1

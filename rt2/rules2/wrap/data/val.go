@@ -10,12 +10,12 @@ import (
 	"fw/rt2/rules2/wrap/data/items"
 	"fw/rt2/scope"
 	"fw/utils"
+	"github.com/kpmy/ypk/assert"
+	"github.com/kpmy/ypk/halt"
 	"math"
 	"math/big"
 	"reflect"
 	"strings"
-	"ypk/assert"
-	"ypk/halt"
 )
 
 type data struct {

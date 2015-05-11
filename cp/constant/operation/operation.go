@@ -1,7 +1,7 @@
 package operation
 
 import (
-	"ypk/assert"
+	"github.com/kpmy/ypk/assert"
 )
 
 type Operation int

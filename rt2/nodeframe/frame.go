@@ -9,8 +9,8 @@ import (
 	"fw/rt2/frame"
 	"fw/rt2/scope"
 	"fw/utils"
+	"github.com/kpmy/ypk/assert"
 	"reflect"
-	"ypk/assert"
 )
 
 var count int64

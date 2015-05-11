@@ -14,9 +14,9 @@ import (
 	"fw/rt2/rules2/wrap/eval"
 	"fw/rt2/scope"
 	"fw/utils"
+	"github.com/kpmy/ypk/assert"
 	"log"
 	"time"
-	"ypk/assert"
 )
 
 type flow struct {

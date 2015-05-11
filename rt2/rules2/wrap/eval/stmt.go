@@ -15,11 +15,11 @@ import (
 	rtm "fw/rt2/module"
 	"fw/rt2/scope"
 	"fw/utils"
+	"github.com/kpmy/ypk/assert"
+	"github.com/kpmy/ypk/halt"
 	"log"
 	"math/big"
 	"reflect"
-	"ypk/assert"
-	"ypk/halt"
 )
 
 func makeTrap(f frame.Frame, err traps.TRAP) (out OUT) {

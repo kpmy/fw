@@ -3,9 +3,9 @@ package xev
 import (
 	"archive/zip"
 	"fw/cp/module"
+	"github.com/kpmy/ypk/assert"
 	"io"
 	"path/filepath"
-	"ypk/assert"
 )
 
 const CODE = "code"

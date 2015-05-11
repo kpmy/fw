@@ -9,12 +9,12 @@ import (
 	"fw/cp/module"
 	"fw/cp/node"
 	"fw/cp/object"
+	"github.com/kpmy/ypk/assert"
 	"log"
 	"math/big"
 	"strconv"
 	"unicode/utf16"
 	"unicode/utf8"
-	"ypk/assert"
 )
 
 var ncache map[int]*Node

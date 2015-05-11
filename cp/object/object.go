@@ -2,8 +2,8 @@ package object
 
 import (
 	"fw/cp"
+	"github.com/kpmy/ypk/assert"
 	"strconv"
-	"ypk/assert"
 )
 
 type Mode int

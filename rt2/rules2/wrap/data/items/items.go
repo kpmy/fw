@@ -1,7 +1,7 @@
 package items
 
 import (
-	"ypk/assert"
+	"github.com/kpmy/ypk/assert"
 )
 
 type ID struct {

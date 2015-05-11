@@ -1,8 +1,8 @@
 package statement
 
 import (
+	"github.com/kpmy/ypk/assert"
 	"strconv"
-	"ypk/assert"
 )
 
 type Statement int

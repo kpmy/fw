@@ -7,8 +7,8 @@ import (
 	"fw/rt2/decision"
 	"fw/rt2/frame"
 	"fw/rt2/rules2/wrap/eval"
+	"github.com/kpmy/ypk/halt"
 	"reflect"
-	"ypk/halt"
 )
 
 func init() {

@@ -9,10 +9,10 @@ import (
 	"fw/rt2/context"
 	rtm "fw/rt2/module"
 	"fw/rt2/scope"
+	"github.com/kpmy/ypk/assert"
+	"github.com/kpmy/ypk/halt"
 	"math/big"
 	"reflect"
-	"ypk/assert"
-	"ypk/halt"
 )
 
 func getConst(in IN) OUT {

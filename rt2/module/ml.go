@@ -8,10 +8,10 @@ import (
 	"fw/cp/object"
 	"fw/rt2/context"
 	"fw/xev"
+	"github.com/kpmy/ypk/assert"
+	"github.com/kpmy/ypk/halt"
 	"os"
 	"reflect"
-	"ypk/assert"
-	"ypk/halt"
 )
 
 type Loader func(*mod.Module)

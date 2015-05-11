@@ -3,7 +3,7 @@ package object
 import (
 	"fmt"
 	"fw/cp"
-	"ypk/assert"
+	"github.com/kpmy/ypk/assert"
 )
 
 type Type int

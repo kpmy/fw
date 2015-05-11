@@ -7,7 +7,7 @@ import (
 	"fw/rt2/frame"
 	"fw/rt2/nodeframe"
 	"fw/rt2/scope"
-	"ypk/assert"
+	"github.com/kpmy/ypk/assert"
 )
 
 var utils nodeframe.NodeFrameUtils

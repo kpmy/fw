@@ -10,9 +10,9 @@ import (
 	_ "fw/rt2/rules2"
 	"fw/rt2/scope"
 	"fw/utils"
+	"github.com/kpmy/ypk/assert"
 	"log"
 	"time"
-	"ypk/assert"
 )
 
 var name string
